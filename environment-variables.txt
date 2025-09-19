@@ -1,0 +1,17 @@
+# Environment Variables Template for .env.local
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
+CLERK_SECRET_KEY=your_clerk_secret_key_here
+
+# Clerk JWT for Convex (get this from your Clerk JWT template named "convex")
+CLERK_JWT_ISSUER_DOMAIN=https://tidy-meerkat-48.clerk.accounts.dev
+
+# Convex
+NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url_here
+
+# IMPORTANT SETUP STEPS:
+# 1. In Clerk Dashboard, create a JWT Template named "convex"
+# 2. Set the JWT Template's "Audience" (aud) to "convex"
+# 3. Copy the "Issuer URL" from the JWT template to CLERK_JWT_ISSUER_DOMAIN
+# 4. The applicationID in convex/auth.config.ts should match the JWT template name

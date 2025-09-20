@@ -17,12 +17,12 @@ export const Navbar = () => {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Link href="/sign-in">
-            <Button variant="outline" className="hidden sm:inline-flex">
+            <Button variant="outline" className="hidden sm:inline-flex rounded-full">
               Sign In
             </Button>
           </Link>
           <Link href="/sign-up">
-            <Button className="hidden xs:inline-flex">Get Started</Button>
+            <Button className="hidden sm:inline-flex rounded-full">Get Started</Button>
           </Link>
 
           {/* Mobile Menu */}

@@ -1,40 +1,62 @@
 import Link from "next/link";
-import { CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Twitter, Twitch, Youtube } from "lucide-react";
+import { Logo } from "./logo";
+
+const footerLinks = [
+  { name: "Features", href: "#features" },
+  { name: "Pricing", href: "#pricing" },
+  { name: "FAQ", href: "#faq" },
+  { name: "Testimonials", href: "#testimonials" },
+  { name: "Privacy", href: "/legal/privacy" },
+];
 
 export const Footer = () => {
   return (
     <footer className="w-full border-t bg-background">
-      <div className="max-w-screen-xl mx-auto px-6 py-8">
-        {/* Single row layout - much more minimal */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* Logo and Copyright */}
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center">
-              <CreditCard className="w-3 h-3 text-primary-foreground" />
+      <div className="max-w-screen-xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-5">
+            <Logo />
+            <div className="mt-6 flex items-center space-x-2">
+              {footerLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.name}
+                </Link>
+              ))}
             </div>
-            <span className="font-bold text-base font-sans">SubTracker</span>
-            <span className="text-sm text-muted-foreground font-sans">© 2025</span>
           </div>
+          <div className="lg:col-span-7 lg:justify-self-end">
+            <h3 className="font-semibold text-lg">Stay up to date</h3>
+            <div className="mt-4 flex flex-col sm:flex-row items-center gap-2 max-w-md">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1"
+              />
+              <Button className="w-full sm:w-auto">Subscribe</Button>
+            </div>
+          </div>
+        </div>
 
-          {/* Essential Links Only */}
-          <div className="flex items-center gap-6 text-sm font-sans">
-            <Link 
-              href="/legal/privacy" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Privacy
+        <div className="border-t mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-muted-foreground">
+            © 2025 SubTracker. All rights reserved.
+          </p>
+          <div className="flex items-center gap-4">
+            <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <Twitter className="h-5 w-5" />
             </Link>
-            <Link 
-              href="/legal/terms" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Terms
+            <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <Youtube className="h-5 w-5" />
             </Link>
-            <Link 
-              href="/sign-up" 
-              className="font-medium text-primary hover:underline"
-            >
-              Get Started
+            <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <Twitch className="h-5 w-5" />
             </Link>
           </div>
         </div>

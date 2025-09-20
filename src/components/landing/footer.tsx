@@ -1,113 +1,40 @@
 import Link from "next/link";
 import { CreditCard } from "lucide-react";
 
-const footerLinks = {
-  product: [
-    { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#pricing" },
-    { name: "FAQ", href: "#faq" },
-  ],
-  company: [
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
-    { name: "Support", href: "/support" },
-  ],
-  legal: [
-    { name: "Privacy Policy", href: "/legal/privacy" },
-    { name: "Terms of Service", href: "/legal/terms" },
-  ],
-};
-
 export const Footer = () => {
   return (
     <footer className="w-full border-t bg-background">
-      <div className="max-w-screen-xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Logo and Description */}
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <CreditCard className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-bold text-lg font-sans">SubTracker</span>
-            </Link>
-            <p className="text-sm text-muted-foreground mb-4 font-sans">
-              Take control of your subscriptions and never overpay again.
-            </p>
-            <div className="text-xs text-muted-foreground font-sans">
-              © 2025 SubTracker. All rights reserved.
+      <div className="max-w-screen-xl mx-auto px-6 py-8">
+        {/* Single row layout - much more minimal */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          {/* Logo and Copyright */}
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center">
+              <CreditCard className="w-3 h-3 text-primary-foreground" />
             </div>
+            <span className="font-bold text-base font-sans">SubTracker</span>
+            <span className="text-sm text-muted-foreground font-sans">© 2025</span>
           </div>
 
-          {/* Product Links */}
-          <div>
-            <h3 className="font-semibold mb-3 font-sans">Product</h3>
-            <ul className="space-y-2">
-              {footerLinks.product.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    href={link.href} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors font-sans"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company Links */}
-          <div>
-            <h3 className="font-semibold mb-3 font-sans">Company</h3>
-            <ul className="space-y-2">
-              {footerLinks.company.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    href={link.href} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors font-sans"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal Links */}
-          <div>
-            <h3 className="font-semibold mb-3 font-sans">Legal</h3>
-            <ul className="space-y-2">
-              {footerLinks.legal.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    href={link.href} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors font-sans"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="border-t mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            Made with ❤️ for people who hate surprise charges
-          </div>
-          <div className="flex items-center gap-4">
+          {/* Essential Links Only */}
+          <div className="flex items-center gap-6 text-sm font-sans">
+            <Link 
+              href="/legal/privacy" 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link 
+              href="/legal/terms" 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Terms
+            </Link>
             <Link 
               href="/sign-up" 
-              className="text-sm font-medium text-primary hover:underline"
+              className="font-medium text-primary hover:underline"
             >
-              Get Started Free
-            </Link>
-            <Link 
-              href="/dashboard" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
+              Get Started
             </Link>
           </div>
         </div>

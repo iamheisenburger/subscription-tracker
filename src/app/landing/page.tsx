@@ -5,12 +5,12 @@ import { FAQ } from "@/components/landing/faq";
 import { Testimonials } from "@/components/landing/testimonials";
 import { CTABanner } from "@/components/landing/cta-banner";
 import { Footer } from "@/components/landing/footer";
-import { LandingNavbar } from "@/components/landing/navbar";
+import { Navbar } from "@/components/landing/navbar";
 
 export default function LandingPage() {
   return (
     <>
-      <LandingNavbar />
+      <Navbar />
       <main className="pt-16 xs:pt-20 sm:pt-24">
         <Hero />
         <Features />

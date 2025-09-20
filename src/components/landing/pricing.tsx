@@ -49,10 +49,10 @@ export const Pricing = () => {
     <div id="pricing" className="w-full py-12 xs:py-20 px-6">
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
             Simple, transparent pricing
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
             Choose the plan that&apos;s right for you. Start free and upgrade when you need more features.
           </p>
         </div>

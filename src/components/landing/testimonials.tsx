@@ -52,10 +52,10 @@ export const Testimonials = () => {
     <div id="testimonials" className="w-full py-12 xs:py-20 px-6 bg-muted/30">
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
             Loved by thousands of users
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
             See what our users are saying about SubTracker and how it&apos;s helping them 
             save money and stay organized.
           </p>

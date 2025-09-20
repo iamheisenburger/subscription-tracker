@@ -12,17 +12,17 @@ export const Hero = () => {
           <Badge className="bg-primary rounded-full py-1 border-none">
             ✨ Track your subscriptions like a pro
           </Badge>
-          <h1 className="mt-6 max-w-[20ch] mx-auto text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-bold !leading-[1.2] tracking-tight">
+          <h1 className="mt-6 max-w-[20ch] mx-auto text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-bold !leading-[1.2] tracking-tight font-sans">
             Never lose track of your{" "}
             <span className="text-primary">subscriptions</span> again
           </h1>
-          <p className="mt-6 max-w-[60ch] mx-auto xs:text-lg text-muted-foreground">
+          <p className="mt-6 max-w-[60ch] mx-auto xs:text-lg text-muted-foreground font-sans">
             SubTracker helps you manage all your subscriptions in one place. 
             Get insights, set budgets, and never miss a renewal with smart notifications.
           </p>
           
           {/* Key Features Preview */}
-          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground font-sans">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-primary" />
               <span>Track unlimited subscriptions</span>
@@ -57,7 +57,7 @@ export const Hero = () => {
             </Link>
           </div>
           
-          <div className="mt-6 text-sm text-muted-foreground">
+          <div className="mt-6 text-sm text-muted-foreground font-sans">
             <span>✅ Free 7-day trial</span>
             <span className="mx-2">•</span>
             <span>✅ No credit card required</span>

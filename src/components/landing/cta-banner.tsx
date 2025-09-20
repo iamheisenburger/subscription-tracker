@@ -7,10 +7,10 @@ export const CTABanner = () => {
     <div className="w-full py-12 xs:py-20 px-6">
       <div className="max-w-screen-lg mx-auto">
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-2xl p-8 md:p-12 text-center">
-          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight mb-4 font-sans">
             Ready to take control of your subscriptions?
           </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto font-sans">
             Join thousands of users who have already saved money and gained peace of mind 
             with SubTracker. Start your free trial today.
           </p>
@@ -28,7 +28,7 @@ export const CTABanner = () => {
             </Link>
           </div>
           
-          <div className="mt-6 text-sm text-muted-foreground">
+          <div className="mt-6 text-sm text-muted-foreground font-sans">
             <span>✅ 7-day free trial</span>
             <span className="mx-2">•</span>
             <span>✅ No credit card required</span>

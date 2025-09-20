@@ -52,10 +52,10 @@ export const Features = () => {
     <div id="features" className="w-full py-12 xs:py-20 px-6">
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
             Everything you need to manage subscriptions
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
             SubTracker provides all the tools you need to take control of your recurring payments
             and optimize your spending.
           </p>
@@ -70,8 +70,8 @@ export const Features = () => {
               <div className="mb-4 h-12 w-12 flex items-center justify-center bg-primary/10 rounded-full">
                 <feature.icon className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground text-[15px] leading-relaxed">
+              <h3 className="text-lg font-semibold mb-2 font-sans">{feature.title}</h3>
+              <p className="text-muted-foreground text-[15px] leading-relaxed font-sans">
                 {feature.description}
               </p>
             </div>

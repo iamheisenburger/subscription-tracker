@@ -49,7 +49,7 @@ export const FAQ = () => {
             Frequently Asked Questions
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Got questions? We've got answers. If you can't find what you're looking for, 
+            Got questions? We&apos;ve got answers. If you can&apos;t find what you&apos;re looking for, 
             feel free to reach out to our support team.
           </p>
         </div>

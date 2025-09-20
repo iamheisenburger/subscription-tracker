@@ -56,7 +56,7 @@ export const Testimonials = () => {
             Loved by thousands of users
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            See what our users are saying about SubTracker and how it's helping them 
+            See what our users are saying about SubTracker and how it&apos;s helping them 
             save money and stay organized.
           </p>
         </div>
@@ -72,7 +72,7 @@ export const Testimonials = () => {
                 </div>
                 
                 <p className="text-muted-foreground mb-4 leading-relaxed">
-                  "{testimonial.content}"
+                  &ldquo;{testimonial.content}&rdquo;
                 </p>
                 
                 <div className="flex items-center gap-3">

@@ -53,7 +53,7 @@ export const Pricing = () => {
             Simple, transparent pricing
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Choose the plan that's right for you. Start free and upgrade when you need more features.
+            Choose the plan that&apos;s right for you. Start free and upgrade when you need more features.
           </p>
         </div>
 

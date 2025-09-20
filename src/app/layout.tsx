@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SubTracker - Manage Your Subscriptions",
+  title: "SubWise - Manage Your Subscriptions",
   description: "Track, analyze, and manage all your subscriptions in one place",
 };
 

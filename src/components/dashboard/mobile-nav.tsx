@@ -10,7 +10,7 @@ export function MobileNav() {
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="p-6">
-        <h2 className="text-lg font-semibold">SubTracker</h2>
+        <h2 className="text-lg font-semibold">SubWise</h2>
         <p className="text-sm text-muted-foreground">
           Manage your subscriptions
         </p>

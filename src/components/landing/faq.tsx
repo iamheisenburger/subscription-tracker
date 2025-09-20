@@ -7,8 +7,8 @@ import {
 
 const faqs = [
   {
-    question: "How does SubTracker work?",
-    answer: "SubTracker helps you manage all your subscriptions in one place. Simply add your subscriptions manually or import them, and we'll track renewal dates, costs, and provide insights into your spending patterns."
+    question: "How does SubWise work?",
+    answer: "SubWise helps you manage all your subscriptions in one place. Simply add your subscriptions manually or import them, and we'll track renewal dates, costs, and provide insights into your spending patterns."
   },
   {
     question: "Is my financial data secure?",

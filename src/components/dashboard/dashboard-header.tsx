@@ -31,10 +31,11 @@ export function DashboardHeader({ firstName }: DashboardHeaderProps) {
         </div>
 
         {/* Logo/Brand */}
-        <div className="flex items-center space-x-2">
-          <div className="hidden md:flex">
-            <h1 className="text-xl font-bold">SubTracker</h1>
+        <div className="md:flex items-center gap-2 hidden">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <CreditCard className="w-4 h-4 text-primary-foreground" />
           </div>
+          <h1 className="text-xl font-bold">SubWise</h1>
         </div>
 
         {/* Desktop Welcome Message */}

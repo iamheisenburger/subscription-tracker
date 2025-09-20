@@ -17,7 +17,7 @@ export const Hero = () => {
             <span className="text-primary">subscriptions</span> again
           </h1>
           <p className="mt-6 max-w-[60ch] mx-auto xs:text-lg text-muted-foreground font-sans">
-            SubTracker helps you manage all your subscriptions in one place. 
+            SubWise helps you manage all your subscriptions in one place. 
             Get insights, set budgets, and never miss a renewal with smart notifications.
           </p>
           

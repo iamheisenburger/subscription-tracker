@@ -56,7 +56,7 @@ export const Features = () => {
             Everything you need to manage subscriptions
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-            SubTracker provides all the tools you need to take control of your recurring payments
+            SubWise provides all the tools you need to take control of your recurring payments
             and optimize your spending.
           </p>
         </div>

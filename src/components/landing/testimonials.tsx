@@ -7,7 +7,7 @@ const testimonials = [
     name: "Sarah Chen",
     role: "Freelance Designer",
     avatar: "/avatars/sarah.jpg",
-    content: "SubTracker saved me over $200 last month by helping me identify subscriptions I forgot about. The interface is clean and the notifications are perfect.",
+    content: "SubWise saved me over $200 last month by helping me identify subscriptions I forgot about. The interface is clean and the notifications are perfect.",
     rating: 5,
   },
   {
@@ -21,7 +21,7 @@ const testimonials = [
     name: "Emily Rodriguez",
     role: "Marketing Manager",
     avatar: "/avatars/emily.jpg",
-    content: "I was skeptical at first, but SubTracker has become essential for managing my business subscriptions. The export feature is a game-changer for accounting.",
+    content: "I was skeptical at first, but SubWise has become essential for managing my business subscriptions. The export feature is a game-changer for accounting.",
     rating: 5,
   },
   {
@@ -42,7 +42,7 @@ const testimonials = [
     name: "Alex Rivera",
     role: "Student",
     avatar: "/avatars/alex.jpg",
-    content: "As a student on a tight budget, SubTracker helps me keep track of all my streaming services and study tools. The free version is perfect for my needs.",
+    content: "As a student on a tight budget, SubWise helps me keep track of all my streaming services and study tools. The free version is perfect for my needs.",
     rating: 5,
   },
 ];
@@ -56,7 +56,7 @@ export const Testimonials = () => {
             Loved by thousands of users
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-            See what our users are saying about SubTracker and how it&apos;s helping them 
+            See what our users are saying about SubWise and how it&apos;s helping them 
             save money and stay organized.
           </p>
         </div>

@@ -12,7 +12,7 @@ export const CTABanner = () => {
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto font-sans">
             Join thousands of users who have already saved money and gained peace of mind 
-            with SubTracker. Start your free trial today.
+            with SubWise. Start your free trial today.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

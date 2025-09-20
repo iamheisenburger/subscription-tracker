@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/components/convex-client-provider";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,10 +32,17 @@ export default function RootLayout({
         <body
           className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
         >
-          <ConvexClientProvider>
-            {children}
-            <Toaster />
-          </ConvexClientProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ConvexClientProvider>
+              {children}
+              <Toaster />
+            </ConvexClientProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

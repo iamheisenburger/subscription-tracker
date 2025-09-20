@@ -7,6 +7,6 @@ export default async function Home() {
   if (userId) {
     redirect("/dashboard");
   } else {
-    redirect("/sign-in");
+    redirect("/landing");
   }
 }

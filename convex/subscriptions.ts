@@ -24,17 +24,17 @@ export const createSubscription = mutation({
       throw new Error("User not found");
     }
 
-    // Check subscription limits for free tier
-    if (user.tier === "free_user") {
-      const currentSubs = await ctx.db
-        .query("subscriptions")
-        .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
-        .collect();
+        // Check subscription limits for free tier
+        if (user.tier === "free_user") {
+          const currentSubs = await ctx.db
+            .query("subscriptions")
+            .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
+            .collect();
 
-      if (currentSubs.length >= user.subscriptionLimit) {
-        throw new Error("Subscription limit reached. Upgrade to premium for unlimited subscriptions.");
-      }
-    }
+          if (currentSubs.length >= 3) {
+            throw new Error("Free plan allows maximum 3 subscriptions. Upgrade to Premium for unlimited subscriptions.");
+          }
+        }
 
     const now = Date.now();
     const subscriptionId = await ctx.db.insert("subscriptions", {

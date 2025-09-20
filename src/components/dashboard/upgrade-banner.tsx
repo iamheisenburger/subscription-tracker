@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export function UpgradeBanner() {
   const { user } = useUser();
@@ -57,9 +58,11 @@ export function UpgradeBanner() {
               <div className="text-2xl font-bold text-gray-900">$9/mo</div>
               <div className="text-sm text-gray-500">or $7.50/mo annually</div>
             </div>
-            <Button className="bg-yellow-600 hover:bg-yellow-700 text-white">
-              Start 7-Day Free Trial
-            </Button>
+            <Link href="/pricing">
+              <Button className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                Start 7-Day Free Trial
+              </Button>
+            </Link>
           </div>
         </div>
       </CardContent>

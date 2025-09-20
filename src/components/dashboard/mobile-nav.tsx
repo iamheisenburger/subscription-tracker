@@ -1,8 +1,9 @@
 "use client";
 
-import { Home, CreditCard, Settings, HelpCircle, Crown } from "lucide-react";
+import { Home, CreditCard, Settings, HelpCircle, Crown, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 export function MobileNav() {
   return (
@@ -20,21 +21,35 @@ export function MobileNav() {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <div className="space-y-2">
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-          >
-            <Home className="mr-3 h-4 w-4" />
-            Dashboard
-          </Button>
+          <Link href="/dashboard">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+            >
+              <Home className="mr-3 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
           
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-          >
-            <CreditCard className="mr-3 h-4 w-4" />
-            Subscriptions
-          </Button>
+          <Link href="/premium">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+            >
+              <Zap className="mr-3 h-4 w-4" />
+              Premium Features
+            </Button>
+          </Link>
+          
+          <Link href="/pricing">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+            >
+              <CreditCard className="mr-3 h-4 w-4" />
+              Pricing
+            </Button>
+          </Link>
           
           <Button
             variant="ghost"
@@ -70,12 +85,14 @@ export function MobileNav() {
               </p>
             </div>
           </div>
-          <Button 
-            size="sm" 
-            className="mt-3 w-full bg-yellow-600 hover:bg-yellow-700"
-          >
-            Upgrade Now
-          </Button>
+          <Link href="/pricing">
+            <Button 
+              size="sm" 
+              className="mt-3 w-full bg-yellow-600 hover:bg-yellow-700"
+            >
+              Upgrade Now
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

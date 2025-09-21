@@ -1,20 +1,17 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2, DollarSign, Calendar, CreditCard } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AddSubscriptionDialog } from "./add-subscription-dialog";
-import { EditSubscriptionDialog } from "./edit-subscription-dialog";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -22,67 +19,35 @@ interface SubscriptionListProps {
   userId: string;
 }
 
-
-export function SubscriptionList({ }: SubscriptionListProps) {
-  const { user } = useUser();
-  const subscriptions = useQuery(
-    api.subscriptions.getUserSubscriptions,
-    user?.id ? { clerkId: user.id } : "skip"
-  );
+export function SubscriptionList({ userId }: SubscriptionListProps) {
+  const subscriptions = useQuery(api.subscriptions.getSubscriptions, { 
+    clerkId: userId 
+  });
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
 
-  const handleDelete = async (subscriptionId: string) => {
-    if (!user?.id) {
-      toast.error("You must be signed in to delete subscriptions");
-      return;
-    }
-
+  const handleDelete = async (subscriptionId: Id<"subscriptions">) => {
     try {
-      await deleteSubscription({
-        subscriptionId: subscriptionId as Id<"subscriptions">,
-        clerkId: user.id,
-      });
-      toast.success("Subscription deleted successfully!");
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(errorMessage || "Failed to delete subscription");
+      await deleteSubscription({ subscriptionId });
+      toast.success("Subscription deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete subscription");
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
-  };
-
-  const getBillingCycleColor = (cycle: string) => {
-    switch (cycle) {
-      case "monthly":
-        return "bg-blue-100 text-blue-800";
-      case "yearly":
-        return "bg-green-100 text-green-800";
-      case "weekly":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  if (subscriptions === undefined) {
+  if (!subscriptions) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Your Subscriptions</CardTitle>
-          <CardDescription>Manage all your active subscriptions</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse border rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-2">
-                    <div className="h-5 bg-gray-200 rounded w-32"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
-                  </div>
-                  <div className="h-6 bg-gray-200 rounded w-16"></div>
+              <div key={i} className="flex items-center space-x-4">
+                <div className="h-12 w-12 bg-muted rounded-lg animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded animate-pulse" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
                 </div>
               </div>
             ))}
@@ -97,23 +62,11 @@ export function SubscriptionList({ }: SubscriptionListProps) {
       <Card>
         <CardHeader>
           <CardTitle>Your Subscriptions</CardTitle>
-          <CardDescription>Manage all your active subscriptions</CardDescription>
         </CardHeader>
-        <CardContent className="py-8">
-          <div className="text-center">
-            <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <CreditCard className="h-6 w-6 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No subscriptions yet
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Start tracking your subscriptions to get insights into your spending.
-            </p>
-            <AddSubscriptionDialog 
-              trigger={<Button>Add Your First Subscription</Button>}
-            />
-          </div>
+        <CardContent className="text-center py-12">
+          <p className="text-muted-foreground mb-4">
+            No subscriptions yet. Add your first subscription to get started!
+          </p>
         </CardContent>
       </Card>
     );
@@ -123,51 +76,49 @@ export function SubscriptionList({ }: SubscriptionListProps) {
     <Card>
       <CardHeader>
         <CardTitle>Your Subscriptions</CardTitle>
-        <CardDescription>Manage all your active subscriptions</CardDescription>
+        <p className="text-sm text-muted-foreground">
+          Manage all your active subscriptions
+        </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {subscriptions.map((subscription) => (
             <div
               key={subscription._id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-semibold text-gray-900">
-                    {subscription.name}
-                  </h3>
-                  <Badge
-                    className={getBillingCycleColor(subscription.billingCycle)}
-                    variant="secondary"
-                  >
-                    {subscription.billingCycle}
-                  </Badge>
-                  {subscription.category && (
-                    <Badge variant="outline">{subscription.category}</Badge>
-                  )}
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <span className="text-primary font-semibold text-lg">
+                    {subscription.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
-                
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" />
-                    {subscription.currency} {subscription.cost}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Next billing: {formatDate(subscription.nextBillingDate)}
+                <div>
+                  <h3 className="font-semibold">{subscription.name}</h3>
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <span>${subscription.cost.toFixed(2)}</span>
+                    <span>•</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {subscription.billingCycle}
+                    </Badge>
+                    {subscription.category && (
+                      <>
+                        <span>•</span>
+                        <span>{subscription.category}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">
-                    ${subscription.cost}
-                  </div>
-                  <div className="text-sm text-gray-500 capitalize">
-                    {subscription.billingCycle}
-                  </div>
+              <div className="flex items-center space-x-2">
+                <div className="text-right text-sm">
+                  <p className="font-medium">
+                    Next: {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {Math.ceil((subscription.nextBillingDate - Date.now()) / (1000 * 60 * 60 * 24))} days
+                  </p>
                 </div>
 
                 <DropdownMenu>
@@ -177,20 +128,15 @@ export function SubscriptionList({ }: SubscriptionListProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <EditSubscriptionDialog
-                      subscription={subscription}
-                      trigger={
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                      }
-                    />
-                    <DropdownMenuItem 
-                      className="text-red-600"
+                    <DropdownMenuItem>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
                       onClick={() => handleDelete(subscription._id)}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>

@@ -1,13 +1,9 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Plus, Menu, CreditCard } from "lucide-react";
+import { Bell, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { MobileNav } from "./mobile-nav";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
-import { NotificationCenter } from "./notification-center";
-import Link from "next/link";
 
 interface DashboardHeaderProps {
   firstName: string | null;
@@ -15,68 +11,35 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ firstName }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        {/* Mobile Menu */}
-        <div className="mr-4 md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80">
-              <MobileNav />
-            </SheetContent>
-          </Sheet>
-        </div>
-
-        {/* Logo/Brand */}
-        <div className="md:flex items-center gap-2 hidden">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <CreditCard className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <h1 className="text-xl font-bold">SubWise</h1>
-        </div>
-
-        {/* Desktop Welcome Message */}
-        <div className="hidden md:flex flex-1 items-center justify-center px-6">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold">
-              Welcome back, {firstName || "there"}!
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Manage your subscriptions and track your spending
-            </p>
-          </div>
+    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-16 items-center justify-between px-6">
+        {/* Welcome Message */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Welcome back, {firstName || "there"}!
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Here's an overview of your subscription activity
+          </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-2">
-          <AddSubscriptionDialog 
+        <div className="flex items-center space-x-4">
+          <AddSubscriptionDialog
             trigger={
-              <Button size="sm" className="hidden sm:flex">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Subscription
               </Button>
             }
           />
           
-          <AddSubscriptionDialog 
-            trigger={
-              <Button size="sm" className="sm:hidden" aria-label="Add Subscription">
-                <Plus className="h-4 w-4" />
-              </Button>
-            }
-          />
-          
-          <Link href="/pricing">
-            <Button variant="ghost" size="icon" title="Pricing">
-              <CreditCard className="h-4 w-4" />
-            </Button>
-          </Link>
-          
-          <NotificationCenter />
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-4 w-4" />
+            <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+              2
+            </span>
+          </Button>
           
           <UserButton 
             afterSignOutUrl="/sign-in"
@@ -88,6 +51,6 @@ export function DashboardHeader({ firstName }: DashboardHeaderProps) {
           />
         </div>
       </div>
-    </header>
+    </div>
   );
 }

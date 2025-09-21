@@ -163,6 +163,58 @@ export const deleteSubscription = mutation({
   },
 });
 
+// Get subscription statistics
+export const getSubscriptionStats = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      return null;
+    }
+
+    const subscriptions = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
+      .collect();
+
+    // Calculate totals and find next renewal
+    let monthlyTotal = 0;
+    let nextRenewal: number | null = null;
+
+    subscriptions.forEach((sub) => {
+      // Calculate monthly equivalent
+      switch (sub.billingCycle) {
+        case "monthly":
+          monthlyTotal += sub.cost;
+          break;
+        case "yearly":
+          monthlyTotal += sub.cost / 12;
+          break;
+        case "weekly":
+          monthlyTotal += sub.cost * 4.33;
+          break;
+      }
+
+      // Find next renewal
+      if (!nextRenewal || sub.nextBillingDate < nextRenewal) {
+        nextRenewal = sub.nextBillingDate;
+      }
+    });
+
+    return {
+      totalSubscriptions: subscriptions.length,
+      activeSubscriptions: subscriptions.filter(s => s.isActive).length,
+      monthlyTotal: Math.round(monthlyTotal * 100) / 100,
+      yearlyTotal: Math.round(monthlyTotal * 12 * 100) / 100,
+      nextRenewal,
+    };
+  },
+});
+
 // Get subscription analytics
 export const getSubscriptionAnalytics = query({
   args: { clerkId: v.string() },

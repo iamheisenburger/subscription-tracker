@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardMobileNav } from "@/components/dashboard/dashboard-mobile-nav";
 
 export default async function DashboardLayout({
   children,

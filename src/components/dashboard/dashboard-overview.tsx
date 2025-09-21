@@ -14,8 +14,7 @@ import {
   Plus,
   Crown,
   BarChart3,
-  Download,
-  Bell
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";

@@ -30,78 +30,38 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
     currency: string;
   } | null>(null);
 
-  // Convert currencies when stats are available
+  // INSTANT currency conversion when stats are available
   useEffect(() => {
     if (!stats?.subscriptionCosts) return;
 
-    // IMMEDIATE synchronous fallback to prevent loading state
-    const preferredCurrency = typeof window !== 'undefined' ? getPreferredCurrency() : 'USD';
-    const simpleTotals = stats.subscriptionCosts.reduce((acc, sub) => {
-      let monthlyAmount = sub.amount;
-      if (sub.billingCycle === "yearly") monthlyAmount = sub.amount / 12;
-      else if (sub.billingCycle === "weekly") monthlyAmount = sub.amount * 4.33;
-      return acc + monthlyAmount;
-    }, 0);
-
-    setConvertedTotals({
-      monthlyTotal: Math.round(simpleTotals * 100) / 100,
-      yearlyTotal: Math.round(simpleTotals * 12 * 100) / 100,
-      currency: preferredCurrency
-    });
-
     const convertCurrencies = async () => {
-      try {
-        const preferredCurrency = getPreferredCurrency();
-        
-        // First, show immediate fallback totals to prevent loading state
-        const simpleTotals = stats.subscriptionCosts.reduce((acc, sub) => {
-          let monthlyAmount = sub.amount;
-          if (sub.billingCycle === "yearly") monthlyAmount = sub.amount / 12;
-          else if (sub.billingCycle === "weekly") monthlyAmount = sub.amount * 4.33;
-          return acc + monthlyAmount;
-        }, 0);
-
-        // Set immediate fallback - SYNCHRONOUSLY
-        const fallbackTotals = {
-          monthlyTotal: Math.round(simpleTotals * 100) / 100,
-          yearlyTotal: Math.round(simpleTotals * 12 * 100) / 100,
-          currency: preferredCurrency
-        };
-        
-        setConvertedTotals(fallbackTotals);
-
-        // Only do conversion if there are multiple currencies
-        const uniqueCurrencies = [...new Set(stats.subscriptionCosts.map(sub => sub.currency))];
-        if (uniqueCurrencies.length > 1 || !uniqueCurrencies.includes(preferredCurrency)) {
-          // Convert all subscription costs to monthly equivalents in preferred currency
-          const monthlyAmounts = stats.subscriptionCosts.map(sub => {
-            let monthlyAmount = sub.amount;
-            if (sub.billingCycle === "yearly") {
-              monthlyAmount = sub.amount / 12;
-            } else if (sub.billingCycle === "weekly") {
-              monthlyAmount = sub.amount * 4.33; // Average weeks per month
-            }
-            
-            return {
-              amount: monthlyAmount,
-              currency: sub.currency
-            };
-          });
-
-          const conversions = await convertMultipleCurrencies(monthlyAmounts, preferredCurrency);
-          const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
-          const yearlyTotal = monthlyTotal * 12;
-
-          setConvertedTotals({
-            monthlyTotal: Math.round(monthlyTotal * 100) / 100,
-            yearlyTotal: Math.round(yearlyTotal * 100) / 100,
-            currency: preferredCurrency
-          });
+      const preferredCurrency = typeof window !== 'undefined' ? getPreferredCurrency() : 'USD';
+      
+      // Convert all subscription costs to monthly equivalents in preferred currency
+      const monthlyAmounts = stats.subscriptionCosts.map(sub => {
+        let monthlyAmount = sub.amount;
+        if (sub.billingCycle === "yearly") {
+          monthlyAmount = sub.amount / 12;
+        } else if (sub.billingCycle === "weekly") {
+          monthlyAmount = sub.amount * 4.33; // Average weeks per month
         }
-      } catch (error) {
-        console.error('Currency conversion failed:', error);
-        // Keep the fallback totals that were already set
-      }
+
+        return {
+          amount: monthlyAmount,
+          currency: sub.currency
+        };
+      });
+
+      // INSTANT conversion with hardcoded rates - NO API CALLS
+      const conversions = await convertMultipleCurrencies(monthlyAmounts, preferredCurrency);
+      const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
+      const yearlyTotal = monthlyTotal * 12;
+
+      setConvertedTotals({
+        monthlyTotal: Math.round(monthlyTotal * 100) / 100,
+        yearlyTotal: Math.round(yearlyTotal * 100) / 100,
+        currency: preferredCurrency
+      });
     };
 
     convertCurrencies();
@@ -109,16 +69,16 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
 
   if (stats === undefined) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card key={i} className="border-0 shadow-sm bg-card/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-8 w-8 rounded-lg" />
             </CardHeader>
-            <CardContent>
-              <Skeleton className="h-7 w-16 mb-1" />
-              <Skeleton className="h-3 w-32" />
+            <CardContent className="pt-0">
+              <Skeleton className="h-7 w-3/4 mb-1" />
+              <Skeleton className="h-3 w-1/2" />
             </CardContent>
           </Card>
         ))}
@@ -135,20 +95,20 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
     },
     {
       title: "Monthly Spend",
-      value: convertedTotals 
+      value: convertedTotals
         ? formatCurrency(convertedTotals.monthlyTotal, convertedTotals.currency)
-        : "Loading...",
-      description: convertedTotals?.currency 
+        : "Calculating...",
+      description: convertedTotals?.currency
         ? `Current monthly cost (${convertedTotals.currency})`
         : "Current monthly cost",
       icon: DollarSign,
     },
     {
       title: "Yearly Spend",
-      value: convertedTotals 
+      value: convertedTotals
         ? formatCurrency(convertedTotals.yearlyTotal, convertedTotals.currency)
-        : "Loading...",
-      description: convertedTotals?.currency 
+        : "Calculating...",
+      description: convertedTotals?.currency
         ? `Projected annual cost (${convertedTotals.currency})`
         : "Projected annual cost",
       icon: TrendingUp,

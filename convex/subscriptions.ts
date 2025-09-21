@@ -281,3 +281,38 @@ export const getSubscriptionAnalytics = query({
   },
 });
 
+// Delete subscription
+export const deleteSubscription = mutation({
+  args: {
+    clerkId: v.string(),
+    subscriptionId: v.id("subscriptions"),
+  },
+  handler: async (ctx, args) => {
+    // Get user to verify ownership
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get subscription to verify ownership
+    const subscription = await ctx.db.get(args.subscriptionId);
+    
+    if (!subscription) {
+      throw new Error("Subscription not found");
+    }
+
+    if (subscription.userId !== user._id) {
+      throw new Error("Unauthorized: You can only delete your own subscriptions");
+    }
+
+    // Delete the subscription
+    await ctx.db.delete(args.subscriptionId);
+    
+    return { success: true };
+  },
+});
+

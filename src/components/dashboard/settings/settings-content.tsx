@@ -1,12 +1,33 @@
 "use client";
 
-import { User } from "@clerk/nextjs/server";
+import { useState, useEffect } from "react";
 
 interface SettingsContentProps {
-  user: User | null;
+  user: {
+    id?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    imageUrl?: string;
+    emailAddresses?: Array<{ emailAddress: string }>;
+    createdAt?: string | number;
+  } | null;
 }
 
 export function SettingsContent({ user }: SettingsContentProps) {
+  const [currency, setCurrency] = useState("USD");
+
+  useEffect(() => {
+    // Get preferred currency from localStorage on client side
+    const preferred = localStorage.getItem('preferred-currency') || 'USD';
+    setCurrency(preferred);
+  }, []);
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setCurrency(newCurrency);
+    localStorage.setItem('preferred-currency', newCurrency);
+    window.location.reload();
+  };
+
   return (
     <div className="space-y-8">
       {/* Settings Header */}
@@ -48,11 +69,8 @@ export function SettingsContent({ user }: SettingsContentProps) {
               <label className="text-sm font-medium font-sans">Default Currency</label>
               <select 
                 className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-sans"
-                onChange={(e) => {
-                  localStorage.setItem('preferred-currency', e.target.value);
-                  window.location.reload();
-                }}
-                defaultValue={typeof window !== 'undefined' ? localStorage.getItem('preferred-currency') || 'USD' : 'USD'}
+                value={currency}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
               >
                 <option value="USD">US Dollar ($)</option>
                 <option value="EUR">Euro (€)</option>

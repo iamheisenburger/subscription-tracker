@@ -11,7 +11,7 @@ export function UserSync() {
 
   useEffect(() => {
     if (isLoaded && user) {
-      // Sync user to Convex database
+      // Automatically create/update user in Convex when they sign in
       createOrUpdateUser({
         clerkId: user.id,
         email: user.emailAddresses[0]?.emailAddress || "",

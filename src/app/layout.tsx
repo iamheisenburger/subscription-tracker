@@ -5,6 +5,7 @@ import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { PWAPrompt } from "@/components/pwa-prompt";
+import { UserSync } from "@/components/user-sync";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -111,6 +112,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ConvexClientProvider>
+              <UserSync />
               {children}
               <Toaster />
               <PWAPrompt />

@@ -1,8 +1,8 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { OverviewCardsFallback as OverviewCards } from "@/components/dashboard/overview-cards-fallback";
-import { RecentSubscriptionsFallback as RecentSubscriptions } from "@/components/dashboard/recent-subscriptions-fallback";
-import { UpcomingRenewalsFallback as UpcomingRenewals } from "@/components/dashboard/upcoming-renewals-fallback";
+import { OverviewCards } from "@/components/dashboard/overview-cards";
+import { RecentSubscriptions } from "@/components/dashboard/recent-subscriptions";
+import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 
 export default async function DashboardPage() {

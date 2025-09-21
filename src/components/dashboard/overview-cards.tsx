@@ -61,16 +61,18 @@ export function OverviewCards({ userId }: OverviewCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-sans">{card.title}</CardTitle>
-            <card.icon className="h-4 w-4 text-muted-foreground" />
+        <Card key={card.title} className="border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium font-sans text-muted-foreground">{card.title}</CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <card.icon className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-sans">{card.value}</div>
-            <p className="text-xs text-muted-foreground font-sans">
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold font-sans tracking-tight">{card.value}</div>
+            <p className="text-xs text-muted-foreground font-sans mt-1">
               {card.description}
             </p>
           </CardContent>

@@ -12,8 +12,8 @@ import { format } from "date-fns";
 interface AccountSettingsProps {
   user: {
     id?: string;
-    firstName?: string;
-    lastName?: string;
+    firstName?: string | null;
+    lastName?: string | null;
     imageUrl?: string;
     emailAddresses?: Array<{ emailAddress: string }>;
     createdAt?: string | number;

@@ -1,56 +1,81 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Bell, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AddSubscriptionDialog } from "./add-subscription-dialog";
+import { Search } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import { NotificationCenter } from "./notification-center";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { usePathname } from "next/navigation";
 
-interface DashboardHeaderProps {
-  firstName: string | null;
-}
+export function DashboardHeader() {
+  const pathname = usePathname();
+  
+  const getBreadcrumbs = () => {
+    const segments = pathname.split('/').filter(Boolean);
+    const breadcrumbs = [
+      { label: "Dashboard", href: "/dashboard", isActive: segments.length === 1 }
+    ];
+    
+    if (segments.length > 1) {
+      const page = segments[1];
+      const pageLabel = page.charAt(0).toUpperCase() + page.slice(1);
+      breadcrumbs.push({ 
+        label: pageLabel, 
+        href: `/dashboard/${page}`, 
+        isActive: true 
+      });
+    }
+    
+    return breadcrumbs;
+  };
 
-export function DashboardHeader({ firstName }: DashboardHeaderProps) {
+  const breadcrumbs = getBreadcrumbs();
+
   return (
-    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between px-6">
-        {/* Welcome Message */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Welcome back, {firstName || "there"}!
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Here&apos;s an overview of your subscription activity
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center space-x-4">
-          <AddSubscriptionDialog
-            trigger={
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Subscription
-              </Button>
-            }
-          />
-          
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-              2
-            </span>
-          </Button>
-          
-          <UserButton 
-            afterSignOutUrl="/sign-in"
-            appearance={{
-              elements: {
-                avatarBox: "w-8 h-8"
-              }
-            }}
-          />
-        </div>
+    <header className="flex h-16 shrink-0 items-center gap-4 border-b px-6">
+      <SidebarTrigger className="-ml-1" />
+      
+      <div className="flex items-center gap-2 text-sm">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.map((crumb, index) => (
+              <div key={crumb.href} className="flex items-center gap-2">
+                <BreadcrumbItem>
+                  {crumb.isActive ? (
+                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+                {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+              </div>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
-    </div>
+
+      <div className="ml-auto flex items-center gap-4">
+        <div className="relative hidden md:block">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search subscriptions..."
+            className="pl-8 w-64"
+          />
+        </div>
+        
+        <NotificationCenter />
+        
+        <UserButton 
+          afterSignOutUrl="/sign-in"
+          appearance={{
+            elements: {
+              avatarBox: "w-8 h-8"
+            }
+          }}
+        />
+      </div>
+    </header>
   );
 }

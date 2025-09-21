@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { DashboardSidebar } from "@/components/dashboard/sidebar";
-import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 
 export default async function DashboardLayout({
   children,
@@ -15,26 +16,18 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Desktop Layout */}
-      <div className="hidden md:flex">
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
         <DashboardSidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto p-6">
-            {children}
-          </div>
-        </main>
+        <SidebarInset className="flex-1">
+          <DashboardHeader />
+          <main className="flex-1 p-6">
+            <div className="mx-auto max-w-7xl">
+              {children}
+            </div>
+          </main>
+        </SidebarInset>
       </div>
-
-      {/* Mobile Layout */}
-      <div className="md:hidden">
-        <main className="pb-20">
-          <div className="container mx-auto p-4">
-            {children}
-          </div>
-        </main>
-        <MobileBottomNav />
-      </div>
-    </div>
+    </SidebarProvider>
   );
 }

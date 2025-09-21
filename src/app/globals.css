@@ -227,7 +227,9 @@
   /* Improved button interactions for touch */
   button,
   .btn {
-    @apply touch-target touch-manipulation;
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
   }
 
   /* Card hover effects only on non-touch devices */

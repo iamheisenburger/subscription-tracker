@@ -74,7 +74,13 @@ export function SubscriptionCardActions({
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
           <EditSubscriptionDialog subscription={subscription}>
-            <DropdownMenuItem className="font-sans">
+            <DropdownMenuItem
+              className="font-sans"
+              onSelect={(e) => {
+                // Prevent Radix DropdownMenu from auto-closing before dialog opens
+                e.preventDefault();
+              }}
+            >
               <Edit className="mr-2 h-4 w-4" />
               Edit Subscription
             </DropdownMenuItem>

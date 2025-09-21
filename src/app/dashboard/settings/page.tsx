@@ -10,5 +10,16 @@ export default async function SettingsPage() {
     redirect("/sign-in");
   }
 
-  return <SettingsContent user={user} />;
+  const safeUser = user
+    ? {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        imageUrl: user.imageUrl,
+        emailAddresses: user.emailAddresses?.map((e) => ({ emailAddress: e.emailAddress })) ?? [],
+        createdAt: user.createdAt,
+      }
+    : null;
+
+  return <SettingsContent user={safeUser} />;
 }

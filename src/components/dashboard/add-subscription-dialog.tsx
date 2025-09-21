@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
+import { useUserTier } from "@/hooks/use-user-tier";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -64,6 +65,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
   const [open, setOpen] = useState(false);
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const { user } = useUser();
+  const { isPremium, subscriptionLimit } = useUserTier();
   const createSubscription = useMutation(api.subscriptions.createSubscription);
 
   const form = useForm<FormData>({
@@ -262,22 +264,22 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
               )}
             />
 
-{/* Category field - Premium feature only - Hidden for now */}
-            {/* TODO: Show only for premium users
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-sans">Category (Premium Feature)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            */}
+{/* Category field - Premium feature only */}
+            {isPremium && (
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-sans">Category (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
@@ -314,8 +316,8 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
     <FreeTierLimitModal 
       open={limitModalOpen}
       onOpenChange={setLimitModalOpen}
-      currentCount={3}
-      limit={3}
+      currentCount={subscriptionLimit}
+      limit={subscriptionLimit}
     />
   </>
   );

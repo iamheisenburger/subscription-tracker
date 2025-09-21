@@ -5,6 +5,7 @@ import { AccountSettings } from "@/components/dashboard/settings/account-setting
 import { PreferencesSettings } from "@/components/dashboard/settings/preferences-settings";
 import { BillingSettings } from "@/components/dashboard/settings/billing-settings";
 import { DangerZone } from "@/components/dashboard/settings/danger-zone";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default async function SettingsPage() {
   const { userId } = await auth();
@@ -19,10 +20,18 @@ export default async function SettingsPage() {
       <SettingsHeader />
       
       <div className="grid gap-8">
-        <AccountSettings user={user} />
-        <PreferencesSettings userId={userId} />
-        <BillingSettings userId={userId} />
-        <DangerZone userId={userId} />
+        <ErrorBoundary>
+          <AccountSettings user={user} />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <PreferencesSettings userId={userId} />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <BillingSettings userId={userId} />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <DangerZone userId={userId} />
+        </ErrorBoundary>
       </div>
     </div>
   );

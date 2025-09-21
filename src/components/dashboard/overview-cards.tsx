@@ -38,45 +38,52 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
       try {
         const preferredCurrency = getPreferredCurrency();
         
-        // Convert all subscription costs to monthly equivalents in preferred currency
-        const monthlyAmounts = stats.subscriptionCosts.map(sub => {
-          let monthlyAmount = sub.amount;
-          if (sub.billingCycle === "yearly") {
-            monthlyAmount = sub.amount / 12;
-          } else if (sub.billingCycle === "weekly") {
-            monthlyAmount = sub.amount * 4.33; // Average weeks per month
-          }
-          
-          return {
-            amount: monthlyAmount,
-            currency: sub.currency
-          };
-        });
-
-        const conversions = await convertMultipleCurrencies(monthlyAmounts, preferredCurrency);
-        const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
-        const yearlyTotal = monthlyTotal * 12;
-
-        setConvertedTotals({
-          monthlyTotal: Math.round(monthlyTotal * 100) / 100,
-          yearlyTotal: Math.round(yearlyTotal * 100) / 100,
-          currency: preferredCurrency
-        });
-      } catch (error) {
-        console.error('Currency conversion failed:', error);
-        // Fallback to simple sum without conversion
-        const monthlyTotal = stats.subscriptionCosts.reduce((sum, sub) => {
+        // First, show immediate fallback totals to prevent loading state
+        const simpleTotals = stats.subscriptionCosts.reduce((acc, sub) => {
           let monthlyAmount = sub.amount;
           if (sub.billingCycle === "yearly") monthlyAmount = sub.amount / 12;
           else if (sub.billingCycle === "weekly") monthlyAmount = sub.amount * 4.33;
-          return sum + monthlyAmount;
+          return acc + monthlyAmount;
         }, 0);
-        
+
+        // Set immediate fallback
         setConvertedTotals({
-          monthlyTotal: Math.round(monthlyTotal * 100) / 100,
-          yearlyTotal: Math.round(monthlyTotal * 12 * 100) / 100,
-          currency: 'USD' // Default fallback
+          monthlyTotal: Math.round(simpleTotals * 100) / 100,
+          yearlyTotal: Math.round(simpleTotals * 12 * 100) / 100,
+          currency: preferredCurrency
         });
+
+        // Only do conversion if there are multiple currencies
+        const uniqueCurrencies = [...new Set(stats.subscriptionCosts.map(sub => sub.currency))];
+        if (uniqueCurrencies.length > 1 || !uniqueCurrencies.includes(preferredCurrency)) {
+          // Convert all subscription costs to monthly equivalents in preferred currency
+          const monthlyAmounts = stats.subscriptionCosts.map(sub => {
+            let monthlyAmount = sub.amount;
+            if (sub.billingCycle === "yearly") {
+              monthlyAmount = sub.amount / 12;
+            } else if (sub.billingCycle === "weekly") {
+              monthlyAmount = sub.amount * 4.33; // Average weeks per month
+            }
+            
+            return {
+              amount: monthlyAmount,
+              currency: sub.currency
+            };
+          });
+
+          const conversions = await convertMultipleCurrencies(monthlyAmounts, preferredCurrency);
+          const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
+          const yearlyTotal = monthlyTotal * 12;
+
+          setConvertedTotals({
+            monthlyTotal: Math.round(monthlyTotal * 100) / 100,
+            yearlyTotal: Math.round(yearlyTotal * 100) / 100,
+            currency: preferredCurrency
+          });
+        }
+      } catch (error) {
+        console.error('Currency conversion failed:', error);
+        // Keep the fallback totals that were already set
       }
     };
 

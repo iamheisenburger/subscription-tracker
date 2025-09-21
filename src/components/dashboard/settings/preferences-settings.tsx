@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Settings, Bell, Globe, Palette } from "lucide-react";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
+import { CurrencySelector } from "./currency-selector";
 
 interface PreferencesSettingsProps {
   userId: string;
@@ -118,18 +119,7 @@ export function PreferencesSettings({ userId }: PreferencesSettingsProps) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="currency" className="font-sans">Default Currency</Label>
-              <Select defaultValue="USD">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD" className="font-sans">USD ($)</SelectItem>
-                  <SelectItem value="EUR" className="font-sans">EUR (€)</SelectItem>
-                  <SelectItem value="GBP" className="font-sans">GBP (£)</SelectItem>
-                  <SelectItem value="CAD" className="font-sans">CAD ($)</SelectItem>
-                  <SelectItem value="AUD" className="font-sans">AUD ($)</SelectItem>
-                </SelectContent>
-              </Select>
+              <CurrencySelector />
             </div>
             
             <div className="space-y-2">

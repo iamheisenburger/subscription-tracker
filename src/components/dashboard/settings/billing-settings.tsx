@@ -1,10 +1,12 @@
 "use client";
 
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Crown, Calendar, DollarSign } from "lucide-react";
+import { CreditCard, Crown, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
 interface BillingSettingsProps {
@@ -12,8 +14,8 @@ interface BillingSettingsProps {
 }
 
 export function BillingSettings({ userId }: BillingSettingsProps) {
-  // TODO: Get user tier from Convex
-  const userTier = ("free_user" as "free_user" | "premium_user"); // This should come from user data
+  const user = useQuery(api.users.getUserByClerkId, { clerkId: userId });
+  const userTier = user?.tier || "free_user";
   const isPremium = userTier === "premium_user";
 
   return (

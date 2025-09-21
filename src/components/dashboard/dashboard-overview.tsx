@@ -100,13 +100,13 @@ export function DashboardOverview({ userId, firstName }: DashboardOverviewProps)
             {stats === undefined ? (
               <Skeleton className="h-7 w-16 mb-1" />
             ) : (
-              <div className="text-2xl font-bold font-sans">{stats.totalSubscriptions}</div>
+              <div className="text-2xl font-bold font-sans">{stats?.totalSubscriptions || 0}</div>
             )}
             <p className="text-xs text-muted-foreground font-sans">
               {stats === undefined ? (
                 <Skeleton className="h-3 w-24" />
               ) : (
-                `${stats.activeSubscriptions} active`
+                `${stats?.activeSubscriptions || 0} active`
               )}
             </p>
           </CardContent>
@@ -121,7 +121,7 @@ export function DashboardOverview({ userId, firstName }: DashboardOverviewProps)
             {stats === undefined ? (
               <Skeleton className="h-7 w-16 mb-1" />
             ) : (
-              <div className="text-2xl font-bold font-sans">${stats.monthlyTotal.toFixed(2)}</div>
+              <div className="text-2xl font-bold font-sans">${stats?.monthlyTotal?.toFixed(2) || "0.00"}</div>
             )}
             <p className="text-xs text-muted-foreground font-sans">
               {stats === undefined ? (
@@ -142,7 +142,7 @@ export function DashboardOverview({ userId, firstName }: DashboardOverviewProps)
             {stats === undefined ? (
               <Skeleton className="h-7 w-16 mb-1" />
             ) : (
-              <div className="text-2xl font-bold font-sans">${stats.yearlyTotal.toFixed(2)}</div>
+              <div className="text-2xl font-bold font-sans">${stats?.yearlyTotal?.toFixed(2) || "0.00"}</div>
             )}
             <p className="text-xs text-muted-foreground font-sans">
               {stats === undefined ? (
@@ -164,7 +164,7 @@ export function DashboardOverview({ userId, firstName }: DashboardOverviewProps)
               <Skeleton className="h-7 w-16 mb-1" />
             ) : (
               <div className="text-2xl font-bold font-sans">
-                {stats.nextRenewal ? format(stats.nextRenewal, "MMM dd") : "N/A"}
+                {stats?.nextRenewal ? format(stats.nextRenewal, "MMM dd") : "N/A"}
               </div>
             )}
             <p className="text-xs text-muted-foreground font-sans">

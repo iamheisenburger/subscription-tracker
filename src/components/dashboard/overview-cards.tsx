@@ -34,6 +34,21 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
   useEffect(() => {
     if (!stats?.subscriptionCosts) return;
 
+    // IMMEDIATE synchronous fallback to prevent loading state
+    const preferredCurrency = typeof window !== 'undefined' ? getPreferredCurrency() : 'USD';
+    const simpleTotals = stats.subscriptionCosts.reduce((acc, sub) => {
+      let monthlyAmount = sub.amount;
+      if (sub.billingCycle === "yearly") monthlyAmount = sub.amount / 12;
+      else if (sub.billingCycle === "weekly") monthlyAmount = sub.amount * 4.33;
+      return acc + monthlyAmount;
+    }, 0);
+
+    setConvertedTotals({
+      monthlyTotal: Math.round(simpleTotals * 100) / 100,
+      yearlyTotal: Math.round(simpleTotals * 12 * 100) / 100,
+      currency: preferredCurrency
+    });
+
     const convertCurrencies = async () => {
       try {
         const preferredCurrency = getPreferredCurrency();
@@ -46,12 +61,14 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
           return acc + monthlyAmount;
         }, 0);
 
-        // Set immediate fallback
-        setConvertedTotals({
+        // Set immediate fallback - SYNCHRONOUSLY
+        const fallbackTotals = {
           monthlyTotal: Math.round(simpleTotals * 100) / 100,
           yearlyTotal: Math.round(simpleTotals * 12 * 100) / 100,
           currency: preferredCurrency
-        });
+        };
+        
+        setConvertedTotals(fallbackTotals);
 
         // Only do conversion if there are multiple currencies
         const uniqueCurrencies = [...new Set(stats.subscriptionCosts.map(sub => sub.currency))];

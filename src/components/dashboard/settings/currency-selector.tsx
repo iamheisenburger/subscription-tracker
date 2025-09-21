@@ -23,8 +23,11 @@ export function CurrencySelector() {
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
 
   useEffect(() => {
-    const preferred = getPreferredCurrency();
-    setSelectedCurrency(preferred);
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      const preferred = getPreferredCurrency();
+      setSelectedCurrency(preferred);
+    }
   }, []);
 
   const handleCurrencyChange = (currency: string) => {
@@ -32,10 +35,12 @@ export function CurrencySelector() {
     setPreferredCurrency(currency);
     toast.success(`Default currency updated to ${currency}`);
     
-    // Refresh the page to update all currency displays
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    // Refresh the page to update all currency displays (client-side only)
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
   };
 
   return (

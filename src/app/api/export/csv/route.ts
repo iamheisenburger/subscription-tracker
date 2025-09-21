@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { api } from '../../../../convex/_generated/api';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '../../../../../convex/_generated/api';
+import { fetchQuery } from 'convex/nextjs';
 
 export const runtime = 'nodejs';
 
@@ -44,7 +44,7 @@ export async function GET() {
       'Updated At'
     ];
 
-    const rows = subs.map((s: any) =>
+    const rows = subs.map((s) =>
       toCsvRow([
         s.name,
         s.cost,
@@ -66,7 +66,7 @@ export async function GET() {
         'Content-Disposition': 'attachment; filename="subwise-subscriptions.csv"'
       }
     });
-  } catch (e) {
+  } catch {
     return new NextResponse('Server error', { status: 500 });
   }
 }

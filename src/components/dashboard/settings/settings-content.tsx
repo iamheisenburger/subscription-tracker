@@ -45,7 +45,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
       const refreshed = await refreshExchangeRates(currency);
       setLastUpdatedTs(refreshed.timestamp);
       toast.success("Exchange rates refreshed");
-    } catch (e) {
+    } catch {
       toast.error("Failed to refresh rates. Using fallback.");
     }
   };

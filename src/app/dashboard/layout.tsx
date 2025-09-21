@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/navigation/sidebar";
 import { DashboardHeader } from "@/components/dashboard/navigation/header";
 import { MobileNav } from "@/components/dashboard/navigation/mobile-nav";
+import { UserSync } from "@/components/user-sync";
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
+      <UserSync />
       {/* Desktop Layout */}
       <div className="hidden lg:flex">
         <DashboardSidebar />

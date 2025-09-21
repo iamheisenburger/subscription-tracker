@@ -6,12 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, TrendingUp, Calendar, Target } from "lucide-react";
 import { format } from "date-fns";
+import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
 
 interface OverviewCardsProps {
   userId: string;
 }
 
 export function OverviewCards({ userId }: OverviewCardsProps) {
+  return (
+    <ConvexErrorBoundary>
+      <OverviewCardsContent userId={userId} />
+    </ConvexErrorBoundary>
+  );
+}
+
+function OverviewCardsContent({ userId }: OverviewCardsProps) {
   const stats = useQuery(api.subscriptions.getSubscriptionStats, { clerkId: userId });
 
   if (stats === undefined) {

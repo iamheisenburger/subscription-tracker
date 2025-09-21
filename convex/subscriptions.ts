@@ -136,32 +136,6 @@ export const updateSubscription = mutation({
   },
 });
 
-// Delete subscription
-export const deleteSubscription = mutation({
-  args: {
-    subscriptionId: v.id("subscriptions"),
-    clerkId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Verify user owns this subscription
-    const subscription = await ctx.db.get(args.subscriptionId);
-    if (!subscription) {
-      throw new Error("Subscription not found");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user || subscription.userId !== user._id) {
-      throw new Error("Unauthorized");
-    }
-
-    await ctx.db.delete(args.subscriptionId);
-    return args.subscriptionId;
-  },
-});
 
 // Get subscription statistics
 export const getSubscriptionStats = query({

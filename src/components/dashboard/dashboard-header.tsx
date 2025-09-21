@@ -1,11 +1,12 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Bell, Plus, Menu, CreditCard } from "lucide-react";
+import { Plus, Menu, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "./mobile-nav";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
+import { NotificationCenter } from "./notification-center";
 import Link from "next/link";
 
 interface DashboardHeaderProps {
@@ -75,9 +76,7 @@ export function DashboardHeader({ firstName }: DashboardHeaderProps) {
             </Button>
           </Link>
           
-          <Button variant="ghost" size="icon">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <NotificationCenter />
           
           <UserButton 
             afterSignOutUrl="/sign-in"

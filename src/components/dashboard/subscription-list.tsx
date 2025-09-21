@@ -27,7 +27,7 @@ export function SubscriptionList({ userId }: SubscriptionListProps) {
 
   const handleDelete = async (subscriptionId: Id<"subscriptions">) => {
     try {
-      await deleteSubscription({ subscriptionId });
+      await deleteSubscription({ clerkId: userId, subscriptionId });
       toast.success("Subscription deleted successfully");
     } catch {
       toast.error("Failed to delete subscription");

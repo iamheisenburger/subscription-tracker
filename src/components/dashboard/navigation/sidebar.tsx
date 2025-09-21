@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
@@ -31,10 +32,12 @@ export function DashboardSidebar() {
 
       {/* Quick Add */}
       <div className="p-4">
-        <Button className="w-full font-sans" size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Subscription
-        </Button>
+        <AddSubscriptionDialog>
+          <Button className="w-full font-sans" size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Subscription
+          </Button>
+        </AddSubscriptionDialog>
       </div>
 
       <Separator />

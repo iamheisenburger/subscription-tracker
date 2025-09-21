@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Target } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
 
 interface RecentSubscriptionsProps {
   userId: string;
@@ -59,10 +60,12 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
           <p className="text-muted-foreground font-sans mb-4">
             Add your first subscription to get started tracking your expenses.
           </p>
-          <Button className="font-sans">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Your First Subscription
-          </Button>
+          <AddSubscriptionDialog>
+            <Button className="font-sans">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Subscription
+            </Button>
+          </AddSubscriptionDialog>
         </CardContent>
       </Card>
     );
@@ -79,10 +82,12 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
             Recent and active subscriptions
           </CardDescription>
         </div>
-        <Button size="sm" className="font-sans">
-          <Plus className="mr-2 h-4 w-4" />
-          Add New
-        </Button>
+        <AddSubscriptionDialog>
+          <Button size="sm" className="font-sans">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New
+          </Button>
+        </AddSubscriptionDialog>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
@@ -42,15 +41,14 @@ export function MobileNav() {
         
         {/* FAB Add Button */}
         <div className="flex-1 flex justify-center">
-          <AddSubscriptionDialog>
-            <Button
-              size="sm"
-              className="h-12 w-12 rounded-full shadow-lg"
-              aria-label="Add Subscription"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-          </AddSubscriptionDialog>
+          <Button
+            size="sm"
+            className="h-12 w-12 rounded-full shadow-lg"
+            aria-label="Add Subscription"
+            disabled
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </div>

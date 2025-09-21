@@ -25,18 +25,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash2, Pause, Play } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
+import { Id, Doc } from "../../../convex/_generated/dataModel";
+import { EditSubscriptionDialog } from "./edit-subscription-dialog";
 
 interface SubscriptionCardActionsProps {
-  subscriptionId: string;
-  subscriptionName: string;
-  isActive: boolean;
+  subscription: Doc<"subscriptions">;
 }
 
 export function SubscriptionCardActions({ 
-  subscriptionId, 
-  subscriptionName, 
-  isActive 
+  subscription 
 }: SubscriptionCardActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { user } = useUser();
@@ -48,9 +45,9 @@ export function SubscriptionCardActions({
     try {
       await deleteSubscription({
         clerkId: user.id,
-        subscriptionId: subscriptionId as Id<"subscriptions">
+        subscriptionId: subscription._id as Id<"subscriptions">
       });
-      toast.success(`${subscriptionName} deleted successfully!`);
+      toast.success(`${subscription.name} deleted successfully!`);
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting subscription:", error);
@@ -58,14 +55,11 @@ export function SubscriptionCardActions({
     }
   };
 
-  const handleEdit = () => {
-    // TODO: Implement edit functionality
-    toast.info("Edit functionality coming soon!");
-  };
+  // Edit functionality is now handled by EditSubscriptionDialog
 
   const handleTogglePause = () => {
     // TODO: Implement pause/resume functionality
-    toast.info(`${isActive ? 'Pause' : 'Resume'} functionality coming soon!`);
+    toast.info(`${subscription.isActive ? 'Pause' : 'Resume'} functionality coming soon!`);
   };
 
   return (
@@ -79,12 +73,14 @@ export function SubscriptionCardActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={handleEdit} className="font-sans">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Subscription
-          </DropdownMenuItem>
+          <EditSubscriptionDialog subscription={subscription}>
+            <DropdownMenuItem className="font-sans">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Subscription
+            </DropdownMenuItem>
+          </EditSubscriptionDialog>
           <DropdownMenuItem onClick={handleTogglePause} className="font-sans">
-            {isActive ? (
+            {subscription.isActive ? (
               <>
                 <Pause className="mr-2 h-4 w-4" />
                 Pause Subscription
@@ -112,7 +108,7 @@ export function SubscriptionCardActions({
           <AlertDialogHeader>
             <AlertDialogTitle className="font-sans">Delete Subscription</AlertDialogTitle>
             <AlertDialogDescription className="font-sans">
-              Are you sure you want to delete <strong>{subscriptionName}</strong>? This action cannot be undone.
+              Are you sure you want to delete <strong>{subscription.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

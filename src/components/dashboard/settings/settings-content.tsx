@@ -18,14 +18,18 @@ export function SettingsContent({ user }: SettingsContentProps) {
 
   useEffect(() => {
     // Get preferred currency from localStorage on client side
-    const preferred = localStorage.getItem('preferred-currency') || 'USD';
-    setCurrency(preferred);
+    if (typeof window !== 'undefined') {
+      const preferred = localStorage.getItem('preferred-currency') || 'USD';
+      setCurrency(preferred);
+    }
   }, []);
 
   const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency);
-    localStorage.setItem('preferred-currency', newCurrency);
-    window.location.reload();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('preferred-currency', newCurrency);
+      window.location.reload();
+    }
   };
 
   return (

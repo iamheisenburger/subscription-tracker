@@ -117,9 +117,7 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
                   )}
                 </div>
                 <SubscriptionCardActions
-                  subscriptionId={subscription._id}
-                  subscriptionName={subscription.name}
-                  isActive={subscription.isActive}
+                  subscription={subscription}
                 />
               </div>
             </div>

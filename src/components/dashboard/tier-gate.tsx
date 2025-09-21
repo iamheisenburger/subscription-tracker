@@ -37,6 +37,25 @@ const DefaultUpgradePrompt = () => (
   </Card>
 );
 
+// Hook to check user tier access
+export function useTierAccess() {
+  const { user } = useUser();
+  const userProfile = useQuery(
+    api.users.getUserByClerkId,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
+
+  const isPremium = userProfile?.tier === "premium_user";
+  const isFree = userProfile?.tier === "free_user";
+  
+  return {
+    isPremium,
+    isFree,
+    tier: userProfile?.tier,
+    loading: userProfile === undefined,
+  };
+}
+
 export function TierGate({ requiredTier, children, fallback, className }: TierGateProps) {
   const { user } = useUser();
   const userProfile = useQuery(
@@ -75,21 +94,6 @@ export function TierGate({ requiredTier, children, fallback, className }: TierGa
   return <div className={className}>{children}</div>;
 }
 
-// Wrapper for inline tier checks
-export function useTierAccess() {
-  const { user } = useUser();
-  const userProfile = useQuery(
-    api.users.getUserByClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
-  );
-
-  return {
-    isPremium: userProfile?.tier === "premium_user",
-    isFree: userProfile?.tier === "free_user",
-    isLoading: userProfile === undefined,
-    userProfile,
-  };
-}
 
 // Premium feature badge component
 export function PremiumBadge({ className }: { className?: string }) {

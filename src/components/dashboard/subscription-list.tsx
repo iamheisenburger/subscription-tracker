@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
+import { EditSubscriptionDialog } from "./edit-subscription-dialog";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -176,10 +177,15 @@ export function SubscriptionList({ }: SubscriptionListProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
+                    <EditSubscriptionDialog
+                      subscription={subscription}
+                      trigger={
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      }
+                    />
                     <DropdownMenuItem 
                       className="text-red-600"
                       onClick={() => handleDelete(subscription._id)}

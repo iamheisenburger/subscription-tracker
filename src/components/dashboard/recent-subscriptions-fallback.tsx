@@ -31,8 +31,8 @@ export function RecentSubscriptionsFallback({ userId }: RecentSubscriptionsProps
         <p className="text-muted-foreground font-sans mb-4">
           Please configure your .env.local file with Clerk and Convex credentials to start tracking subscriptions.
         </p>
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-left">
-          <p className="text-sm text-blue-700 dark:text-blue-300 font-sans">
+        <div className="bg-muted/50 border border-border rounded-lg p-4 text-left">
+          <p className="text-sm text-muted-foreground font-sans">
             <strong>Missing:</strong> .env.local file with CLERK_SECRET_KEY and NEXT_PUBLIC_CONVEX_URL
           </p>
         </div>

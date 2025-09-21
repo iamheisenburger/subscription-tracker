@@ -18,14 +18,14 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-card border-r">
+    <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
       {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <CreditCard className="w-4 h-4 text-primary-foreground" />
+      <div className="flex h-16 items-center px-6 border-b border-border/50">
+        <Link href="/dashboard" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+            <CreditCard className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold font-sans">SubWise</span>
+          <span className="text-xl font-bold font-sans tracking-tight">SubWise</span>
         </Link>
       </div>
 
@@ -40,7 +40,7 @@ export function DashboardSidebar() {
       <Separator />
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-2 p-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           
@@ -49,15 +49,16 @@ export function DashboardSidebar() {
               <Button
                 variant={isActive ? "default" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-3 font-sans",
-                  item.premium && "relative"
+                  "w-full justify-start gap-3 font-sans h-11 px-4 rounded-lg transition-all duration-200",
+                  item.premium && "relative",
+                  isActive && "shadow-sm",
+                  !isActive && "hover:bg-muted/60"
                 )}
-                size="sm"
               >
-                <item.icon className="h-4 w-4" />
-                {item.name}
+                <item.icon className="h-5 w-5" />
+                <span className="font-medium">{item.name}</span>
                 {item.premium && (
-                  <Crown className="ml-auto h-3 w-3 text-yellow-500" />
+                  <Crown className="ml-auto h-4 w-4 text-primary" />
                 )}
               </Button>
             </Link>
@@ -69,18 +70,18 @@ export function DashboardSidebar() {
 
       {/* Upgrade CTA */}
       <div className="p-4">
-        <div className="rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 p-4">
+        <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-            <span className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 font-sans">
+            <Crown className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground font-sans">
               Upgrade to Premium
             </span>
           </div>
-          <p className="text-xs text-yellow-700 dark:text-yellow-300 font-sans mb-3">
+          <p className="text-xs text-muted-foreground font-sans mb-3">
             Unlimited subscriptions & advanced analytics
           </p>
           <Link href="/pricing">
-            <Button size="sm" className="w-full bg-yellow-600 hover:bg-yellow-700 font-sans">
+            <Button size="sm" className="w-full font-sans">
               Start Free Trial
             </Button>
           </Link>

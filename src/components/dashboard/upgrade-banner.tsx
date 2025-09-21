@@ -7,21 +7,21 @@ import Link from "next/link";
 
 export function UpgradeBanner() {
   return (
-    <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 dark:border-yellow-800">
+    <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="rounded-full bg-yellow-100 dark:bg-yellow-900/30 p-3">
-              <Crown className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+            <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
+              <Crown className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 font-sans">
+              <h3 className="text-lg font-semibold text-foreground font-sans">
                 Upgrade to Premium
               </h3>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 font-sans">
+              <p className="text-sm text-muted-foreground font-sans">
                 Unlock unlimited subscriptions, advanced analytics, and more features.
               </p>
-              <div className="flex items-center space-x-4 mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Crown className="h-3 w-3" />
                   <span className="font-sans">Unlimited subscriptions</span>
@@ -38,14 +38,14 @@ export function UpgradeBanner() {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-yellow-900 dark:text-yellow-100 font-sans">
+            <div className="text-2xl font-bold text-foreground font-sans">
               $9<span className="text-sm font-normal">/mo</span>
             </div>
-            <div className="text-sm text-yellow-700 dark:text-yellow-300 font-sans">
+            <div className="text-sm text-muted-foreground font-sans">
               or $7.50/mo annually
             </div>
             <Link href="/pricing">
-              <Button className="mt-3 bg-yellow-600 hover:bg-yellow-700 text-white font-sans">
+              <Button className="mt-3 font-sans">
                 Start 7-Day Free Trial
               </Button>
             </Link>

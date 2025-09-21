@@ -9,8 +9,8 @@ import { ThemeToggle } from "@/components/landing/theme-toggle";
 
 export function DashboardHeader() {
   return (
-    <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-full items-center justify-between px-4 lg:px-6">
+    <header className="h-16 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-full items-center justify-between px-6">
         {/* Mobile Menu Button */}
         <div className="lg:hidden">
           <Button variant="ghost" size="icon">
@@ -19,13 +19,13 @@ export function DashboardHeader() {
         </div>
 
         {/* Search */}
-        <div className="flex-1 max-w-md mx-4">
+        <div className="flex-1 max-w-md mx-6">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search subscriptions..."
-              className="pl-8 font-sans"
+              className="pl-10 h-10 bg-muted/30 border-0 focus:bg-background focus:ring-2 focus:ring-primary/20 font-sans rounded-xl transition-all duration-200"
             />
           </div>
         </div>
@@ -36,11 +36,11 @@ export function DashboardHeader() {
           <ThemeToggle />
           
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl hover:bg-muted/60 transition-colors">
+            <Bell className="h-5 w-5" />
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs font-medium shadow-sm"
             >
               2
             </Badge>

@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useUserTier } from "@/hooks/use-user-tier";
+import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface SettingsContentProps {
   user: {
@@ -17,12 +20,14 @@ interface SettingsContentProps {
 export function SettingsContent({ user }: SettingsContentProps) {
   const [currency, setCurrency] = useState("USD");
   const { isPremium } = useUserTier();
+  const [lastUpdatedTs, setLastUpdatedTs] = useState<number>(0);
 
   useEffect(() => {
     // Get preferred currency from localStorage on client side
     if (typeof window !== 'undefined') {
       const preferred = localStorage.getItem('preferred-currency') || 'USD';
       setCurrency(preferred);
+      setLastUpdatedTs(getLastRatesUpdate(preferred));
     }
   }, []);
 
@@ -30,7 +35,18 @@ export function SettingsContent({ user }: SettingsContentProps) {
     setCurrency(newCurrency);
     if (typeof window !== 'undefined') {
       localStorage.setItem('preferred-currency', newCurrency);
+      setLastUpdatedTs(getLastRatesUpdate(newCurrency));
       window.location.reload();
+    }
+  };
+
+  const handleRefreshRates = async () => {
+    try {
+      const refreshed = await refreshExchangeRates(currency);
+      setLastUpdatedTs(refreshed.timestamp);
+      toast.success("Exchange rates refreshed");
+    } catch (e) {
+      toast.error("Failed to refresh rates. Using fallback.");
     }
   };
 
@@ -84,6 +100,20 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 <option value="CAD">Canadian Dollar (C$)</option>
                 <option value="AUD">Australian Dollar (A$)</option>
               </select>
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground font-sans">
+                  {lastUpdatedTs
+                    ? `Rates updated ${formatDistanceToNow(lastUpdatedTs, { addSuffix: true })}`
+                    : 'Rates not loaded yet'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleRefreshRates}
+                  className="px-3 py-1.5 border border-input rounded-md text-xs font-sans hover:bg-muted"
+                >
+                  Refresh Rates
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -148,9 +178,12 @@ export function SettingsContent({ user }: SettingsContentProps) {
           <h2 className="text-lg font-semibold font-sans mb-4">Data Management</h2>
           <div className="space-y-4">
             {isPremium ? (
-              <button className="w-full px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted">
+              <a
+                href="/api/export/csv"
+                className="w-full inline-flex items-center justify-center px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted"
+              >
                 Export Data (CSV)
-              </button>
+              </a>
             ) : (
               <div className="w-full px-4 py-3 border border-dashed rounded-md text-sm text-muted-foreground font-sans">
                 Export is a Premium feature. <a href="/pricing" className="text-primary underline">Upgrade to enable</a>.

@@ -1,7 +1,7 @@
 /**
- * Currency conversion utilities
- * Uses HARDCODED exchange rates - NO API CALLS
- */
+* Currency conversion utilities
+* Live rates via exchangerate.host with 1h cache and hardcoded fallback
+*/
 
 export interface ExchangeRates {
   [key: string]: number;
@@ -16,7 +16,7 @@ export interface CurrencyConversionResult {
   timestamp: number;
 }
 
-// ACCURATE EXCHANGE RATES - ALL CURRENCIES PROPERLY CORRELATED
+// Hardcoded fallback exchange rates (used when API unavailable)
 const EXCHANGE_RATES: Record<string, ExchangeRates> = {
   USD: {
     USD: 1.00,
@@ -55,15 +55,120 @@ const EXCHANGE_RATES: Record<string, ExchangeRates> = {
   },
 };
 
-/**
- * Get exchange rates instantly - NO API CALLS
- */
+type CachedRates = { base: string; rates: ExchangeRates; timestamp: number };
+
+const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
+const CACHE_KEY_PREFIX = "exchange-rates:";
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+const inMemoryRatesCache: Map<string, CachedRates> = new Map();
+
+function isBrowser(): boolean {
+  return typeof window !== "undefined" && typeof localStorage !== "undefined";
+}
+
+function readCache(baseCurrency: string): CachedRates | null {
+  if (isBrowser()) {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY_PREFIX + baseCurrency);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CachedRates;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+  return inMemoryRatesCache.get(baseCurrency) || null;
+}
+
+function writeCache(entry: CachedRates): void {
+  if (isBrowser()) {
+    try {
+      localStorage.setItem(CACHE_KEY_PREFIX + entry.base, JSON.stringify(entry));
+    } catch {
+      // ignore storage errors
+    }
+  } else {
+    inMemoryRatesCache.set(entry.base, entry);
+  }
+}
+
+async function fetchFromApi(baseCurrency: string): Promise<CachedRates> {
+  const base = (baseCurrency || "USD").toUpperCase();
+  const symbols = SUPPORTED_CURRENCIES.join(",");
+  const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${symbols}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Exchange API error: ${res.status}`);
+  }
+  const json = await res.json();
+  // Start from fallback to guarantee coverage, then overlay API values
+  const fallback = EXCHANGE_RATES[base] || EXCHANGE_RATES.USD;
+  const rates: ExchangeRates = { ...fallback };
+  for (const symbol of SUPPORTED_CURRENCIES) {
+    if (symbol === base) {
+      rates[symbol] = 1;
+    } else if (json?.rates?.[symbol] != null && typeof json.rates[symbol] === "number") {
+      rates[symbol] = json.rates[symbol];
+    }
+  }
+  const timestamp = Date.now();
+  return { base, rates, timestamp };
+}
+
+function getFallbackRates(baseCurrency: string): CachedRates {
+  const base = (baseCurrency || "USD").toUpperCase();
+  const fallback = EXCHANGE_RATES[base] || EXCHANGE_RATES.USD;
+  const rates: ExchangeRates = { ...fallback };
+  // Ensure self-rate is 1
+  rates[base] = 1;
+  return { base, rates, timestamp: Date.now() };
+}
+
+function isFresh(entry: CachedRates | null): boolean {
+  if (!entry) return false;
+  return Date.now() - entry.timestamp < ONE_HOUR_MS;
+}
+
+export async function getExchangeRates(
+  baseCurrency = "USD",
+  options?: { forceRefresh?: boolean }
+): Promise<CachedRates> {
+  const base = baseCurrency.toUpperCase();
+  const cached = readCache(base);
+  const force = options?.forceRefresh === true;
+  if (!force && isFresh(cached)) {
+    return cached as CachedRates;
+  }
+  try {
+    const fresh = await fetchFromApi(base);
+    writeCache(fresh);
+    return fresh;
+  } catch {
+    const fallback = getFallbackRates(base);
+    // Cache fallback so downstream uses consistent timestamp
+    writeCache(fallback);
+    return fallback;
+  }
+}
+
+export function getLastRatesUpdate(baseCurrency = "USD"): number {
+  const cached = readCache(baseCurrency.toUpperCase());
+  return cached?.timestamp ?? 0;
+}
+
+export async function refreshExchangeRates(baseCurrency = "USD"): Promise<CachedRates> {
+  return getExchangeRates(baseCurrency, { forceRefresh: true });
+}
+
+// Backwards-compatible function name retained for existing imports
 export async function fetchExchangeRates(baseCurrency = 'USD'): Promise<ExchangeRates> {
-  return EXCHANGE_RATES[baseCurrency] || EXCHANGE_RATES.USD;
+  const { rates } = await getExchangeRates(baseCurrency);
+  return rates;
 }
 
 /**
- * Convert amount from one currency to another - INSTANT
+* Convert amount from one currency to another using cached/live rates
  */
 export async function convertCurrency(
   amount: number,
@@ -81,8 +186,21 @@ export async function convertCurrency(
     };
   }
 
-  const rates = EXCHANGE_RATES[fromCurrency] || EXCHANGE_RATES.USD;
-  const rate = rates[toCurrency] || 1;
+  const base = (fromCurrency || "USD").toUpperCase();
+  const target = (toCurrency || "USD").toUpperCase();
+
+  let rate = 1;
+  let timestamp = Date.now();
+
+  try {
+    const { rates, timestamp: ts } = await getExchangeRates(base);
+    rate = rates[target] ?? 1;
+    timestamp = ts;
+  } catch {
+    const fallback = EXCHANGE_RATES[base] || EXCHANGE_RATES.USD;
+    rate = fallback[target] ?? 1;
+  }
+
   const convertedAmount = amount * rate;
 
   return {
@@ -91,24 +209,24 @@ export async function convertCurrency(
     convertedAmount: Math.round(convertedAmount * 100) / 100,
     targetCurrency: toCurrency,
     rate,
-    timestamp: Date.now()
+    timestamp
   };
 }
 
 /**
- * Convert multiple amounts to a target currency - INSTANT
+* Convert multiple amounts to a target currency; reuses per-base caches
  */
 export async function convertMultipleCurrencies(
   amounts: Array<{ amount: number; currency: string }>,
   targetCurrency: string
 ): Promise<CurrencyConversionResult[]> {
+  // Preload rates for distinct bases to minimize API calls
+  const distinctBases = Array.from(new Set(amounts.map(a => (a.currency || "USD").toUpperCase())));
+  await Promise.all(distinctBases.map(base => getExchangeRates(base)));
   const results: CurrencyConversionResult[] = [];
-
   for (const { amount, currency } of amounts) {
-    const result = await convertCurrency(amount, currency, targetCurrency);
-    results.push(result);
+    results.push(await convertCurrency(amount, currency, targetCurrency));
   }
-
   return results;
 }
 

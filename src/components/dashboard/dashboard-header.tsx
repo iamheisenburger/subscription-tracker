@@ -19,7 +19,7 @@ export function DashboardHeader({ firstName }: DashboardHeaderProps) {
             Welcome back, {firstName || "there"}!
           </h1>
           <p className="text-sm text-muted-foreground">
-            Here's an overview of your subscription activity
+            Here&apos;s an overview of your subscription activity
           </p>
         </div>
 

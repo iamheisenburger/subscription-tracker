@@ -20,7 +20,7 @@ interface SubscriptionListProps {
 }
 
 export function SubscriptionList({ userId }: SubscriptionListProps) {
-  const subscriptions = useQuery(api.subscriptions.getSubscriptions, { 
+  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { 
     clerkId: userId 
   });
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
@@ -29,7 +29,7 @@ export function SubscriptionList({ userId }: SubscriptionListProps) {
     try {
       await deleteSubscription({ subscriptionId });
       toast.success("Subscription deleted successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete subscription");
     }
   };

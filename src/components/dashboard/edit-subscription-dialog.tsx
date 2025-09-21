@@ -44,6 +44,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
@@ -66,6 +67,7 @@ export function EditSubscriptionDialog({ subscription, children }: EditSubscript
   const [open, setOpen] = useState(false);
   const { user } = useUser();
   const updateSubscription = useMutation(api.subscriptions.updateSubscription);
+  const { isPremium } = useUserTier();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -252,19 +254,21 @@ export function EditSubscriptionDialog({ subscription, children }: EditSubscript
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-sans">Category (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isPremium && (
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-sans">Category (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

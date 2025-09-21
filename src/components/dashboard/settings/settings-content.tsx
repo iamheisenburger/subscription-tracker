@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 interface SettingsContentProps {
   user: {
@@ -15,6 +16,7 @@ interface SettingsContentProps {
 
 export function SettingsContent({ user }: SettingsContentProps) {
   const [currency, setCurrency] = useState("USD");
+  const { isPremium } = useUserTier();
 
   useEffect(() => {
     // Get preferred currency from localStorage on client side
@@ -145,9 +147,15 @@ export function SettingsContent({ user }: SettingsContentProps) {
         <div className="p-6 border rounded-lg bg-card">
           <h2 className="text-lg font-semibold font-sans mb-4">Data Management</h2>
           <div className="space-y-4">
-            <button className="w-full px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted">
-              Export Data (CSV)
-            </button>
+            {isPremium ? (
+              <button className="w-full px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted">
+                Export Data (CSV)
+              </button>
+            ) : (
+              <div className="w-full px-4 py-3 border border-dashed rounded-md text-sm text-muted-foreground font-sans">
+                Export is a Premium feature. <a href="/pricing" className="text-primary underline">Upgrade to enable</a>.
+              </div>
+            )}
             <button className="w-full px-4 py-2 border border-destructive text-destructive rounded-md text-sm font-sans hover:bg-destructive/10">
               Delete Account
             </button>

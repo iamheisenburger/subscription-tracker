@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, BarChart3, Download } from "lucide-react";
+import { Crown, BarChart3, Download, Bell, FolderKanban, Shield } from "lucide-react";
 import Link from "next/link";
 
 export function UpgradeBanner() {
@@ -21,7 +21,7 @@ export function UpgradeBanner() {
               <p className="text-sm text-muted-foreground font-sans">
                 Unlock unlimited subscriptions, advanced analytics, and more features.
               </p>
-              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+              <div className="grid grid-cols-2 md:flex md:flex-row md:items-center gap-3 md:space-x-4 mt-2 text-xs text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Crown className="h-3 w-3" />
                   <span className="font-sans">Unlimited subscriptions</span>
@@ -33,6 +33,18 @@ export function UpgradeBanner() {
                 <div className="flex items-center space-x-1">
                   <Download className="h-3 w-3" />
                   <span className="font-sans">Export data</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <FolderKanban className="h-3 w-3" />
+                  <span className="font-sans">Custom categories</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Bell className="h-3 w-3" />
+                  <span className="font-sans">Smart alerts & notifications</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Shield className="h-3 w-3" />
+                  <span className="font-sans">Priority support</span>
                 </div>
               </div>
             </div>

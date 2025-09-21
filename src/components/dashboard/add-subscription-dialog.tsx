@@ -42,6 +42,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { FreeTierLimitModal } from "./free-tier-limit-modal";
 
 const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
@@ -61,6 +62,7 @@ interface AddSubscriptionDialogProps {
 
 export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) {
   const [open, setOpen] = useState(false);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
   const { user } = useUser();
   const createSubscription = useMutation(api.subscriptions.createSubscription);
 
@@ -96,15 +98,23 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
       setOpen(false);
     } catch (error) {
       console.error("Error creating subscription:", error);
-      toast.error("Failed to add subscription. Please try again.");
+      
+      // Check if it's a free tier limit error
+      if (error instanceof Error && error.message.includes("Free plan allows maximum 3 subscriptions")) {
+        setOpen(false);
+        setLimitModalOpen(true);
+      } else {
+        toast.error("Failed to add subscription. Please try again.");
+      }
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-sans">Add New Subscription</DialogTitle>
@@ -252,12 +262,14 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
               )}
             />
 
+{/* Category field - Premium feature only - Hidden for now */}
+            {/* TODO: Show only for premium users
             <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-sans">Category (Optional)</FormLabel>
+                  <FormLabel className="font-sans">Category (Premium Feature)</FormLabel>
                   <FormControl>
                     <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
                   </FormControl>
@@ -265,6 +277,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                 </FormItem>
               )}
             />
+            */}
 
             <FormField
               control={form.control}
@@ -297,5 +310,13 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
         </Form>
       </DialogContent>
     </Dialog>
+
+    <FreeTierLimitModal 
+      open={limitModalOpen}
+      onOpenChange={setLimitModalOpen}
+      currentCount={3}
+      limit={3}
+    />
+  </>
   );
 }

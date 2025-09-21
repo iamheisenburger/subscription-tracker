@@ -24,7 +24,7 @@ interface DangerZoneProps {
   userId: string;
 }
 
-export function DangerZone({ userId }: DangerZoneProps) {
+export function DangerZone({ }: DangerZoneProps) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const handleExportData = () => {

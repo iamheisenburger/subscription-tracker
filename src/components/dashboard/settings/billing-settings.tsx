@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Crown, Calendar, DollarSign, CheckCircle } from "lucide-react";
+import { CreditCard, Crown, Calendar, DollarSign } from "lucide-react";
 import Link from "next/link";
 
 interface BillingSettingsProps {

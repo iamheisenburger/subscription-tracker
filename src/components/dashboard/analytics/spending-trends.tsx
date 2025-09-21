@@ -7,7 +7,7 @@ interface SpendingTrendsProps {
   userId: string;
 }
 
-export function SpendingTrends({ userId }: SpendingTrendsProps) {
+export function SpendingTrends({ }: SpendingTrendsProps) {
   // TODO: Implement actual analytics data fetching
   const mockData = [
     { month: "Jan", amount: 79.99 },

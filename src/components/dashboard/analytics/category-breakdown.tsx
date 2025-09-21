@@ -1,13 +1,13 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Tag, DollarSign } from "lucide-react";
+import { PieChart, Tag } from "lucide-react";
 
 interface CategoryBreakdownProps {
   userId: string;
 }
 
-export function CategoryBreakdown({ userId }: CategoryBreakdownProps) {
+export function CategoryBreakdown({ }: CategoryBreakdownProps) {
   // TODO: Implement actual category data fetching
   const mockCategories = [
     { name: "Entertainment", amount: 45.99, percentage: 52 },

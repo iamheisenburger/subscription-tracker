@@ -20,7 +20,7 @@ interface PreferencesSettingsProps {
   userId: string;
 }
 
-export function PreferencesSettings({ userId }: PreferencesSettingsProps) {
+export function PreferencesSettings({ }: PreferencesSettingsProps) {
   return (
     <Card>
       <CardHeader>

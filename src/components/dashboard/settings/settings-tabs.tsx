@@ -10,7 +10,14 @@ import { DangerZone } from "./danger-zone";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 interface SettingsTabsProps {
-  user: any;
+  user: {
+    id?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    imageUrl?: string;
+    emailAddresses?: Array<{ emailAddress: string }>;
+    createdAt?: string | number;
+  } | null;
   userId: string;
 }
 
@@ -65,7 +72,7 @@ export function SettingsTabs({ user, userId }: SettingsTabsProps) {
       {tabs.map((tab) => (
         <TabsContent key={tab.id} value={tab.id} className="mt-6">
           <ErrorBoundary
-            fallback={({ error, resetError }) => (
+            fallback={({ resetError }) => (
               <div className="p-6 border border-destructive/20 rounded-lg bg-destructive/5">
                 <h3 className="font-semibold text-destructive mb-2">
                   Error Loading {tab.label}

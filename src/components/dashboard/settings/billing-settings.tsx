@@ -11,7 +11,7 @@ interface BillingSettingsProps {
   userId: string;
 }
 
-export function BillingSettings({ }: BillingSettingsProps) {
+export function BillingSettings({ userId }: BillingSettingsProps) {
   // TODO: Get user tier from Convex
   const userTier = ("free_user" as "free_user" | "premium_user"); // This should come from user data
   const isPremium = userTier === "premium_user";

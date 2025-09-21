@@ -137,7 +137,7 @@ export const updateSubscription = mutation({
 });
 
 
-// Get subscription statistics
+// Get subscription statistics with raw currency data
 export const getSubscriptionStats = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
@@ -155,25 +155,16 @@ export const getSubscriptionStats = query({
       .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
       .collect();
 
-    // Calculate totals and find next renewal
-    let monthlyTotal = 0;
+    // Return raw subscription data for client-side currency conversion
+    const subscriptionCosts = subscriptions.map(sub => ({
+      amount: sub.cost,
+      currency: sub.currency,
+      billingCycle: sub.billingCycle
+    }));
+
+    // Find next renewal
     let nextRenewal: number | null = null;
-
     subscriptions.forEach((sub) => {
-      // Calculate monthly equivalent
-      switch (sub.billingCycle) {
-        case "monthly":
-          monthlyTotal += sub.cost;
-          break;
-        case "yearly":
-          monthlyTotal += sub.cost / 12;
-          break;
-        case "weekly":
-          monthlyTotal += sub.cost * 4.33;
-          break;
-      }
-
-      // Find next renewal
       if (!nextRenewal || sub.nextBillingDate < nextRenewal) {
         nextRenewal = sub.nextBillingDate;
       }
@@ -182,8 +173,7 @@ export const getSubscriptionStats = query({
     return {
       totalSubscriptions: subscriptions.length,
       activeSubscriptions: subscriptions.filter(s => s.isActive).length,
-      monthlyTotal: Math.round(monthlyTotal * 100) / 100,
-      yearlyTotal: Math.round(monthlyTotal * 12 * 100) / 100,
+      subscriptionCosts, // Raw data for client-side conversion
       nextRenewal,
     };
   },

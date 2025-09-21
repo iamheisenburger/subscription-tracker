@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Target } from "lucide-react";
+import { Plus, Target, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
+import { SubscriptionCardActions } from "@/components/dashboard/subscription-card-actions";
 
 interface RecentSubscriptionsProps {
   userId: string;
@@ -92,10 +93,10 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
       <CardContent>
         <div className="space-y-4">
           {recentSubscriptions.map((subscription) => (
-            <div key={subscription._id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+            <div key={subscription._id} className="group flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Target className="h-6 w-6 text-primary" />
+                  <CreditCard className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-semibold font-sans">{subscription.name}</h3>
@@ -104,15 +105,22 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
                   </p>
                 </div>
               </div>
-              <div className="text-right space-y-1">
-                <div className="font-bold font-sans">
-                  {subscription.currency} {subscription.cost.toFixed(2)}
+              <div className="flex items-center gap-3">
+                <div className="text-right space-y-1">
+                  <div className="font-bold font-sans">
+                    {subscription.currency} {subscription.cost.toFixed(2)}
+                  </div>
+                  {subscription.category && (
+                    <Badge variant="secondary" className="text-xs font-sans">
+                      {subscription.category}
+                    </Badge>
+                  )}
                 </div>
-                {subscription.category && (
-                  <Badge variant="secondary" className="text-xs font-sans">
-                    {subscription.category}
-                  </Badge>
-                )}
+                <SubscriptionCardActions
+                  subscriptionId={subscription._id}
+                  subscriptionName={subscription.name}
+                  isActive={subscription.isActive}
+                />
               </div>
             </div>
           ))}

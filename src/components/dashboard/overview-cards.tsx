@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, TrendingUp, Calendar, Target } from "lucide-react";
 import { format } from "date-fns";
 import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
+import { useState, useEffect } from "react";
+import { convertMultipleCurrencies, getPreferredCurrency, formatCurrency } from "@/lib/currency";
 
 interface OverviewCardsProps {
   userId: string;
@@ -22,6 +24,64 @@ export function OverviewCards({ userId }: OverviewCardsProps) {
 
 function OverviewCardsContent({ userId }: OverviewCardsProps) {
   const stats = useQuery(api.subscriptions.getSubscriptionStats, { clerkId: userId });
+  const [convertedTotals, setConvertedTotals] = useState<{
+    monthlyTotal: number;
+    yearlyTotal: number;
+    currency: string;
+  } | null>(null);
+
+  // Convert currencies when stats are available
+  useEffect(() => {
+    if (!stats?.subscriptionCosts) return;
+
+    const convertCurrencies = async () => {
+      try {
+        const preferredCurrency = getPreferredCurrency();
+        
+        // Convert all subscription costs to monthly equivalents in preferred currency
+        const monthlyAmounts = stats.subscriptionCosts.map(sub => {
+          let monthlyAmount = sub.amount;
+          if (sub.billingCycle === "yearly") {
+            monthlyAmount = sub.amount / 12;
+          } else if (sub.billingCycle === "weekly") {
+            monthlyAmount = sub.amount * 4.33; // Average weeks per month
+          }
+          
+          return {
+            amount: monthlyAmount,
+            currency: sub.currency
+          };
+        });
+
+        const conversions = await convertMultipleCurrencies(monthlyAmounts, preferredCurrency);
+        const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
+        const yearlyTotal = monthlyTotal * 12;
+
+        setConvertedTotals({
+          monthlyTotal: Math.round(monthlyTotal * 100) / 100,
+          yearlyTotal: Math.round(yearlyTotal * 100) / 100,
+          currency: preferredCurrency
+        });
+      } catch (error) {
+        console.error('Currency conversion failed:', error);
+        // Fallback to simple sum without conversion
+        const monthlyTotal = stats.subscriptionCosts.reduce((sum, sub) => {
+          let monthlyAmount = sub.amount;
+          if (sub.billingCycle === "yearly") monthlyAmount = sub.amount / 12;
+          else if (sub.billingCycle === "weekly") monthlyAmount = sub.amount * 4.33;
+          return sum + monthlyAmount;
+        }, 0);
+        
+        setConvertedTotals({
+          monthlyTotal: Math.round(monthlyTotal * 100) / 100,
+          yearlyTotal: Math.round(monthlyTotal * 12 * 100) / 100,
+          currency: 'USD' // Default fallback
+        });
+      }
+    };
+
+    convertCurrencies();
+  }, [stats?.subscriptionCosts]);
 
   if (stats === undefined) {
     return (
@@ -51,14 +111,22 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
     },
     {
       title: "Monthly Spend",
-      value: `$${stats?.monthlyTotal?.toFixed(2) || "0.00"}`,
-      description: "Current monthly cost",
+      value: convertedTotals 
+        ? formatCurrency(convertedTotals.monthlyTotal, convertedTotals.currency)
+        : "Loading...",
+      description: convertedTotals?.currency 
+        ? `Current monthly cost (${convertedTotals.currency})`
+        : "Current monthly cost",
       icon: DollarSign,
     },
     {
       title: "Yearly Spend",
-      value: `$${stats?.yearlyTotal?.toFixed(2) || "0.00"}`,
-      description: "Projected annual cost",
+      value: convertedTotals 
+        ? formatCurrency(convertedTotals.yearlyTotal, convertedTotals.currency)
+        : "Loading...",
+      description: convertedTotals?.currency 
+        ? `Projected annual cost (${convertedTotals.currency})`
+        : "Projected annual cost",
       icon: TrendingUp,
     },
     {

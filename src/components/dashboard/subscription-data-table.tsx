@@ -296,7 +296,7 @@ export function SubscriptionDataTable({ userId }: SubscriptionDataTableProps) {
 
   const categories = useMemo(() => {
     if (!subscriptions) return [];
-    return Array.from(new Set(subscriptions.map(s => s.category).filter(Boolean)));
+    return Array.from(new Set(subscriptions.map(s => s.category).filter(Boolean))) as string[];
   }, [subscriptions]);
 
   if (!subscriptions) {

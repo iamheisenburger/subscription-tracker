@@ -97,7 +97,17 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
       title: "Monthly Spend",
       value: convertedTotals
         ? formatCurrency(convertedTotals.monthlyTotal, convertedTotals.currency)
-        : "Calculating...",
+        : stats?.subscriptionCosts?.length 
+          ? formatCurrency(
+              stats.subscriptionCosts.reduce((sum, sub) => {
+                let monthly = sub.amount;
+                if (sub.billingCycle === "yearly") monthly = sub.amount / 12;
+                else if (sub.billingCycle === "weekly") monthly = sub.amount * 4.33;
+                return sum + monthly;
+              }, 0), 
+              "USD"
+            )
+          : "$0.00",
       description: convertedTotals?.currency
         ? `Current monthly cost (${convertedTotals.currency})`
         : "Current monthly cost",
@@ -107,7 +117,17 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
       title: "Yearly Spend",
       value: convertedTotals
         ? formatCurrency(convertedTotals.yearlyTotal, convertedTotals.currency)
-        : "Calculating...",
+        : stats?.subscriptionCosts?.length
+          ? formatCurrency(
+              stats.subscriptionCosts.reduce((sum, sub) => {
+                let monthly = sub.amount;
+                if (sub.billingCycle === "yearly") monthly = sub.amount / 12;
+                else if (sub.billingCycle === "weekly") monthly = sub.amount * 4.33;
+                return sum + monthly;
+              }, 0) * 12, 
+              "USD"
+            )
+          : "$0.00",
       description: convertedTotals?.currency
         ? `Projected annual cost (${convertedTotals.currency})`
         : "Projected annual cost",

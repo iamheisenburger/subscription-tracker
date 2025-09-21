@@ -48,12 +48,55 @@ export default async function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium font-sans">Default Currency</label>
+              <select 
+                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-sans"
+                onChange={(e) => {
+                  localStorage.setItem('preferred-currency', e.target.value);
+                  window.location.reload();
+                }}
+                defaultValue={typeof window !== 'undefined' ? localStorage.getItem('preferred-currency') || 'USD' : 'USD'}
+              >
+                <option value="USD">US Dollar ($)</option>
+                <option value="EUR">Euro (€)</option>
+                <option value="GBP">British Pound (£)</option>
+                <option value="CAD">Canadian Dollar (C$)</option>
+                <option value="AUD">Australian Dollar (A$)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="p-6 border rounded-lg bg-card">
+          <h2 className="text-lg font-semibold font-sans mb-4">Notification Preferences</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium font-sans">Email Notifications</label>
+                <p className="text-xs text-muted-foreground font-sans">Receive renewal reminders via email</p>
+              </div>
+              <input type="checkbox" defaultChecked className="rounded" />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium font-sans">Push Notifications</label>
+                <p className="text-xs text-muted-foreground font-sans">Browser notifications for upcoming renewals</p>
+              </div>
+              <input type="checkbox" className="rounded" />
+            </div>
+          </div>
+        </div>
+
+        {/* Theme Settings */}
+        <div className="p-6 border rounded-lg bg-card">
+          <h2 className="text-lg font-semibold font-sans mb-4">Appearance</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium font-sans">Theme</label>
               <select className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-sans">
-                <option value="USD">US Dollar (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
-                <option value="GBP">British Pound (GBP)</option>
-                <option value="CAD">Canadian Dollar (CAD)</option>
-                <option value="AUD">Australian Dollar (AUD)</option>
+                <option value="system">System Default</option>
+                <option value="light">Light Mode</option>
+                <option value="dark">Dark Mode</option>
               </select>
             </div>
           </div>
@@ -63,12 +106,30 @@ export default async function SettingsPage() {
         <div className="p-6 border rounded-lg bg-card">
           <h2 className="text-lg font-semibold font-sans mb-4">Billing & Subscription</h2>
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium font-sans">Current Plan</label>
-              <p className="text-sm text-muted-foreground font-sans">Free Plan</p>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium font-sans">Free Plan</h3>
+                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full font-sans">Current</span>
+                </div>
+                <p className="text-sm text-muted-foreground font-sans">Up to 3 subscriptions</p>
+              </div>
+              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
+                Upgrade to Premium
+              </button>
             </div>
-            <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
-              Upgrade to Premium
+          </div>
+        </div>
+
+        {/* Data Management */}
+        <div className="p-6 border rounded-lg bg-card">
+          <h2 className="text-lg font-semibold font-sans mb-4">Data Management</h2>
+          <div className="space-y-4">
+            <button className="w-full px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted">
+              Export Data (CSV)
+            </button>
+            <button className="w-full px-4 py-2 border border-destructive text-destructive rounded-md text-sm font-sans hover:bg-destructive/10">
+              Delete Account
             </button>
           </div>
         </div>

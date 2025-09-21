@@ -16,41 +16,41 @@ export interface CurrencyConversionResult {
   timestamp: number;
 }
 
-// HARDCODED EXCHANGE RATES - INSTANT CONVERSION
+// ACCURATE EXCHANGE RATES - ALL CURRENCIES PROPERLY CORRELATED
 const EXCHANGE_RATES: Record<string, ExchangeRates> = {
   USD: {
     USD: 1.00,
-    EUR: 0.85,
-    GBP: 0.80,
-    CAD: 1.25,
-    AUD: 1.45,
-  },
-  GBP: {
-    USD: 1.25,
-    EUR: 1.06,
-    GBP: 1.00,
-    CAD: 1.56,
-    AUD: 1.81,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36,
+    AUD: 1.52,
   },
   EUR: {
-    USD: 1.18,
+    USD: 1.09,
     EUR: 1.00,
-    GBP: 0.94,
-    CAD: 1.47,
-    AUD: 1.71,
+    GBP: 0.86,
+    CAD: 1.48,
+    AUD: 1.65,
+  },
+  GBP: {
+    USD: 1.27,
+    EUR: 1.16,
+    GBP: 1.00,
+    CAD: 1.73,
+    AUD: 1.93,
   },
   CAD: {
-    USD: 0.80,
+    USD: 0.74,
     EUR: 0.68,
-    GBP: 0.64,
+    GBP: 0.58,
     CAD: 1.00,
-    AUD: 1.16,
+    AUD: 1.12,
   },
   AUD: {
-    USD: 0.69,
-    EUR: 0.58,
-    GBP: 0.55,
-    CAD: 0.86,
+    USD: 0.66,
+    EUR: 0.61,
+    GBP: 0.52,
+    CAD: 0.89,
     AUD: 1.00,
   },
 };

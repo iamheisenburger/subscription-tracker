@@ -307,7 +307,9 @@
     /* Remove default margins in PWA mode */
     margin: 0;
     /* Improve performance */
-    @apply gpu-accelerate;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
   }
   
   /* Hide install prompt when already installed */

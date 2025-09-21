@@ -7,7 +7,7 @@ interface OverviewCardsProps {
   userId: string;
 }
 
-export function OverviewCardsFallback({ userId }: OverviewCardsProps) {
+export function OverviewCardsFallback({ }: OverviewCardsProps) {
   const cards = [
     {
       title: "Total Subscriptions",

@@ -7,7 +7,7 @@ interface UpcomingRenewalsProps {
   userId: string;
 }
 
-export function UpcomingRenewalsFallback({ userId }: UpcomingRenewalsProps) {
+export function UpcomingRenewalsFallback({ }: UpcomingRenewalsProps) {
   return (
     <Card>
       <CardHeader>

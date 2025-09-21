@@ -12,14 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Bell, Globe, Palette, Moon } from "lucide-react";
+import { Settings, Bell, Globe, Palette } from "lucide-react";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 
 interface PreferencesSettingsProps {
   userId: string;
 }
 
-export function PreferencesSettings({ userId }: PreferencesSettingsProps) {
+export function PreferencesSettings({ }: PreferencesSettingsProps) {
   return (
     <Card>
       <CardHeader>

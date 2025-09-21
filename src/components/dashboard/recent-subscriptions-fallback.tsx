@@ -8,7 +8,7 @@ interface RecentSubscriptionsProps {
   userId: string;
 }
 
-export function RecentSubscriptionsFallback({ userId }: RecentSubscriptionsProps) {
+export function RecentSubscriptionsFallback({ }: RecentSubscriptionsProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">

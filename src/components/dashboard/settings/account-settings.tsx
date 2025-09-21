@@ -6,11 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Calendar } from "lucide-react";
+import { User, Mail } from "lucide-react";
 import { format } from "date-fns";
 
 interface AccountSettingsProps {
-  user: any; // Clerk user object
+  user: {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    imageUrl?: string;
+    emailAddresses?: Array<{ emailAddress: string }>;
+    createdAt?: string | number;
+  } | null;
 }
 
 export function AccountSettings({ user }: AccountSettingsProps) {

@@ -26,6 +26,7 @@ import { MoreHorizontal, Edit, Trash2, Pause, Play, Target } from "lucide-react"
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 interface SubscriptionsTableProps {
   userId: string;
@@ -47,7 +48,7 @@ function SubscriptionsTableContent({ userId }: SubscriptionsTableProps) {
     try {
       await deleteSubscription({ 
         clerkId: userId, 
-        subscriptionId: subscriptionId as any 
+        subscriptionId: subscriptionId as Id<"subscriptions"> 
       });
       toast.success("Subscription deleted successfully!");
     } catch (error) {

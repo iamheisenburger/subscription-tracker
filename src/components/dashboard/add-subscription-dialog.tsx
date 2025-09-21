@@ -68,7 +68,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      cost: 0,
+      cost: undefined,
       currency: "USD",
       billingCycle: "monthly",
       category: "",
@@ -142,8 +142,18 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                         min="0"
                         placeholder="9.99"
                         className="font-sans"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "") {
+                            field.onChange(undefined);
+                          } else {
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue)) {
+                              field.onChange(numValue);
+                            }
+                          }
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

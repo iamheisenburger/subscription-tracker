@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Filter, Download } from "lucide-react";
+import { Search, Plus, Filter, Download, Tag } from "lucide-react";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
 import { useUserTier } from "@/hooks/use-user-tier";
 import {
@@ -16,6 +16,8 @@ import {
 
 export function SubscriptionsHeader() {
   const { isPremium } = useUserTier();
+  // TODO: wire to state/store URL params in a follow-up
+  const categoriesEnabled = isPremium;
   
   return (
     <div className="space-y-4">
@@ -68,6 +70,16 @@ export function SubscriptionsHeader() {
               <DropdownMenuItem className="font-sans">Monthly</DropdownMenuItem>
               <DropdownMenuItem className="font-sans">Yearly</DropdownMenuItem>
               <DropdownMenuItem className="font-sans">Weekly</DropdownMenuItem>
+              {categoriesEnabled && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="font-sans flex items-center gap-2">
+                    <Tag className="h-4 w-4" /> Categories
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem className="font-sans">All Categories</DropdownMenuItem>
+                  {/* Category chips/selection will be wired to Convex in next step */}
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

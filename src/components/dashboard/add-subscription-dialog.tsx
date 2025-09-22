@@ -44,6 +44,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { FreeTierLimitModal } from "./free-tier-limit-modal";
+import { CategorySelector } from "./categories/category-selector";
 
 const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
@@ -273,7 +274,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                   <FormItem>
                     <FormLabel className="font-sans">Category (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
+                      <CategorySelector value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -45,6 +45,7 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useUserTier } from "@/hooks/use-user-tier";
+import { CategorySelector } from "./categories/category-selector";
 
 const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
@@ -262,7 +263,7 @@ export function EditSubscriptionDialog({ subscription, children }: EditSubscript
                   <FormItem>
                     <FormLabel className="font-sans">Category (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Entertainment, Productivity, etc." className="font-sans" {...field} />
+                      <CategorySelector value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

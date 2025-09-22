@@ -51,6 +51,9 @@ export async function POST(req: Request) {
 
   const { data, type } = evt;
 
+  // Debug logging to see what we're receiving
+  console.log('🔍 Webhook received:', { type, userId: data.id, metadata: data.public_metadata });
+
   try {
     switch (type) {
       case 'user.created':

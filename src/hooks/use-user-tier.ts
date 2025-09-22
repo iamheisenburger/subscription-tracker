@@ -18,5 +18,8 @@ export function useUserTier() {
     subscriptionType: userData?.subscriptionType || null,
     isMonthlyPremium: userData?.tier === "premium_user" && userData?.subscriptionType === "monthly",
     isAnnualPremium: userData?.tier === "premium_user" && userData?.subscriptionType === "annual",
+    // Treat unknown subscriptionType as monthly for upsell purposes
+    isMonthlyOrUnknownPremium:
+      (userData?.tier === "premium_user") && (userData?.subscriptionType !== "annual"),
   };
 }

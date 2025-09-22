@@ -18,7 +18,7 @@ const navigation = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const { isPremium, isMonthlyPremium, isAnnualPremium } = useUserTier();
+  const { isPremium, isMonthlyPremium, isAnnualPremium, isMonthlyOrUnknownPremium } = useUserTier();
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
@@ -78,7 +78,7 @@ export function DashboardSidebar() {
         {/* Annual premium: hide entirely */}
         {isAnnualPremium ? null : (
           // Monthly premium: show annual upsell
-          isMonthlyPremium ? (
+          (isMonthlyPremium || isMonthlyOrUnknownPremium) ? (
             <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="h-4 w-4 text-primary" />

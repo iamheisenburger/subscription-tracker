@@ -161,14 +161,14 @@ export function SettingsContent({ user }: SettingsContentProps) {
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium font-sans">Free Plan</h3>
-                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full font-sans">Current</span>
+                  <h3 className="font-medium font-sans">Plan</h3>
+                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full font-sans">Managed by Clerk</span>
                 </div>
-                <p className="text-sm text-muted-foreground font-sans">Up to 3 subscriptions</p>
+                <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
-                Upgrade to Premium
-              </button>
+              <a href="/pricing" className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
+                Manage Billing
+              </a>
             </div>
           </div>
         </div>
@@ -178,12 +178,20 @@ export function SettingsContent({ user }: SettingsContentProps) {
           <h2 className="text-lg font-semibold font-sans mb-4">Data Management</h2>
           <div className="space-y-4">
             {isPremium ? (
-              <a
-                href="/api/export/csv"
-                className="w-full inline-flex items-center justify-center px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted"
-              >
-                Export Data (CSV)
-              </a>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <a
+                  href="/api/export/csv"
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted"
+                >
+                  Export CSV
+                </a>
+                <a
+                  href="/api/export/pdf"
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-input rounded-md text-sm font-sans hover:bg-muted"
+                >
+                  Export PDF
+                </a>
+              </div>
             ) : (
               <div className="w-full px-4 py-3 border border-dashed rounded-md text-sm text-muted-foreground font-sans">
                 Export is a Premium feature. <a href="/pricing" className="text-primary underline">Upgrade to enable</a>.

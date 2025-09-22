@@ -81,6 +81,35 @@ export const upgradeTopremium = mutation({
   },
 });
 
+// Set user tier explicitly (used by server-side sync)
+export const setTier = mutation({
+  args: {
+    clerkId: v.string(),
+    tier: v.union(v.literal("free_user"), v.literal("premium_user")),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const now = Date.now();
+    const isPremium = args.tier === "premium_user";
+
+    await ctx.db.patch(user._id, {
+      tier: args.tier,
+      subscriptionLimit: isPremium ? -1 : 3,
+      updatedAt: now,
+    });
+
+    return user._id;
+  },
+});
+
 // Check if user can add more subscriptions
 export const canAddSubscription = query({
   args: { clerkId: v.string() },

@@ -15,5 +15,8 @@ export function useUserTier() {
     isFree: userData?.tier === "free_user" || !userData?.tier,
     isLoading: userData === undefined,
     subscriptionLimit: userData?.subscriptionLimit || 3,
+    subscriptionType: userData?.subscriptionType || null,
+    isMonthlyPremium: userData?.tier === "premium_user" && userData?.subscriptionType === "monthly",
+    isAnnualPremium: userData?.tier === "premium_user" && userData?.subscriptionType === "annual",
   };
 }

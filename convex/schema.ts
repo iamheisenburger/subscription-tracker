@@ -10,6 +10,8 @@ export default defineSchema({
     subscriptionLimit: v.number(),
     premiumExpiresAt: v.optional(v.number()),
     trialEndsAt: v.optional(v.number()),
+    // Track subscription type for premium users
+    subscriptionType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

@@ -86,6 +86,7 @@ export const setTier = mutation({
   args: {
     clerkId: v.string(),
     tier: v.union(v.literal("free_user"), v.literal("premium_user")),
+    subscriptionType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -100,11 +101,20 @@ export const setTier = mutation({
     const now = Date.now();
     const isPremium = args.tier === "premium_user";
 
-    await ctx.db.patch(user._id, {
+    const updateData: any = {
       tier: args.tier,
       subscriptionLimit: isPremium ? -1 : 3,
       updatedAt: now,
-    });
+    };
+
+    // Only set subscriptionType for premium users
+    if (isPremium && args.subscriptionType) {
+      updateData.subscriptionType = args.subscriptionType;
+    } else if (!isPremium) {
+      updateData.subscriptionType = undefined;
+    }
+
+    await ctx.db.patch(user._id, updateData);
 
     return user._id;
   },

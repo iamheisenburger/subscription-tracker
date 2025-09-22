@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
@@ -17,6 +18,7 @@ const navigation = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const { isPremium, isMonthlyPremium, isAnnualPremium } = useUserTier();
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
@@ -71,24 +73,50 @@ export function DashboardSidebar() {
 
       <Separator />
 
-      {/* Upgrade CTA */}
+      {/* Upgrade CTA (smart) */}
       <div className="p-4">
-        <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Crown className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground font-sans">
-              Upgrade to Premium
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground font-sans mb-3">
-            Unlimited subscriptions & advanced analytics
-          </p>
-          <Link href="/pricing">
-            <Button size="sm" className="w-full font-sans">
-              Start Free Trial
-            </Button>
-          </Link>
-        </div>
+        {/* Annual premium: hide entirely */}
+        {isAnnualPremium ? null : (
+          // Monthly premium: show annual upsell
+          isMonthlyPremium ? (
+            <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground font-sans">
+                  Save with Annual Billing
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-sans mb-3">
+                Switch to annual and save 2 months ($18/year)
+              </p>
+              <Link href="/pricing">
+                <Button size="sm" className="w-full font-sans">
+                  Switch to Annual
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            // Free users: show original upgrade CTA
+            !isPremium && (
+              <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Crown className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground font-sans">
+                    Upgrade to Premium
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground font-sans mb-3">
+                  Unlimited subscriptions & advanced analytics
+                </p>
+                <Link href="/pricing">
+                  <Button size="sm" className="w-full font-sans">
+                    Start Free Trial
+                  </Button>
+                </Link>
+              </div>
+            )
+          )
+        )}
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ export function CategorySelector({ value, onChange }: CategorySelectorProps) {
     if (!user?.id) return;
     const name = query.trim();
     if (!name) return;
-    const id = await createCategory({ clerkId: user.id, name });
+    await createCategory({ clerkId: user.id, name });
     // Use the name directly on subscriptions; categories table is for management/filters/colors later
     onChange(name);
     setQuery("");
@@ -66,7 +66,7 @@ export function CategorySelector({ value, onChange }: CategorySelectorProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem className="font-sans" onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Create "{query || ""}"
+          Create &ldquo;{query || ""}&rdquo;
         </DropdownMenuItem>
         {value && (
           <>

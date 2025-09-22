@@ -13,21 +13,33 @@ export function UserSync() {
   useEffect(() => {
     if (!isLoaded || !user) return;
 
-    // Ensure user exists
-    createOrUpdateUser({
-      clerkId: user.id,
-      email: user.emailAddresses[0]?.emailAddress || "",
-    }).catch((error) => {
-      console.error("Failed to sync user:", error);
-    });
+    // Ensure user exists and sync tier from Clerk's organization memberships
+    const syncUser = async () => {
+      try {
+        await createOrUpdateUser({
+          clerkId: user.id,
+          email: user.emailAddresses[0]?.emailAddress || "",
+        });
 
-    // If Clerk exposes plan info via public metadata or memberships, sync tier.
-    type PublicMetadata = { plan?: string } | undefined;
-    const meta = user.publicMetadata as PublicMetadata;
-    const plan = meta?.plan;
-    if (plan === 'premium_user') {
-      setTier({ clerkId: user.id, tier: 'premium_user' }).catch(() => {});
-    }
+        // Check if user has premium via organization membership or public metadata
+        const hasPremiumMembership = user.organizationMemberships?.some(
+          (membership) => membership.organization.slug === 'premium' || 
+                        membership.organization.name?.toLowerCase().includes('premium')
+        );
+        
+        type PublicMetadata = { plan?: string; tier?: string } | undefined;
+        const meta = user.publicMetadata as PublicMetadata;
+        const hasPremiumMetadata = meta?.plan === 'premium' || meta?.tier === 'premium_user';
+
+        if (hasPremiumMembership || hasPremiumMetadata) {
+          await setTier({ clerkId: user.id, tier: 'premium_user' });
+        }
+      } catch (error) {
+        console.error("Failed to sync user:", error);
+      }
+    };
+
+    syncUser();
   }, [isLoaded, user, createOrUpdateUser, setTier]);
 
   return null; // This component doesn't render anything

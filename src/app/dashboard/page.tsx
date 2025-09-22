@@ -4,6 +4,7 @@ import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { RecentSubscriptions } from "@/components/dashboard/recent-subscriptions";
 import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
+import { OverviewActions } from "@/components/dashboard/overview-actions";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -16,13 +17,16 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight font-sans">
-          Welcome back, {user?.firstName || "there"}!
-        </h1>
-        <p className="text-muted-foreground font-sans">
-          Here&apos;s your subscription overview
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight font-sans">
+            Welcome back, {user?.firstName || "there"}!
+          </h1>
+          <p className="text-muted-foreground font-sans">
+            Here&apos;s your subscription overview
+          </p>
+        </div>
+        <OverviewActions />
       </div>
 
       {/* Upgrade Banner */}

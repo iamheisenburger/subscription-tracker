@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Filter, Download } from "lucide-react";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
+import { useUserTier } from "@/hooks/use-user-tier";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function SubscriptionsHeader() {
+  const { isPremium } = useUserTier();
+  
   return (
     <div className="space-y-4">
       {/* Page Header */}
@@ -68,10 +71,31 @@ export function SubscriptionsHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" className="font-sans">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+          {isPremium ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="font-sans">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="font-sans">Export Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <a href="/api/export/csv" className="font-sans">Export as CSV</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="/api/export/pdf" className="font-sans">Export as PDF</a>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="outline" className="font-sans opacity-50 cursor-not-allowed" disabled>
+              <Download className="mr-2 h-4 w-4" />
+              Export (Premium)
+            </Button>
+          )}
         </div>
       </div>
     </div>

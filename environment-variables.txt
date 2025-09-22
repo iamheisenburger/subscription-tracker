@@ -3,6 +3,7 @@
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
 CLERK_SECRET_KEY=your_clerk_secret_key_here
+CLERK_WEBHOOK_SECRET=your_clerk_webhook_signing_secret_here
 
 # Clerk JWT for Convex (get this from your Clerk JWT template named "convex")
 CLERK_JWT_ISSUER_DOMAIN=https://tidy-meerkat-48.clerk.accounts.dev

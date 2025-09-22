@@ -4,8 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, BarChart3, Download, Bell, FolderKanban, Shield } from "lucide-react";
 import Link from "next/link";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
+  const { isPremium } = useUserTier();
+  
+  if (isPremium) {
+    return null;
+  }
   return (
     <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10">
       <CardContent className="p-6">
@@ -56,25 +62,11 @@ export function UpgradeBanner() {
             <div className="text-sm text-muted-foreground font-sans">
               or $7.50/mo annually
             </div>
-            <div className="flex items-center gap-2 justify-end mt-3">
-              <Link href="/pricing">
-                <Button className="font-sans">
-                  Start 7-Day Free Trial
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                className="font-sans"
-                onClick={async () => {
-                  try {
-                    await fetch('/api/sync/tier', { method: 'POST' });
-                    window.location.reload();
-                  } catch {}
-                }}
-              >
-                Refresh Status
+            <Link href="/pricing">
+              <Button className="mt-3 font-sans">
+                Start 7-Day Free Trial
               </Button>
-            </div>
+            </Link>
           </div>
         </div>
       </CardContent>

@@ -1,11 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Download, Plus, RefreshCw } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
-import { useState } from "react";
-import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,32 +15,6 @@ import {
 
 export function OverviewActions() {
   const { isPremium } = useUserTier();
-  const [isDebugging, setIsDebugging] = useState(false);
-
-  const handleDebugSync = async () => {
-    setIsDebugging(true);
-    try {
-      const response = await fetch('/api/debug/sync-tier', {
-        method: 'POST',
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        toast.success(`Tier synced: ${result.tier}`);
-        console.log('Debug sync result:', result);
-        // Refresh page to show updated tier
-        window.location.reload();
-      } else {
-        toast.error(`Sync failed: ${result.error}`);
-        console.error('Debug sync failed:', result);
-      }
-    } catch (error) {
-      toast.error('Sync failed');
-      console.error('Debug sync error:', error);
-    } finally {
-      setIsDebugging(false);
-    }
-  };
 
   return (
     <div className="flex items-center gap-2">
@@ -53,17 +25,6 @@ export function OverviewActions() {
         </Button>
       </AddSubscriptionDialog>
       
-      {/* Debug button - remove after testing */}
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={handleDebugSync}
-        disabled={isDebugging}
-        className="font-sans"
-      >
-        <RefreshCw className={`mr-2 h-4 w-4 ${isDebugging ? 'animate-spin' : ''}`} />
-        Debug Sync
-      </Button>
       
       {isPremium ? (
         <DropdownMenu>

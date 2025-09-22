@@ -179,7 +179,7 @@ export const getSubscriptionStats = query({
   },
 });
 
-// Get subscription analytics
+// Get subscription analytics with spending trends
 export const getSubscriptionAnalytics = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
@@ -197,24 +197,54 @@ export const getSubscriptionAnalytics = query({
       .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
       .collect();
 
-    // Calculate totals
+    // Calculate spending trends (last 6 months)
+    const now = new Date();
+    const spendingTrends = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      
+      // Calculate total for this month
+      let monthlySpend = 0;
+      subscriptions.forEach(sub => {
+        // Only count subscriptions that existed during this month
+        const subCreated = new Date(sub.createdAt);
+        if (subCreated <= date) {
+          let monthlyAmount = sub.cost;
+          if (sub.billingCycle === "yearly") {
+            monthlyAmount = sub.cost / 12;
+          } else if (sub.billingCycle === "weekly") {
+            monthlyAmount = sub.cost * 4.33;
+          }
+          monthlySpend += monthlyAmount;
+        }
+      });
+      
+      spendingTrends.push({
+        month,
+        spending: Math.round(monthlySpend * 100) / 100,
+      });
+    }
+
+    // Calculate current totals
     const monthlyTotal = subscriptions.reduce((total, sub) => {
       let monthlyAmount = sub.cost;
       if (sub.billingCycle === "yearly") {
         monthlyAmount = sub.cost / 12;
       } else if (sub.billingCycle === "weekly") {
-        monthlyAmount = sub.cost * 4.33; // Average weeks per month
+        monthlyAmount = sub.cost * 4.33;
       }
       return total + monthlyAmount;
     }, 0);
 
     const yearlyTotal = monthlyTotal * 12;
 
-    // Group by category
-    const byCategory = subscriptions.reduce((acc, sub) => {
+    // Group by category for pie chart
+    const categoryData = subscriptions.reduce((acc, sub) => {
       const category = sub.category || "Uncategorized";
       if (!acc[category]) {
-        acc[category] = { total: 0, count: 0 };
+        acc[category] = { total: 0, count: 0, subscriptions: [] };
       }
       
       let monthlyAmount = sub.cost;
@@ -226,8 +256,44 @@ export const getSubscriptionAnalytics = query({
       
       acc[category].total += monthlyAmount;
       acc[category].count += 1;
+      acc[category].subscriptions.push(sub.name);
       return acc;
-    }, {} as Record<string, { total: number; count: number }>);
+    }, {} as Record<string, { total: number; count: number; subscriptions: string[] }>);
+
+    // Convert to array format for charts
+    const categoryBreakdown = Object.entries(categoryData).map(([category, data]) => ({
+      category,
+      amount: Math.round(data.total * 100) / 100,
+      count: data.count,
+      subscriptions: data.subscriptions,
+      fill: `var(--chart-${Object.keys(categoryData).indexOf(category) + 1})`,
+    }));
+
+    // Billing cycle breakdown
+    const billingCycleData = subscriptions.reduce((acc, sub) => {
+      const cycle = sub.billingCycle;
+      if (!acc[cycle]) {
+        acc[cycle] = { count: 0, amount: 0 };
+      }
+      
+      let monthlyAmount = sub.cost;
+      if (sub.billingCycle === "yearly") {
+        monthlyAmount = sub.cost / 12;
+      } else if (sub.billingCycle === "weekly") {
+        monthlyAmount = sub.cost * 4.33;
+      }
+      
+      acc[cycle].count += 1;
+      acc[cycle].amount += monthlyAmount;
+      return acc;
+    }, {} as Record<string, { count: number; amount: number }>);
+
+    const cycleBreakdown = Object.entries(billingCycleData).map(([cycle, data]) => ({
+      cycle: cycle.charAt(0).toUpperCase() + cycle.slice(1),
+      count: data.count,
+      amount: Math.round(data.amount * 100) / 100,
+      fill: `var(--chart-${Object.keys(billingCycleData).indexOf(cycle) + 1})`,
+    }));
 
     // Upcoming renewals (next 30 days)
     const thirtyDaysFromNow = Date.now() + (30 * 24 * 60 * 60 * 1000);
@@ -237,10 +303,13 @@ export const getSubscriptionAnalytics = query({
 
     return {
       totalSubscriptions: subscriptions.length,
-      monthlyTotal,
-      yearlyTotal,
-      byCategory,
+      monthlyTotal: Math.round(monthlyTotal * 100) / 100,
+      yearlyTotal: Math.round(yearlyTotal * 100) / 100,
+      spendingTrends,
+      categoryBreakdown,
+      cycleBreakdown,
       upcomingRenewals: upcomingRenewals.length,
+      averagePerSubscription: subscriptions.length > 0 ? Math.round((monthlyTotal / subscriptions.length) * 100) / 100 : 0,
     };
   },
 });

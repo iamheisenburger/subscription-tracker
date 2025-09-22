@@ -1,9 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { AnalyticsHeader } from "@/components/dashboard/analytics/analytics-header";
-import { SpendingTrends } from "@/components/dashboard/analytics/spending-trends";
-import { CategoryBreakdown } from "@/components/dashboard/analytics/category-breakdown";
 import { PremiumFeatureGate } from "@/components/dashboard/premium-feature-gate";
+import { AnalyticsDashboard } from "@/components/dashboard/analytics/analytics-dashboard";
 
 export default async function AnalyticsPage() {
   const { userId } = await auth();
@@ -28,11 +27,7 @@ export default async function AnalyticsPage() {
     >
       <div className="space-y-8">
         <AnalyticsHeader />
-        
-        <div className="grid gap-8">
-          <SpendingTrends userId={userId} />
-          <CategoryBreakdown userId={userId} />
-        </div>
+        <AnalyticsDashboard userId={userId} />
       </div>
     </PremiumFeatureGate>
   );

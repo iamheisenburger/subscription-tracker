@@ -56,11 +56,25 @@ export function UpgradeBanner() {
             <div className="text-sm text-muted-foreground font-sans">
               or $7.50/mo annually
             </div>
-            <Link href="/pricing">
-              <Button className="mt-3 font-sans">
-                Start 7-Day Free Trial
+            <div className="flex items-center gap-2 justify-end mt-3">
+              <Link href="/pricing">
+                <Button className="font-sans">
+                  Start 7-Day Free Trial
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="font-sans"
+                onClick={async () => {
+                  try {
+                    await fetch('/api/sync/tier', { method: 'POST' });
+                    window.location.reload();
+                  } catch {}
+                }}
+              >
+                Refresh Status
               </Button>
-            </Link>
+            </div>
           </div>
         </div>
       </CardContent>

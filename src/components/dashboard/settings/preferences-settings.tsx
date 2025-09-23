@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Bell, Globe, Palette, Crown } from "lucide-react";
+import { Settings, Bell, Globe, Palette, Crown, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 import { CurrencySelector } from "./currency-selector";
 import { toast } from "sonner";
@@ -179,22 +179,47 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
             {/* Reminder Days Selection */}
             {renewalReminders && (
               <div className="space-y-2">
-                <Label className="font-sans">Reminder Schedule</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="font-sans">Reminder Schedule</Label>
+                  {!isPremium && <Crown className="h-4 w-4 text-primary" />}
+                </div>
                 <p className="text-sm text-muted-foreground font-sans">
-                  Choose when to receive renewal reminders
+                  {isPremium 
+                    ? "Choose when to receive renewal reminders"
+                    : "Free users get 3-day reminders. Upgrade for custom scheduling."
+                  }
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {[14, 7, 3, 1].map((day) => (
-                    <Badge
-                      key={day}
-                      variant={reminderDays.includes(day) ? "default" : "secondary"}
-                      className="cursor-pointer font-sans"
-                      onClick={() => toggleReminderDay(day)}
-                    >
-                      {day} day{day !== 1 ? 's' : ''} before
+                  {isPremium ? (
+                    // Premium: Full customization
+                    [30, 14, 7, 3, 1].map((day) => (
+                      <Badge
+                        key={day}
+                        variant={reminderDays.includes(day) ? "default" : "secondary"}
+                        className="cursor-pointer font-sans transition-colors hover:bg-primary/20"
+                        onClick={() => toggleReminderDay(day)}
+                      >
+                        {day} day{day !== 1 ? 's' : ''} before
+                      </Badge>
+                    ))
+                  ) : (
+                    // Free: Fixed 3-day reminder
+                    <Badge variant="default" className="font-sans">
+                      3 days before (Free Plan)
                     </Badge>
-                  ))}
+                  )}
                 </div>
+                {isPremium && (
+                  <div className="mt-2 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="h-4 w-4 text-primary mt-0.5" />
+                      <div className="text-xs text-muted-foreground font-sans">
+                        <strong>Smart Features:</strong> Multiple reminders, spending context in emails, 
+                        and actionable buttons to manage subscriptions directly from notifications.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

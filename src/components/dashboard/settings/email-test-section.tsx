@@ -26,15 +26,15 @@ export function EmailTestSection() {
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="font-sans">Renewal reminders are sent 3 days before billing</span>
+            <span className="font-sans">Smart renewal reminders with customizable timing (Premium: 1-30 days, Free: 3 days)</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="font-sans">Price change alerts are sent when subscription costs change</span>
+            <span className="font-sans">Price change alerts with instant notifications (Premium only)</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="font-sans">Spending alerts notify you when approaching budget thresholds</span>
+            <span className="font-sans">Spending alerts with budget threshold monitoring (Premium only)</span>
           </div>
         </div>
 

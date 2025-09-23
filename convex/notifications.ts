@@ -81,14 +81,16 @@ export const updateNotificationPreferences = mutation({
       if (args.priceChangeAlerts !== undefined) updateData.priceChangeAlerts = args.priceChangeAlerts;
       if (args.spendingAlerts !== undefined) updateData.spendingAlerts = args.spendingAlerts;
       if (args.spendingThreshold !== undefined) updateData.spendingThreshold = args.spendingThreshold;
+      // Premium users can customize reminder days
+      if (args.reminderDays !== undefined) updateData.reminderDays = args.reminderDays;
     } else {
       // Force disable premium features for free users
       updateData.priceChangeAlerts = false;
       updateData.spendingAlerts = false;
       updateData.spendingThreshold = undefined;
+      // Force free users to use only 3-day reminders
+      updateData.reminderDays = [3];
     }
-    
-    if (args.reminderDays !== undefined) updateData.reminderDays = args.reminderDays;
 
     if (existingPreferences) {
       // Update existing preferences
@@ -387,6 +389,29 @@ export const generateRenewalReminders = internalMutation({
                 .unique();
               
               if (!existingNotification) {
+                // Calculate smart context for premium users
+                let smartData = {};
+                if (user.tier === "premium_user") {
+                  // Calculate total monthly spending
+                  let monthlySpending = 0;
+                  for (const sub of subscriptions) {
+                    let monthlyCost = sub.cost;
+                    if (sub.billingCycle === "yearly") {
+                      monthlyCost = sub.cost / 12;
+                    } else if (sub.billingCycle === "weekly") {
+                      monthlyCost = sub.cost * 4.33;
+                    }
+                    monthlySpending += monthlyCost;
+                  }
+                  
+                  smartData = {
+                    isPremium: true,
+                    monthlySpending,
+                    totalSubscriptions: subscriptions.length,
+                    subscriptionId: subscription._id,
+                  };
+                }
+
                 // Schedule the reminder
                 await ctx.db.insert("notificationQueue", {
                   userId: user._id,
@@ -398,11 +423,14 @@ export const generateRenewalReminders = internalMutation({
                     subject: `${subscription.name} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`}`,
                     template: "renewal_reminder",
                     templateData: {
+                      userName: user.email?.split('@')[0] || 'there',
                       daysUntil,
                       subscriptionName: subscription.name,
                       cost: subscription.cost,
-                      currency: subscription.currency,
+                      currency: subscription.currency || 'USD',
                       billingCycle: subscription.billingCycle,
+                      category: subscription.category,
+                      ...smartData,
                     },
                   },
                   attempts: 0,

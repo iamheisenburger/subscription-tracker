@@ -20,6 +20,11 @@ interface RenewalReminderEmailProps {
   billingCycle?: 'monthly' | 'yearly' | 'weekly';
   daysUntil?: number;
   category?: string;
+  // Smart premium features
+  isPremium?: boolean;
+  monthlySpending?: number;
+  totalSubscriptions?: number;
+  subscriptionId?: string;
 }
 
 const baseUrl = process.env.VERCEL_URL
@@ -34,6 +39,10 @@ export const RenewalReminderEmail = ({
   billingCycle = 'monthly',
   daysUntil = 3,
   category,
+  isPremium = false,
+  monthlySpending = 0,
+  totalSubscriptions = 1,
+  subscriptionId,
 }: RenewalReminderEmailProps) => {
   const previewText = `${subscriptionName} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`} - $${cost}/${billingCycle}`;
   
@@ -99,6 +108,17 @@ export const RenewalReminderEmail = ({
               </div>
             </Section>
 
+            {/* Smart Premium Context */}
+            {isPremium && monthlySpending > 0 && (
+              <Section style={smartInsightCard}>
+                <Text style={insightTitle}>💡 Smart Insight</Text>
+                <Text style={insightText}>
+                  This renewal will bring your monthly spending to <strong>{currencySymbol}{(monthlySpending + (billingCycle === 'monthly' ? cost : billingCycle === 'yearly' ? cost / 12 : cost * 4.33)).toFixed(2)}</strong> 
+                  across {totalSubscriptions} subscription{totalSubscriptions !== 1 ? 's' : ''}.
+                </Text>
+              </Section>
+            )}
+
             <Text style={paragraph}>
               {daysUntil === 1 
                 ? "Your subscription will automatically renew tomorrow. If you'd like to make any changes, you can manage your subscription in your SubWise dashboard."
@@ -108,12 +128,28 @@ export const RenewalReminderEmail = ({
 
             {/* Action Buttons */}
             <Section style={buttonContainer}>
-              <Button style={primaryButton} href={`${baseUrl}/dashboard/subscriptions`}>
-                Manage Subscription
-              </Button>
-              <Button style={secondaryButton} href={`${baseUrl}/dashboard`}>
-                View Dashboard
-              </Button>
+              {isPremium && subscriptionId ? (
+                <>
+                  <Button style={primaryButton} href={`${baseUrl}/dashboard/subscriptions?edit=${subscriptionId}`}>
+                    Edit Subscription
+                  </Button>
+                  <Button style={warningButton} href={`${baseUrl}/dashboard/subscriptions?pause=${subscriptionId}`}>
+                    Pause Subscription
+                  </Button>
+                  <Button style={secondaryButton} href={`${baseUrl}/dashboard`}>
+                    View Dashboard
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button style={primaryButton} href={`${baseUrl}/dashboard/subscriptions`}>
+                    Manage Subscription
+                  </Button>
+                  <Button style={secondaryButton} href={`${baseUrl}/dashboard`}>
+                    View Dashboard
+                  </Button>
+                </>
+              )}
             </Section>
 
             <Text style={footerText}>
@@ -295,6 +331,41 @@ const secondaryButton = {
   display: 'inline-block',
   padding: '12px 24px',
   margin: '0 8px 16px 8px',
+};
+
+const warningButton = {
+  backgroundColor: '#f59e0b',
+  borderRadius: '8px',
+  color: '#ffffff',
+  fontSize: '16px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'inline-block',
+  padding: '12px 24px',
+  margin: '0 8px 16px 8px',
+};
+
+const smartInsightCard = {
+  backgroundColor: '#f0f9ff',
+  border: '1px solid #0ea5e9',
+  borderRadius: '12px',
+  padding: '20px',
+  margin: '24px 0',
+};
+
+const insightTitle = {
+  fontSize: '16px',
+  fontWeight: '600',
+  color: '#0369a1',
+  margin: '0 0 8px 0',
+};
+
+const insightText = {
+  fontSize: '14px',
+  lineHeight: '1.5',
+  color: '#0c4a6e',
+  margin: '0',
 };
 
 const footerText = {

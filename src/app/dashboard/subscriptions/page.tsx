@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SubscriptionsHeader } from "@/components/dashboard/subscriptions/subscriptions-header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SubscriptionsTable } from "@/components/dashboard/subscriptions/subscriptions-table";
 import { useUser } from "@clerk/nextjs";
 
@@ -34,6 +36,13 @@ export default function SubscriptionsPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const categoriesArray = useMemo(() => Array.from(categorySet), [categorySet]);
 
+  const filterCount = (
+    (activeFilter !== "all" ? 1 : 0) +
+    billingSet.size +
+    (categoryFilter !== "all" ? 1 : 0) +
+    categorySet.size
+  );
+
   if (!user?.id) {
     return <div>Loading...</div>;
   }
@@ -47,26 +56,71 @@ export default function SubscriptionsPage() {
         onFilterChange={(v) => { setActiveFilter(v); syncURL({ status: v }); }}
         categoryFilter={categoryFilter}
         onCategoryChange={(v) => { setCategoryFilter(v); syncURL({ category: v }); }}
+        filterCount={filterCount}
         billingSet={billingSet}
         onBillingToggle={(cycle) => {
           const next = new Set(billingSet);
-          next.has(cycle) ? next.delete(cycle) : next.add(cycle);
+          if (next.has(cycle)) {
+            next.delete(cycle);
+          } else {
+            next.add(cycle);
+          }
           setBillingSet(next);
           syncURL({ billing: Array.from(next) });
         }}
         categorySet={categorySet}
         onCategoryToggle={(name) => {
           const next = new Set(categorySet);
-          next.has(name) ? next.delete(name) : next.add(name);
+          if (next.has(name)) {
+            next.delete(name);
+          } else {
+            next.add(name);
+          }
           setCategorySet(next);
           syncURL({ categories: Array.from(next) });
         }}
       />
+
+      {/* Applied filter chips */}
+      {filterCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 -mt-2">
+          {activeFilter !== "all" && (
+            <Badge variant="secondary" className="font-sans">Status: {activeFilter}</Badge>
+          )}
+          {Array.from(billingSet).map((b) => (
+            <Badge key={`b-${b}`} variant="secondary" className="font-sans">Billing: {b}</Badge>
+          ))}
+          {categoryFilter !== "all" && (
+            <Badge variant="secondary" className="font-sans">Category: {categoryFilter}</Badge>
+          )}
+          {Array.from(categorySet).map((c) => (
+            <Badge key={`c-${c}`} variant="secondary" className="font-sans">Category: {c}</Badge>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 font-sans text-muted-foreground"
+            onClick={() => {
+              setSearch("");
+              setActiveFilter("all");
+              setCategoryFilter("all");
+              const ns = new Set<string>();
+              setBillingSet(ns);
+              setCategorySet(new Set<string>());
+              syncURL({ q: "", status: "all", billing: [], categories: [], category: "all" });
+            }}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
       <SubscriptionsTable 
         userId={user.id} 
         search={search}
         activeFilter={activeFilter}
         categoryFilter={categoryFilter}
+        billing={billingArray}
+        categories={categoriesArray}
       />
     </div>
   );

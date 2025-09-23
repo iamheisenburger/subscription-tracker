@@ -34,6 +34,8 @@ interface SubscriptionsTableProps {
   search?: string;
   activeFilter?: string;
   categoryFilter?: string;
+  billing?: ("monthly"|"yearly"|"weekly")[];
+  categories?: string[];
 }
 
 export function SubscriptionsTable({ userId, search, activeFilter, categoryFilter }: SubscriptionsTableProps) {
@@ -55,7 +57,7 @@ interface SubscriptionsTableContentProps extends SubscriptionsTableProps {
   categoryFilter?: string;
 }
 
-function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilter }: SubscriptionsTableContentProps) {
+function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableContentProps) {
   // Parse filters for Convex query
   const activeOnly = activeFilter === "active";
   const billingCycle = ["monthly", "yearly", "weekly"].includes(activeFilter || "") ? activeFilter as "monthly" | "yearly" | "weekly" : undefined;
@@ -68,6 +70,8 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
     search: search || undefined,
     category,
     billingCycle,
+    billing,
+    categories,
   });
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
   const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);

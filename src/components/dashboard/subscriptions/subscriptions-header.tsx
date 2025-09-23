@@ -28,6 +28,7 @@ interface SubscriptionsHeaderProps {
   onBillingToggle?: (cycle: string) => void;
   categorySet?: Set<string>;
   onCategoryToggle?: (name: string) => void;
+  filterCount?: number;
 }
 
 export function SubscriptionsHeader({ 
@@ -41,6 +42,7 @@ export function SubscriptionsHeader({
   onBillingToggle,
   categorySet,
   onCategoryToggle,
+  filterCount,
 }: SubscriptionsHeaderProps) {
   const { isPremium } = useUserTier();
   const { user } = useUser();
@@ -86,7 +88,7 @@ export function SubscriptionsHeader({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="font-sans">
                 <Filter className="mr-2 h-4 w-4" />
-                {activeFilter !== "all" || categoryFilter !== "all" ? "Filters applied" : "Filter"}
+                {filterCount && filterCount > 0 ? `Filters (${filterCount})` : "Filter"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

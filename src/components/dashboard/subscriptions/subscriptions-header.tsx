@@ -24,6 +24,10 @@ interface SubscriptionsHeaderProps {
   onFilterChange: (filter: string) => void;
   categoryFilter: string; // all | uncategorized | <name>
   onCategoryChange: (category: string) => void;
+  billingSet?: Set<string>;
+  onBillingToggle?: (cycle: string) => void;
+  categorySet?: Set<string>;
+  onCategoryToggle?: (name: string) => void;
 }
 
 export function SubscriptionsHeader({ 
@@ -32,7 +36,11 @@ export function SubscriptionsHeader({
   activeFilter, 
   onFilterChange, 
   categoryFilter, 
-  onCategoryChange 
+  onCategoryChange,
+  billingSet,
+  onBillingToggle,
+  categorySet,
+  onCategoryToggle,
 }: SubscriptionsHeaderProps) {
   const { isPremium } = useUserTier();
   const { user } = useUser();
@@ -104,24 +112,16 @@ export function SubscriptionsHeader({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="font-sans">Filter by Billing</DropdownMenuLabel>
-              <DropdownMenuItem 
-                className="font-sans" 
-                onClick={() => onFilterChange("monthly")}
-              >
-                Monthly
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="font-sans" 
-                onClick={() => onFilterChange("yearly")}
-              >
-                Yearly
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="font-sans" 
-                onClick={() => onFilterChange("weekly")}
-              >
-                Weekly
-              </DropdownMenuItem>
+              {(["monthly","yearly","weekly"]).map((c) => (
+                <DropdownMenuItem
+                  key={c}
+                  className="font-sans flex items-center gap-2"
+                  onClick={() => (typeof window !== 'undefined' && (onBillingToggle && onBillingToggle(c)))}
+                >
+                  <span className={`h-2 w-2 rounded-full ${billingSet?.has(c) ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                  {c.charAt(0).toUpperCase()+c.slice(1)}
+                </DropdownMenuItem>
+              ))}
               {isPremium && (
                 <>
                   <DropdownMenuSeparator />
@@ -143,9 +143,10 @@ export function SubscriptionsHeader({
                   {categories?.map((c) => (
                     <DropdownMenuItem 
                       key={c._id}
-                      className="font-sans"
-                      onClick={() => onCategoryChange(c.name)}
+                      className="font-sans flex items-center gap-2"
+                      onClick={() => (typeof window !== 'undefined' && (onCategoryToggle && onCategoryToggle(c.name)))}
                     >
+                      <span className={`h-2 w-2 rounded-full ${categorySet?.has(c.name) ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
                       {c.name}
                     </DropdownMenuItem>
                   ))}

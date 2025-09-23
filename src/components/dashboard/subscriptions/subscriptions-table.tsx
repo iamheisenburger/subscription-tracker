@@ -219,7 +219,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                                 isActive: !subscription.isActive,
                               });
                               toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
-                            } catch (e) {
+                            } catch {
                               toast.error("Failed to update status");
                             }
                           }}

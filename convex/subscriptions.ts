@@ -64,6 +64,9 @@ export const getUserSubscriptions = query({
     search: v.optional(v.string()),
     category: v.optional(v.string()),
     billingCycle: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
+    // Multi-select support
+    billing: v.optional(v.array(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly")))),
+    categories: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -104,17 +107,23 @@ export const getUserSubscriptions = query({
         if (!matchesName && !matchesCategory) return false;
       }
 
-      // Category filter
-      if (args.category && args.category !== "all") {
-        if (args.category === "uncategorized") {
-          if (sub.category) return false;
-        } else {
-          if (sub.category !== args.category) return false;
+      // Category filter (multi)
+      const selectedCategories = args.categories && args.categories.length > 0 ? args.categories :
+        (args.category && args.category !== "all" ? [args.category] : []);
+      if (selectedCategories.length > 0) {
+        const wantsUncategorized = selectedCategories.includes("uncategorized");
+        const named = selectedCategories.filter(c => c !== "uncategorized");
+        const matchNamed = sub.category ? named.includes(sub.category) : false;
+        const matchUncategorized = wantsUncategorized && !sub.category;
+        if (!(matchNamed || matchUncategorized)) {
+          return false;
         }
       }
 
-      // Billing cycle filter
-      if (args.billingCycle && sub.billingCycle !== args.billingCycle) {
+      // Billing cycle filter (multi)
+      const selectedBilling = args.billing && args.billing.length > 0 ? args.billing :
+        (args.billingCycle ? [args.billingCycle] : []);
+      if (selectedBilling.length > 0 && !selectedBilling.includes(sub.billingCycle)) {
         return false;
       }
 

@@ -92,14 +92,20 @@ export function EmailTestSection() {
 
       const result = await response.json();
       
+      console.log('=== EMAIL TEST RESPONSE ===');
+      console.log('Status:', response.status);
+      console.log('Response:', result);
+      console.log('===========================');
+      
       if (result.success) {
         toast.success(`Test ${emailType.replace('_', ' ')} email sent successfully!`);
       } else {
-        toast.error(`Failed to send email: ${result.error}`);
+        console.error('Email failed with result:', result);
+        toast.error(`Failed to send email: ${result.error}${result.details ? ` - ${result.details}` : ''}`);
       }
     } catch (error) {
       console.error('Send email error:', error);
-      toast.error("Failed to send test email");
+      toast.error(`Failed to send test email: ${error instanceof Error ? error.message : 'Network error'}`);
     } finally {
       setIsSending(false);
     }

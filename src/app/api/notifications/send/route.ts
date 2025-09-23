@@ -8,18 +8,26 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== EMAIL API START ===');
+    console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+    console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
+    
     const { userId } = await auth();
+    console.log('User ID:', userId);
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
+    console.log('Request body:', body);
     const { type, subscriptionId } = body;
 
     // Handle test connection request
     if (type === 'test_connection') {
+      console.log('Testing connection...');
       const result = await emailService.testConnection();
+      console.log('Connection test result:', result);
       return NextResponse.json(result);
     }
 
@@ -127,10 +135,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(emailResult);
 
   } catch (error) {
-    console.error('Email API error:', error);
+    console.error('=== EMAIL API ERROR ===');
+    console.error('Error type:', typeof error);
+    console.error('Error instanceof Error:', error instanceof Error);
+    console.error('Error message:', error instanceof Error ? error.message : 'No message');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('Full error object:', error);
+    console.error('========================');
+    
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error' 
+      details: error instanceof Error ? error.message : 'Unknown error',
+      type: typeof error,
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }

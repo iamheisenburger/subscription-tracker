@@ -152,3 +152,4 @@ export function CategoryBreakdownChart({ data, currency = "USD" }: CategoryBreak
   );
 }
 
+

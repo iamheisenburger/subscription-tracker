@@ -92,11 +92,6 @@ export function EmailTestSection() {
 
       const result = await response.json();
       
-      console.log('=== EMAIL TEST RESPONSE ===');
-      console.log('Status:', response.status);
-      console.log('Response:', result);
-      console.log('===========================');
-      
       if (result.success) {
         toast.success(`Test ${emailType.replace('_', ' ')} email sent successfully!`);
       } else {

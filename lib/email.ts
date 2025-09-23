@@ -32,7 +32,7 @@ class EmailService {
   private fromEmail: string;
 
   constructor() {
-    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'SubWise <onboarding@resend.dev>';
+    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'SubWise <noreply@usesubwise.app>';
   }
 
   /**
@@ -201,7 +201,7 @@ class EmailService {
       // Test with a simple email to verify API key and connection
       const { error } = await resend.emails.send({
         from: this.fromEmail,
-        to: ['test@resend.dev'], // Resend's test email
+        to: ['delivered@resend.dev'], // Use Resend's delivered test email
         subject: 'SubWise Email Service Test',
         html: '<p>This is a test email from SubWise notification system.</p>',
       });

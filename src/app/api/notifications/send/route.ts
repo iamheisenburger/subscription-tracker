@@ -8,19 +8,13 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== EMAIL API START ===');
-    console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
-    console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
-    
     const { userId } = await auth();
-    console.log('User ID:', userId);
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    console.log('Request body:', body);
     const { type, subscriptionId } = body;
 
     // Handle test connection request
@@ -69,7 +63,7 @@ export async function POST(request: NextRequest) {
       category: subscription.category,
     };
 
-    let emailResult;
+    let emailResult: { success: boolean; messageId?: string; error?: string };
 
     // Send appropriate email based on type
     switch (type) {

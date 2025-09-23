@@ -19,24 +19,20 @@ export interface SubscriptionData {
   cost: number;
   currency: string;
   billingCycle: "monthly" | "yearly" | "weekly";
-  nextBillingDate: number;
   category?: string;
 }
 
 export interface UserData {
   email: string;
   firstName?: string;
+  clerkId: string;
 }
 
-export class EmailService {
-  private static instance: EmailService;
-  private fromEmail = 'SubWise <notifications@subwise.app>';
-  
-  public static getInstance(): EmailService {
-    if (!EmailService.instance) {
-      EmailService.instance = new EmailService();
-    }
-    return EmailService.instance;
+class EmailService {
+  private fromEmail: string;
+
+  constructor() {
+    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'SubWise <onboarding@resend.dev>';
   }
 
   /**
@@ -58,7 +54,6 @@ export class EmailService {
         cost: subscription.cost,
         currency: subscription.currency,
         billingCycle: subscription.billingCycle,
-        nextBillingDate: new Date(subscription.nextBillingDate),
         daysUntil,
         category: subscription.category,
       }));
@@ -222,5 +217,4 @@ export class EmailService {
   }
 }
 
-// Export singleton instance
-export const emailService = EmailService.getInstance();
+export const emailService = new EmailService();

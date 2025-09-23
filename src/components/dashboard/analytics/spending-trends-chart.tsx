@@ -114,3 +114,4 @@ export function SpendingTrendsChart({ data, currency = "USD" }: SpendingTrendsCh
     </Card>
   );
 }
+

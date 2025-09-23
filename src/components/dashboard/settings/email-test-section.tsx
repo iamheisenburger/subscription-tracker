@@ -38,7 +38,7 @@ export function EmailTestSection() {
       const response = await fetch('/api/notifications/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'test', testEmail: true }),
+        body: JSON.stringify({ type: 'test_connection' }),
       });
 
       const result = await response.json();

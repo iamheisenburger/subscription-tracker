@@ -13,13 +13,12 @@ import {
 import * as React from 'react';
 
 interface RenewalReminderEmailProps {
-  userName: string;
-  subscriptionName: string;
-  cost: number;
-  currency: string;
-  billingCycle: 'monthly' | 'yearly' | 'weekly';
-  nextBillingDate: Date;
-  daysUntil: number;
+  userName?: string;
+  subscriptionName?: string;
+  cost?: number;
+  currency?: string;
+  billingCycle?: 'monthly' | 'yearly' | 'weekly';
+  daysUntil?: number;
   category?: string;
 }
 
@@ -33,13 +32,17 @@ export const RenewalReminderEmail = ({
   cost = 15.99,
   currency = 'USD',
   billingCycle = 'monthly',
-  nextBillingDate = new Date(),
   daysUntil = 3,
   category,
 }: RenewalReminderEmailProps) => {
   const previewText = `${subscriptionName} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`} - $${cost}/${billingCycle}`;
   
   const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
+  
+  // Calculate next billing date based on daysUntil
+  const nextBillingDate = new Date();
+  nextBillingDate.setDate(nextBillingDate.getDate() + daysUntil);
+  
   const formattedDate = nextBillingDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',

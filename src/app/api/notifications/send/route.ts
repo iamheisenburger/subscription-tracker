@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, subscriptionId, testEmail } = body;
+    const { type, subscriptionId } = body;
 
-    // For testing purposes, allow sending test emails
-    if (testEmail && type === 'test') {
+    // Handle test connection request
+    if (type === 'test_connection') {
       const result = await emailService.testConnection();
       return NextResponse.json(result);
     }
@@ -49,7 +49,8 @@ export async function POST(request: NextRequest) {
     // Prepare email data
     const userData = {
       email: user.email,
-      firstName: user.email.split('@')[0], // Extract name from email as fallback
+      firstName: user.firstName || user.email.split('@')[0], // Extract name from email as fallback
+      clerkId: userId,
     };
 
     const subscriptionData = {
@@ -57,7 +58,6 @@ export async function POST(request: NextRequest) {
       cost: subscription.cost,
       currency: subscription.currency,
       billingCycle: subscription.billingCycle,
-      nextBillingDate: subscription.nextBillingDate,
       category: subscription.category,
     };
 

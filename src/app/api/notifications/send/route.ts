@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Prepare email data
     const userData = {
       email: user.email,
-      firstName: user.firstName || user.email.split('@')[0], // Extract name from email as fallback
+      firstName: user.email.split('@')[0], // Extract name from email
       clerkId: userId,
     };
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CategoriesManager } from "./categories-manager";
+import { EmailTestSection } from "./email-test-section";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
@@ -176,6 +177,9 @@ export function SettingsContent({ user }: SettingsContentProps) {
 
         {/* Categories Manager */}
         <CategoriesManager />
+
+        {/* Email Testing Section (Development/Premium) */}
+        <EmailTestSection />
 
         {/* Data Management */}
         <div className="p-6 border rounded-lg bg-card">

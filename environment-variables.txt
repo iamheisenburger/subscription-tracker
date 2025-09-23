@@ -11,8 +11,13 @@ CLERK_JWT_ISSUER_DOMAIN=https://tidy-meerkat-48.clerk.accounts.dev
 # Convex
 NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url_here
 
+# Resend Email Service
+RESEND_API_KEY=your_resend_api_key_here
+
 # IMPORTANT SETUP STEPS:
 # 1. In Clerk Dashboard, create a JWT Template named "convex"
 # 2. Set the JWT Template's "Audience" (aud) to "convex"
 # 3. Copy the "Issuer URL" from the JWT template to CLERK_JWT_ISSUER_DOMAIN
 # 4. The applicationID in convex/auth.config.ts should match the JWT template name
+# 5. Sign up for Resend at https://resend.com and get your API key
+# 6. Add your domain to Resend and verify it for production email sending

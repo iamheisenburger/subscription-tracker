@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CategoriesManager } from "./categories-manager";
 import { EmailTestSection } from "./email-test-section";
+import { PreferencesSettings } from "./preferences-settings";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
@@ -121,25 +122,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
         </div>
 
         {/* Notifications */}
-        <div className="p-6 border rounded-lg bg-card">
-          <h2 className="text-lg font-semibold font-sans mb-4">Notification Preferences</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium font-sans">Email Notifications</label>
-                <p className="text-xs text-muted-foreground font-sans">Receive renewal reminders via email</p>
-              </div>
-              <input type="checkbox" defaultChecked className="rounded" />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium font-sans">Push Notifications</label>
-                <p className="text-xs text-muted-foreground font-sans">Browser notifications for upcoming renewals</p>
-              </div>
-              <input type="checkbox" className="rounded" />
-            </div>
-          </div>
-        </div>
+        <PreferencesSettings userId={user?.id || ""} />
 
         {/* Theme Settings */}
         <div className="p-6 border rounded-lg bg-card">

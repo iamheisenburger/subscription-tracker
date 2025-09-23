@@ -121,7 +121,7 @@ export function EmailTestSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-sans">
           <Mail className="h-5 w-5" />
-          Email Notifications {/* Production Ready */}
+          🚀 PRODUCTION EMAIL SYSTEM
         </CardTitle>
         <CardDescription className="font-sans">
           Manage your email notification preferences and test delivery

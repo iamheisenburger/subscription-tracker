@@ -208,6 +208,39 @@ export const toggleSubscriptionStatus = mutation({
   },
 });
 
+// Relabel/migrate category across user's subscriptions (used for rename/merge)
+export const relabelCategory = mutation({
+  args: {
+    clerkId: v.string(),
+    from: v.string(),
+    to: v.optional(v.string()), // undefined or empty => remove category (uncategorized)
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    const subs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const targetValue = args.to && args.to.trim().length > 0 ? args.to : undefined;
+    const now = Date.now();
+
+    for (const s of subs) {
+      if ((s.category || "") === args.from) {
+        await ctx.db.patch(s._id, { category: targetValue, updatedAt: now });
+      }
+    }
+
+    return { updated: true };
+  },
+});
+
 
 // Get subscription statistics with raw currency data
 export const getSubscriptionStats = query({

@@ -196,18 +196,21 @@ export const updateSubscription = mutation({
         await ctx.db.insert("notificationQueue", {
           userId: user._id,
           type: "price_change",
-          title: `Price Change: ${subscription.name}`,
-          message: `The price for ${subscription.name} changed from ${subscription.currency || 'USD'} ${oldCost} to ${subscription.currency || 'USD'} ${newCost}.`,
-          data: {
-            subscriptionId: args.subscriptionId,
-            subscriptionName: subscription.name,
-            oldPrice: oldCost,
-            newPrice: newCost,
-            currency: subscription.currency || 'USD',
+          subscriptionId: args.subscriptionId,
+          emailData: {
+            subject: `Price Change: ${subscription.name}`,
+            template: "price_change",
+            templateData: {
+              subscriptionName: subscription.name,
+              oldPrice: oldCost,
+              newPrice: newCost,
+              currency: subscription.currency || 'USD',
+            },
           },
           scheduledFor: Date.now() + (5 * 60 * 1000), // Send in 5 minutes
           attempts: 0,
           status: "pending",
+          createdAt: Date.now(),
         });
       }
     }

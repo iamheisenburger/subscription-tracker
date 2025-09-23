@@ -1,11 +1,11 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
+import { NotificationCenter } from "../notification-center";
 
 export function DashboardHeader() {
   return (
@@ -36,15 +36,7 @@ export function DashboardHeader() {
           <ThemeToggle />
           
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl hover:bg-muted/60 transition-colors">
-            <Bell className="h-5 w-5" />
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs font-medium shadow-sm"
-            >
-              2
-            </Badge>
-          </Button>
+          <NotificationCenter />
 
           {/* User Menu */}
           <UserButton 

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, ExternalLink, TestTube } from "lucide-react";
+import { Mail, ExternalLink, TestTube, Clock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useUserTier } from "@/hooks/use-user-tier";
 
@@ -30,6 +30,7 @@ export function EmailTestSection() {
   const [emailType, setEmailType] = useState<string>("renewal_reminder");
   const [isSending, setIsSending] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isRunningCron, setIsRunningCron] = useState(false);
 
   const handleTestConnection = async () => {
     setIsTestingConnection(true);
@@ -107,6 +108,32 @@ export function EmailTestSection() {
   const openEmailPreview = (type: string) => {
     const url = `/api/notifications/preview?type=${type.replace('_', '-')}`;
     window.open(url, '_blank', 'width=800,height=600');
+  };
+
+  const handleRunCronJob = async (action: string) => {
+    setIsRunningCron(true);
+    try {
+      const response = await fetch('/api/notifications/test-cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(`${action.replace(/_/g, ' ')} completed successfully!`, {
+          description: JSON.stringify(result.result, null, 2),
+        });
+      } else {
+        toast.error(`${action} failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Cron job error:', error);
+      toast.error("Failed to run cron job");
+    } finally {
+      setIsRunningCron(false);
+    }
   };
 
   // Only show for premium users or in development
@@ -235,6 +262,38 @@ export function EmailTestSection() {
             <Mail className="mr-2 h-4 w-4" />
             {isSending ? "Sending..." : "Send Test Email"}
           </Button>
+        </div>
+
+        <Separator />
+
+        {/* Cron Job Testing */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-medium font-sans">Notification System Testing</h4>
+            <p className="text-sm text-muted-foreground font-sans">
+              Manually trigger cron jobs for testing the notification scheduling system
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { action: 'generate_renewal_reminders', label: 'Generate Reminders', icon: Clock },
+              { action: 'process_notification_queue', label: 'Process Queue', icon: Zap },
+              { action: 'check_spending_thresholds', label: 'Check Spending', icon: TestTube },
+              { action: 'cleanup_old_notifications', label: 'Cleanup Old', icon: TestTube },
+            ].map(({ action, label, icon: Icon }) => (
+              <Button
+                key={action}
+                variant="outline"
+                onClick={() => handleRunCronJob(action)}
+                disabled={isRunningCron}
+                className="font-sans"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {isRunningCron ? "Running..." : label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {!isPremium && (

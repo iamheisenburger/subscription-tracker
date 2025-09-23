@@ -113,24 +113,14 @@ export function EmailTestSection() {
   const handleRunCronJob = async (action: string) => {
     setIsRunningCron(true);
     try {
-      const response = await fetch('/api/notifications/test-cron', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+      // Note: Cron jobs run automatically in production
+      // This is just a placeholder for development testing
+      toast.info(`${action.replace(/_/g, ' ')} would run automatically in production`, {
+        description: "Cron jobs are scheduled to run at specific intervals",
       });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        toast.success(`${action.replace(/_/g, ' ')} completed successfully!`, {
-          description: JSON.stringify(result.result, null, 2),
-        });
-      } else {
-        toast.error(`${action} failed: ${result.error}`);
-      }
     } catch (error) {
       console.error('Cron job error:', error);
-      toast.error("Failed to run cron job");
+      toast.error("Failed to simulate cron job");
     } finally {
       setIsRunningCron(false);
     }

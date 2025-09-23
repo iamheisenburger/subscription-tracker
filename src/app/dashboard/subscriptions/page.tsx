@@ -85,16 +85,16 @@ export default function SubscriptionsPage() {
       {filterCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 -mt-2">
           {activeFilter !== "all" && (
-            <Badge variant="secondary" className="font-sans">Status: {activeFilter}</Badge>
+            <Badge className="font-sans bg-accent text-accent-foreground border border-border">Status: {activeFilter}</Badge>
           )}
           {Array.from(billingSet).map((b) => (
-            <Badge key={`b-${b}`} variant="secondary" className="font-sans">Billing: {b}</Badge>
+            <Badge key={`b-${b}`} className="font-sans bg-accent text-accent-foreground border border-border">Billing: {b}</Badge>
           ))}
           {categoryFilter !== "all" && (
-            <Badge variant="secondary" className="font-sans">Category: {categoryFilter}</Badge>
+            <Badge className="font-sans bg-accent text-accent-foreground border border-border">Category: {categoryFilter}</Badge>
           )}
           {Array.from(categorySet).map((c) => (
-            <Badge key={`c-${c}`} variant="secondary" className="font-sans">Category: {c}</Badge>
+            <Badge key={`c-${c}`} className="font-sans bg-accent text-accent-foreground border border-border">Category: {c}</Badge>
           ))}
           <Button
             variant="ghost"

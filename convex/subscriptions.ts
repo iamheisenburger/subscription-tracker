@@ -44,7 +44,7 @@ export const createSubscription = mutation({
       currency: args.currency,
       billingCycle: args.billingCycle,
       nextBillingDate: args.nextBillingDate,
-      category: args.category,
+      category: args.category && args.category.trim().length > 0 ? args.category.trim() : undefined,
       description: args.description,
       isActive: true,
       createdAt: now,
@@ -172,7 +172,7 @@ export const updateSubscription = mutation({
     if (args.currency !== undefined) updateData.currency = args.currency;
     if (args.billingCycle !== undefined) updateData.billingCycle = args.billingCycle;
     if (args.nextBillingDate !== undefined) updateData.nextBillingDate = args.nextBillingDate;
-    if (args.category !== undefined) updateData.category = args.category;
+    if (args.category !== undefined) updateData.category = args.category && args.category.trim().length > 0 ? args.category.trim() : undefined;
     if (args.description !== undefined) updateData.description = args.description;
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 

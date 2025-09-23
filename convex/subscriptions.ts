@@ -166,6 +166,11 @@ export const updateSubscription = mutation({
       updatedAt: Date.now(),
     };
 
+    // Check for price changes before updating
+    const oldCost = subscription.cost;
+    const newCost = args.cost;
+    const priceChanged = newCost !== undefined && newCost !== oldCost;
+
     // Only include provided fields
     if (args.name !== undefined) updateData.name = args.name;
     if (args.cost !== undefined) updateData.cost = args.cost;
@@ -177,6 +182,35 @@ export const updateSubscription = mutation({
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
     await ctx.db.patch(args.subscriptionId, updateData);
+
+    // If price changed, queue price change alert for premium users
+    if (priceChanged && newCost !== undefined) {
+      // Get user's notification preferences
+      const preferences = await ctx.db
+        .query("notificationPreferences")
+        .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+        .unique();
+
+      // Only send if user has price change alerts enabled (premium feature)
+      if (preferences?.priceChangeAlerts && user.tier === "premium_user") {
+        await ctx.db.insert("notificationQueue", {
+          userId: user._id,
+          type: "price_change",
+          title: `Price Change: ${subscription.name}`,
+          message: `The price for ${subscription.name} changed from ${subscription.currency || 'USD'} ${oldCost} to ${subscription.currency || 'USD'} ${newCost}.`,
+          data: {
+            subscriptionId: args.subscriptionId,
+            subscriptionName: subscription.name,
+            oldPrice: oldCost,
+            newPrice: newCost,
+            currency: subscription.currency || 'USD',
+          },
+          scheduledFor: Date.now() + (5 * 60 * 1000), // Send in 5 minutes
+          attempts: 0,
+          status: "pending",
+        });
+      }
+    }
     return args.subscriptionId;
   },
 });

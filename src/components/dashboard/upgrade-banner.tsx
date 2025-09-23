@@ -7,7 +7,12 @@ import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
-  const { isPremium } = useUserTier();
+  const { isPremium, isLoading } = useUserTier();
+  
+  // Don't show anything while loading to prevent flash
+  if (isLoading) {
+    return null;
+  }
   
   // Hide banner for ALL premium users for now
   // TODO: Later show annual upgrade for monthly premium users

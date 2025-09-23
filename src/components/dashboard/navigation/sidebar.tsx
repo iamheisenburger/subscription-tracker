@@ -76,7 +76,7 @@ export function DashboardSidebar() {
       {/* Upgrade CTA (smart) */}
       <div className="p-4">
         {/* Annual premium: hide entirely */}
-        {isAnnualPremium ? null : (
+        {!isLoading && (isAnnualPremium ? null : (
           // Monthly premium: show annual upsell
           (isMonthlyPremium || isMonthlyOrUnknownPremium) ? (
             <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
@@ -116,8 +116,7 @@ export function DashboardSidebar() {
               </div>
             )
           )
-        )}
-      </div>
+        ))}
     </div>
   );
 }

@@ -11,16 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Settings, Bell, Globe, Palette, Crown, Sparkles } from "lucide-react";
-import { ThemeToggle } from "@/components/landing/theme-toggle";
-import { CurrencySelector } from "./currency-selector";
+import { Settings, Bell, Crown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useUserTier } from "@/hooks/use-user-tier";
 
@@ -95,31 +86,13 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-sans">
           <Settings className="h-5 w-5" />
-          Preferences
+          Notification Preferences
         </CardTitle>
         <CardDescription className="font-sans">
-          Customize your SubWise experience
+          Control email and alert settings
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Theme Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                <Label className="font-sans">Theme</Label>
-              </div>
-              <p className="text-sm text-muted-foreground font-sans">
-                Choose your preferred theme
-              </p>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-
-        <Separator />
-
         {/* Notification Settings */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -316,37 +289,6 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                   </p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Regional Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            <Label className="font-sans">Regional Settings</Label>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="currency" className="font-sans">Default Currency</Label>
-              <CurrencySelector />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="date-format" className="font-sans">Date Format</Label>
-              <Select defaultValue="MM/dd/yyyy">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MM/dd/yyyy" className="font-sans">MM/DD/YYYY</SelectItem>
-                  <SelectItem value="dd/MM/yyyy" className="font-sans">DD/MM/YYYY</SelectItem>
-                  <SelectItem value="yyyy-MM-dd" className="font-sans">YYYY-MM-DD</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </div>

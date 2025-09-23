@@ -86,7 +86,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
           </div>
         </div>
 
-        {/* Currency Settings */}
+        {/* Currency Preferences (with live rates) */}
         <div className="p-6 border rounded-lg bg-card">
           <h2 className="text-lg font-semibold font-sans mb-4">Currency Preferences</h2>
           <div className="space-y-4">
@@ -158,11 +158,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
           </div>
         </div>
 
-        {/* Categories Manager */}
-        <CategoriesManager />
-
-        {/* Email Testing Section (Development/Premium) */}
-        <EmailTestSection />
+        {/* Categories Manager removed from Settings (managed elsewhere) */}
 
         {/* Data Management */}
         <div className="p-6 border rounded-lg bg-card">

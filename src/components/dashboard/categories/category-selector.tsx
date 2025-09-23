@@ -61,10 +61,10 @@ export function CategorySelector({ value, onChange }: CategorySelectorProps) {
             </DropdownMenuItem>
           ))
         ) : (
-          <DropdownMenuLabel className="text-xs text-muted-foreground font-sans">No matches</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-muted-foreground font-sans">No matches. Type to create.</DropdownMenuLabel>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="font-sans" onClick={handleCreate}>
+        <DropdownMenuItem className="font-sans" onClick={handleCreate} disabled={!query.trim()}>
           <Plus className="mr-2 h-4 w-4" />
           Create &ldquo;{query || ""}&rdquo;
         </DropdownMenuItem>

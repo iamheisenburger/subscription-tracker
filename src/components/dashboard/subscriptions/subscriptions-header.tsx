@@ -17,9 +17,9 @@ import {
 interface SubscriptionsHeaderProps {
   search: string;
   onSearchChange: (search: string) => void;
-  activeFilter: string;
+  activeFilter: string; // all | active | inactive | monthly | yearly | weekly
   onFilterChange: (filter: string) => void;
-  categoryFilter: string;
+  categoryFilter: string; // all | uncategorized | <name>
   onCategoryChange: (category: string) => void;
 }
 
@@ -73,7 +73,7 @@ export function SubscriptionsHeader({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="font-sans">
                 <Filter className="mr-2 h-4 w-4" />
-                Filter
+                {activeFilter !== "all" || categoryFilter !== "all" ? "Filters applied" : "Filter"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

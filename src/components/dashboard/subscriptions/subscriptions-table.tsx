@@ -69,6 +69,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
     billingCycle,
   });
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
+  const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 
   const handleDelete = async (subscriptionId: string) => {
     try {
@@ -205,7 +206,21 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                             Edit
                           </DropdownMenuItem>
                         </EditSubscriptionDialog>
-                        <DropdownMenuItem className="font-sans">
+                        <DropdownMenuItem
+                          className="font-sans"
+                          onClick={async () => {
+                            try {
+                              await toggleStatus({
+                                clerkId: userId,
+                                subscriptionId: subscription._id as Id<"subscriptions">,
+                                isActive: !subscription.isActive,
+                              });
+                              toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
+                            } catch (e) {
+                              toast.error("Failed to update status");
+                            }
+                          }}
+                        >
                           {subscription.isActive ? (
                             <>
                               <Pause className="mr-2 h-4 w-4" />

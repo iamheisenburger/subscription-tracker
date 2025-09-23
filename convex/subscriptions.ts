@@ -167,6 +167,33 @@ export const updateSubscription = mutation({
   },
 });
 
+// Toggle active status (pause/resume)
+export const toggleSubscriptionStatus = mutation({
+  args: {
+    clerkId: v.string(),
+    subscriptionId: v.id("subscriptions"),
+    isActive: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    const subscription = await ctx.db.get(args.subscriptionId);
+    if (!subscription || subscription.userId !== user._id) throw new Error("Unauthorized");
+
+    await ctx.db.patch(args.subscriptionId, {
+      isActive: args.isActive,
+      updatedAt: Date.now(),
+    });
+
+    return args.subscriptionId;
+  },
+});
+
 
 // Get subscription statistics with raw currency data
 export const getSubscriptionStats = query({

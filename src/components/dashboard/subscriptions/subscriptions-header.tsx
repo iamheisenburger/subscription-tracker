@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Filter, Download, Tag } from "lucide-react";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
+import { useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useUserTier } from "@/hooks/use-user-tier";
 import {
   DropdownMenu,
@@ -32,6 +35,8 @@ export function SubscriptionsHeader({
   onCategoryChange 
 }: SubscriptionsHeaderProps) {
   const { isPremium } = useUserTier();
+  const { user } = useUser();
+  const categories = useQuery(api.categories.listCategories, user?.id ? { clerkId: user.id } : "skip");
   
   return (
     <div className="space-y-4">
@@ -135,6 +140,15 @@ export function SubscriptionsHeader({
                   >
                     Uncategorized
                   </DropdownMenuItem>
+                  {categories?.map((c) => (
+                    <DropdownMenuItem 
+                      key={c._id}
+                      className="font-sans"
+                      onClick={() => onCategoryChange(c.name)}
+                    >
+                      {c.name}
+                    </DropdownMenuItem>
+                  ))}
                 </>
               )}
             </DropdownMenuContent>

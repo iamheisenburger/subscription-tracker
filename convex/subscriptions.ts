@@ -60,6 +60,7 @@ export const getUserSubscriptions = query({
   args: { 
     clerkId: v.string(),
     activeOnly: v.optional(v.boolean()),
+    status: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
     search: v.optional(v.string()),
     category: v.optional(v.string()),
     billingCycle: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
@@ -75,7 +76,7 @@ export const getUserSubscriptions = query({
     }
 
     let subscriptions;
-    if (args.activeOnly) {
+    if (args.activeOnly || args.status === "active") {
       subscriptions = await ctx.db
         .query("subscriptions")
         .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
@@ -91,6 +92,10 @@ export const getUserSubscriptions = query({
 
     // Client-side filtering for search, category, billing cycle
     return subscriptions.filter(sub => {
+      // Status filter (inactive handled here)
+      if (args.status === "inactive" && sub.isActive) {
+        return false;
+      }
       // Search filter
       if (args.search) {
         const searchLower = args.search.toLowerCase();

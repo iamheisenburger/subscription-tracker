@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { SubscriptionsHeader } from "@/components/dashboard/subscriptions/subscriptions-header";
 import { SubscriptionsTable } from "@/components/dashboard/subscriptions/subscriptions-table";
 import { useUser } from "@clerk/nextjs";

@@ -64,6 +64,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { 
     clerkId: userId,
     activeOnly,
+    status: activeFilter === "inactive" ? "inactive" : activeFilter === "active" ? "active" : undefined,
     search: search || undefined,
     category,
     billingCycle,
@@ -160,9 +161,11 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                       <div>
                         <p className="font-medium font-sans">{subscription.name}</p>
                         {subscription.category && (
-                          <p className="text-sm text-muted-foreground font-sans">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 mt-1 rounded-md text-xs font-medium bg-accent/40 text-accent-foreground"
+                          >
                             {subscription.category}
-                          </p>
+                          </span>
                         )}
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 export function NotificationCenter() {
   const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
   
   // Fetch notifications
   const notifications = useQuery(api.notifications.getNotificationHistory, 
@@ -131,6 +133,17 @@ export function NotificationCenter() {
               <p className="text-xs text-muted-foreground font-sans mt-1">
                 We&apos;ll notify you about subscription renewals and spending alerts
               </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 text-xs font-sans"
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push("/dashboard/settings");
+                }}
+              >
+                Manage preferences
+              </Button>
             </div>
           ) : (
             <div className="p-2">
@@ -199,16 +212,28 @@ export function NotificationCenter() {
         
         {notifications && notifications.length > 0 && (
           <div className="border-t p-2">
-            <Button
-              variant="ghost"
-              className="w-full text-xs font-sans"
-              onClick={() => {
-                setIsOpen(false);
-                // TODO: Navigate to full notifications page
-              }}
-            >
-              View all notifications
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="ghost"
+                className="text-xs font-sans"
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push("/dashboard/settings");
+                }}
+              >
+                Manage preferences
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-xs font-sans"
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push("/dashboard/settings"); // placeholder for future notifications page
+                }}
+              >
+                View all
+              </Button>
+            </div>
           </div>
         )}
       </DropdownMenuContent>

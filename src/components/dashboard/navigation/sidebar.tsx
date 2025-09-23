@@ -18,7 +18,7 @@ const navigation = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const { isPremium, isMonthlyPremium, isAnnualPremium, isMonthlyOrUnknownPremium } = useUserTier();
+  const { isLoading, isPremium, isMonthlyPremium, isAnnualPremium, isMonthlyOrUnknownPremium } = useUserTier();
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">

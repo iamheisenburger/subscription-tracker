@@ -185,8 +185,8 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">
                   {isPremium 
-                    ? "Choose when to receive renewal reminders"
-                    : "Free users get 3-day reminders. Upgrade for custom scheduling."
+                    ? "Select your preferred reminder schedule"
+                    : "Basic reminders are sent 3 days before renewal"
                   }
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -203,10 +203,15 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                       </Badge>
                     ))
                   ) : (
-                    // Free: Fixed 3-day reminder
-                    <Badge variant="default" className="font-sans">
-                      3 days before (Free Plan)
-                    </Badge>
+                    // Free: Fixed 3-day reminder with upgrade hint
+                    <div className="space-y-2 w-full">
+                      <Badge variant="outline" className="font-sans">
+                        3 days before
+                      </Badge>
+                      <div className="text-xs text-muted-foreground font-sans">
+                        Want custom timing? <span className="text-primary">Upgrade to Premium</span> for 1, 3, 7, 14, or 30-day reminders.
+                      </div>
+                    </div>
                   )}
                 </div>
                 {isPremium && (
@@ -214,8 +219,8 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                     <div className="flex items-start gap-2">
                       <Sparkles className="h-4 w-4 text-primary mt-0.5" />
                       <div className="text-xs text-muted-foreground font-sans">
-                        <strong>Smart Features:</strong> Multiple reminders, spending context in emails, 
-                        and actionable buttons to manage subscriptions directly from notifications.
+                        <strong>Enhanced emails</strong> with spending insights, subscription context, 
+                        and direct action buttons to manage your subscriptions.
                       </div>
                     </div>
                   </div>
@@ -223,7 +228,7 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
               </div>
             )}
 
-            {/* Premium Features */}
+            {/* Advanced Alerts */}
             <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -234,8 +239,16 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                     {!isPremium && <Crown className="h-4 w-4 text-primary" />}
                   </div>
                   <p className="text-sm text-muted-foreground font-sans">
-                    Get notified when subscription prices change
+                    {isPremium 
+                      ? "Instant notifications when subscription prices change"
+                      : "Get notified when prices change"
+                    }
                   </p>
+                  {!isPremium && (
+                    <p className="text-xs text-muted-foreground font-sans">
+                      Available with Premium plan
+                    </p>
+                  )}
                 </div>
                 <Switch 
                   id="price-change-alerts" 
@@ -254,8 +267,16 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                     {!isPremium && <Crown className="h-4 w-4 text-primary" />}
                   </div>
                   <p className="text-sm text-muted-foreground font-sans">
-                    Get notified when you exceed spending thresholds
+                    {isPremium 
+                      ? "Monitor your spending with smart threshold alerts"
+                      : "Get alerts when exceeding budget thresholds"
+                    }
                   </p>
+                  {!isPremium && (
+                    <p className="text-xs text-muted-foreground font-sans">
+                      Available with Premium plan
+                    </p>
+                  )}
                 </div>
                 <Switch 
                   id="spending-alerts" 

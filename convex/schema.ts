@@ -47,5 +47,64 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_user", ["userId"]),
+
+  // Notification system tables
+  notificationPreferences: defineTable({
+    userId: v.id("users"),
+    emailEnabled: v.boolean(),
+    pushEnabled: v.boolean(),
+    renewalReminders: v.boolean(),
+    priceChangeAlerts: v.boolean(),
+    spendingAlerts: v.boolean(),
+    reminderDays: v.array(v.number()), // [7, 3, 1]
+    spendingThreshold: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]),
+
+  notificationQueue: defineTable({
+    userId: v.id("users"),
+    subscriptionId: v.optional(v.id("subscriptions")),
+    type: v.union(
+      v.literal("renewal_reminder"),
+      v.literal("price_change"),
+      v.literal("spending_alert"),
+      v.literal("trial_expiry")
+    ),
+    scheduledFor: v.number(), // timestamp
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    emailData: v.optional(v.object({
+      subject: v.string(),
+      template: v.string(),
+      templateData: v.any(),
+    })),
+    attempts: v.number(),
+    lastAttempt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_scheduled", ["scheduledFor"])
+    .index("by_user_type", ["userId", "type"]),
+
+  notificationHistory: defineTable({
+    userId: v.id("users"),
+    type: v.string(),
+    title: v.string(),
+    message: v.string(),
+    read: v.boolean(),
+    metadata: v.optional(v.any()), // Additional data (subscription info, etc.)
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_read", ["userId", "read"])
+    .index("by_created", ["createdAt"]),
 });
 

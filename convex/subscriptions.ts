@@ -188,7 +188,7 @@ export const updateSubscription = mutation({
       // Get user's notification preferences
       const preferences = await ctx.db
         .query("notificationPreferences")
-        .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
         .unique();
 
       // Only send if user has price change alerts enabled (premium feature)

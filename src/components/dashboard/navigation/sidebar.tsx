@@ -75,48 +75,48 @@ export function DashboardSidebar() {
 
       {/* Upgrade CTA (smart) */}
       <div className="p-4">
-        {/* Annual premium: hide entirely */}
-        {!isLoading && (isAnnualPremium ? null : (
-          // Monthly premium: show annual upsell
-          (isMonthlyPremium || isMonthlyOrUnknownPremium) ? (
-            <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Crown className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground font-sans">
-                  Save with Annual Billing
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground font-sans mb-3">
-                Switch to annual and save 2 months ($18/year)
-              </p>
-              <Link href="/pricing">
-                <Button size="sm" className="w-full font-sans">
-                  Switch to Annual
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            // Free users: show original upgrade CTA
-            !isPremium && (
+        {!isLoading && (
+          isAnnualPremium ? null : (
+            (isMonthlyPremium || isMonthlyOrUnknownPremium) ? (
               <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Crown className="h-4 w-4 text-primary" />
                   <span className="text-sm font-semibold text-foreground font-sans">
-                    Upgrade to Premium
+                    Save with Annual Billing
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground font-sans mb-3">
-                  Unlimited subscriptions & advanced analytics
+                  Switch to annual and save 2 months ($18/year)
                 </p>
                 <Link href="/pricing">
                   <Button size="sm" className="w-full font-sans">
-                    Start Free Trial
+                    Switch to Annual
                   </Button>
                 </Link>
               </div>
+            ) : (
+              !isPremium && (
+                <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground font-sans">
+                      Upgrade to Premium
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-sans mb-3">
+                    Unlimited subscriptions & advanced analytics
+                  </p>
+                  <Link href="/pricing">
+                    <Button size="sm" className="w-full font-sans">
+                      Start Free Trial
+                    </Button>
+                  </Link>
+                </div>
+              )
             )
           )
-        ))}
+        )}
+      </div>
     </div>
   );
 }

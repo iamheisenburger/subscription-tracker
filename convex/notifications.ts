@@ -786,11 +786,11 @@ export const sendNotificationEmail = internalAction({
 function getNotificationMessage(type: string, subscriptionName: string, data: Record<string, unknown>): string {
   switch (type) {
     case 'renewal_reminder':
-      const days = data.daysUntil || 3;
+      const days = (data.daysUntil as number) || 3;
       return `${subscriptionName} renews ${days === 1 ? 'tomorrow' : `in ${days} days`}`;
     case 'spending_alert':
-      const currentSpending = data.currentSpending || 0;
-      const threshold = data.threshold || 0;
+      const currentSpending = (data.currentSpending as number) || 0;
+      const threshold = (data.threshold as number) || 0;
       return `Current spending: $${currentSpending.toFixed(2)} (${Math.round((currentSpending / threshold) * 100)}% of budget)`;
     case 'price_change':
       return `${subscriptionName} price changed`;

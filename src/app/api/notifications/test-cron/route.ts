@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'generate_renewal_reminders':
-        result = await convex.action(internal.notifications.generateRenewalReminders);
+        result = await convex.mutation(internal.notifications.generateRenewalReminders);
         break;
 
       case 'process_notification_queue':
@@ -30,11 +30,11 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'check_spending_thresholds':
-        result = await convex.action(internal.notifications.checkSpendingThresholds);
+        result = await convex.mutation(internal.notifications.checkSpendingThresholds);
         break;
 
       case 'cleanup_old_notifications':
-        result = await convex.action(internal.notifications.cleanupOldNotifications);
+        result = await convex.mutation(internal.notifications.cleanupOldNotifications);
         break;
 
       default:

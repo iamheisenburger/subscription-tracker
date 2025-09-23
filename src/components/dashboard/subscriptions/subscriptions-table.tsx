@@ -38,7 +38,7 @@ interface SubscriptionsTableProps {
   categories?: string[];
 }
 
-export function SubscriptionsTable({ userId, search, activeFilter, categoryFilter }: SubscriptionsTableProps) {
+export function SubscriptionsTable({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableProps) {
   return (
     <ConvexErrorBoundary>
       <SubscriptionsTableContent 
@@ -46,6 +46,8 @@ export function SubscriptionsTable({ userId, search, activeFilter, categoryFilte
         search={search}
         activeFilter={activeFilter}
         categoryFilter={categoryFilter}
+        billing={billing}
+        categories={categories}
       />
     </ConvexErrorBoundary>
   );

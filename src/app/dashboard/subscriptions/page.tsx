@@ -85,21 +85,29 @@ export default function SubscriptionsPage() {
       {filterCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 -mt-2">
           {activeFilter !== "all" && (
-            <Badge className="font-sans bg-accent text-accent-foreground border border-border">Status: {activeFilter}</Badge>
+            <Badge className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+              Status: {activeFilter}
+            </Badge>
           )}
           {Array.from(billingSet).map((b) => (
-            <Badge key={`b-${b}`} className="font-sans bg-accent text-accent-foreground border border-border">Billing: {b}</Badge>
+            <Badge key={`b-${b}`} className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+              Billing: {b}
+            </Badge>
           ))}
           {categoryFilter !== "all" && (
-            <Badge className="font-sans bg-accent text-accent-foreground border border-border">Category: {categoryFilter}</Badge>
+            <Badge className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+              Category: {categoryFilter}
+            </Badge>
           )}
           {Array.from(categorySet).map((c) => (
-            <Badge key={`c-${c}`} className="font-sans bg-accent text-accent-foreground border border-border">Category: {c}</Badge>
+            <Badge key={`c-${c}`} className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+              Category: {c}
+            </Badge>
           ))}
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 font-sans text-muted-foreground"
+            className="h-7 px-2 font-sans text-muted-foreground hover:text-foreground"
             onClick={() => {
               setSearch("");
               setActiveFilter("all");

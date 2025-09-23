@@ -61,11 +61,16 @@ type FormData = z.infer<typeof formSchema>;
 
 interface EditSubscriptionDialogProps {
   subscription: Doc<"subscriptions">;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditSubscriptionDialog({ subscription, children }: EditSubscriptionDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditSubscriptionDialog({ subscription, children, open: openProp, onOpenChange }: EditSubscriptionDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = typeof openProp === "boolean" && typeof onOpenChange === "function";
+  const open = isControlled ? (openProp as boolean) : internalOpen;
+  const setOpen = isControlled ? (onOpenChange as (open: boolean) => void) : setInternalOpen;
   const { user } = useUser();
   const updateSubscription = useMutation(api.subscriptions.updateSubscription);
   const { isPremium } = useUserTier();
@@ -109,9 +114,11 @@ export function EditSubscriptionDialog({ subscription, children }: EditSubscript
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      {children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-sans">Edit Subscription</DialogTitle>

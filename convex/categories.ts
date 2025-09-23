@@ -44,8 +44,9 @@ export const createCategory = mutation({
       .query("categories")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
-    if (existing.some((c) => c.name.trim().toLowerCase() === args.name.trim().toLowerCase())) {
-      return existing.find((c) => c.name.trim().toLowerCase() === args.name.trim().toLowerCase())!._id;
+    const existingMatch = existing.find((c) => c.name.trim().toLowerCase() === args.name.trim().toLowerCase());
+    if (existingMatch) {
+      return existingMatch._id;
     }
 
     const id = await ctx.db.insert("categories", {

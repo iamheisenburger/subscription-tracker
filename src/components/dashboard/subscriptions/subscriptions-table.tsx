@@ -200,7 +200,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                         <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <EditSubscriptionDialog subscription={subscription}>
-                          <DropdownMenuItem className="font-sans">
+                          <DropdownMenuItem className="font-sans" onSelect={(e) => e.preventDefault()}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>

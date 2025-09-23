@@ -30,7 +30,6 @@ export function EmailTestSection() {
   const [emailType, setEmailType] = useState<string>("renewal_reminder");
   const [isSending, setIsSending] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [isRunningCron, setIsRunningCron] = useState(false);
 
   const handleTestConnection = async () => {
     setIsTestingConnection(true);
@@ -111,21 +110,6 @@ export function EmailTestSection() {
     window.open(url, '_blank', 'width=800,height=600');
   };
 
-  const handleRunCronJob = async (action: string) => {
-    setIsRunningCron(true);
-    try {
-      // Note: Cron jobs run automatically in production
-      // This is just a placeholder for development testing
-      toast.info(`${action.replace(/_/g, ' ')} would run automatically in production`, {
-        description: "Cron jobs are scheduled to run at specific intervals",
-      });
-    } catch (error) {
-      console.error('Cron job error:', error);
-      toast.error("Failed to simulate cron job");
-    } finally {
-      setIsRunningCron(false);
-    }
-  };
 
   // Only show for premium users or in development
   if (!isPremium && process.env.NODE_ENV === 'production') {
@@ -137,11 +121,10 @@ export function EmailTestSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-sans">
           <Mail className="h-5 w-5" />
-          Email Testing
-          <Badge variant="secondary" className="font-sans">Development</Badge>
+          Email Notifications
         </CardTitle>
         <CardDescription className="font-sans">
-          Test email notifications and preview templates
+          Manage your email notification preferences and test delivery
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -260,30 +243,29 @@ export function EmailTestSection() {
         {/* Cron Job Testing */}
         <div className="space-y-4">
           <div>
-            <h4 className="font-medium font-sans">Notification System Testing</h4>
+            <h4 className="font-medium font-sans">Notification System Status</h4>
             <p className="text-sm text-muted-foreground font-sans">
-              Manually trigger cron jobs for testing the notification scheduling system
+              Automated notification system is running in the background
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[
-              { action: 'generate_renewal_reminders', label: 'Generate Reminders', icon: Clock },
-              { action: 'process_notification_queue', label: 'Process Queue', icon: Zap },
-              { action: 'check_spending_thresholds', label: 'Check Spending', icon: TestTube },
-              { action: 'cleanup_old_notifications', label: 'Cleanup Old', icon: TestTube },
-            ].map(({ action, label, icon: Icon }) => (
-              <Button
-                key={action}
-                variant="outline"
-                onClick={() => handleRunCronJob(action)}
-                disabled={isRunningCron}
-                className="font-sans"
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {isRunningCron ? "Running..." : label}
-              </Button>
-            ))}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="font-sans">Renewal reminders are automatically sent 3 days before billing</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="font-sans">Price change alerts are sent when subscription costs change</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="font-sans">Spending alerts notify you when approaching budget thresholds</span>
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground font-sans">
+            <p>All notifications are processed automatically every hour. You can customize your preferences in the section above.</p>
           </div>
         </div>
 

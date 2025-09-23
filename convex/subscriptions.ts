@@ -55,11 +55,14 @@ export const createSubscription = mutation({
   },
 });
 
-// Get all subscriptions for a user
+// Get all subscriptions for a user with filtering
 export const getUserSubscriptions = query({
   args: { 
     clerkId: v.string(),
     activeOnly: v.optional(v.boolean()),
+    search: v.optional(v.string()),
+    category: v.optional(v.string()),
+    billingCycle: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -71,19 +74,47 @@ export const getUserSubscriptions = query({
       return [];
     }
 
+    let subscriptions;
     if (args.activeOnly) {
-      return await ctx.db
+      subscriptions = await ctx.db
         .query("subscriptions")
         .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
         .order("desc")
         .collect();
+    } else {
+      subscriptions = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .collect();
     }
 
-    return await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
+    // Client-side filtering for search, category, billing cycle
+    return subscriptions.filter(sub => {
+      // Search filter
+      if (args.search) {
+        const searchLower = args.search.toLowerCase();
+        const matchesName = sub.name.toLowerCase().includes(searchLower);
+        const matchesCategory = sub.category?.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesCategory) return false;
+      }
+
+      // Category filter
+      if (args.category && args.category !== "all") {
+        if (args.category === "uncategorized") {
+          if (sub.category) return false;
+        } else {
+          if (sub.category !== args.category) return false;
+        }
+      }
+
+      // Billing cycle filter
+      if (args.billingCycle && sub.billingCycle !== args.billingCycle) {
+        return false;
+      }
+
+      return true;
+    });
   },
 });
 

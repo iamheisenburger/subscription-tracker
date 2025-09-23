@@ -26,22 +26,48 @@ import { MoreHorizontal, Edit, Trash2, Pause, Play, Target } from "lucide-react"
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
+import { EditSubscriptionDialog } from "@/components/dashboard/edit-subscription-dialog";
 import { Id } from "../../../../convex/_generated/dataModel";
 
 interface SubscriptionsTableProps {
   userId: string;
+  search?: string;
+  activeFilter?: string;
+  categoryFilter?: string;
 }
 
-export function SubscriptionsTable({ userId }: SubscriptionsTableProps) {
+export function SubscriptionsTable({ userId, search, activeFilter, categoryFilter }: SubscriptionsTableProps) {
   return (
     <ConvexErrorBoundary>
-      <SubscriptionsTableContent userId={userId} />
+      <SubscriptionsTableContent 
+        userId={userId} 
+        search={search}
+        activeFilter={activeFilter}
+        categoryFilter={categoryFilter}
+      />
     </ConvexErrorBoundary>
   );
 }
 
-function SubscriptionsTableContent({ userId }: SubscriptionsTableProps) {
-  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
+interface SubscriptionsTableContentProps extends SubscriptionsTableProps {
+  search?: string;
+  activeFilter?: string;
+  categoryFilter?: string;
+}
+
+function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilter }: SubscriptionsTableContentProps) {
+  // Parse filters for Convex query
+  const activeOnly = activeFilter === "active";
+  const billingCycle = ["monthly", "yearly", "weekly"].includes(activeFilter || "") ? activeFilter as "monthly" | "yearly" | "weekly" : undefined;
+  const category = categoryFilter && categoryFilter !== "all" ? categoryFilter : undefined;
+
+  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { 
+    clerkId: userId,
+    activeOnly,
+    search: search || undefined,
+    category,
+    billingCycle,
+  });
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
 
   const handleDelete = async (subscriptionId: string) => {
@@ -173,10 +199,12 @@ function SubscriptionsTableContent({ userId }: SubscriptionsTableProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="font-sans">
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
+                        <EditSubscriptionDialog subscription={subscription}>
+                          <DropdownMenuItem className="font-sans">
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                        </EditSubscriptionDialog>
                         <DropdownMenuItem className="font-sans">
                           {subscription.isActive ? (
                             <>

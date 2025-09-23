@@ -14,10 +14,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function SubscriptionsHeader() {
+interface SubscriptionsHeaderProps {
+  search: string;
+  onSearchChange: (search: string) => void;
+  activeFilter: string;
+  onFilterChange: (filter: string) => void;
+  categoryFilter: string;
+  onCategoryChange: (category: string) => void;
+}
+
+export function SubscriptionsHeader({ 
+  search, 
+  onSearchChange, 
+  activeFilter, 
+  onFilterChange, 
+  categoryFilter, 
+  onCategoryChange 
+}: SubscriptionsHeaderProps) {
   const { isPremium } = useUserTier();
-  // TODO: wire to state/store URL params in a follow-up
-  const categoriesEnabled = isPremium;
   
   return (
     <div className="space-y-4">
@@ -49,6 +63,8 @@ export function SubscriptionsHeader() {
           <Input
             placeholder="Search subscriptions..."
             className="pl-10 font-sans"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
         
@@ -61,23 +77,64 @@ export function SubscriptionsHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-sans">Filter by</DropdownMenuLabel>
+              <DropdownMenuLabel className="font-sans">Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="font-sans">All Subscriptions</DropdownMenuItem>
-              <DropdownMenuItem className="font-sans">Active</DropdownMenuItem>
-              <DropdownMenuItem className="font-sans">Cancelled</DropdownMenuItem>
+              <DropdownMenuItem 
+                className="font-sans" 
+                onClick={() => onFilterChange("all")}
+              >
+                All Subscriptions
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="font-sans" 
+                onClick={() => onFilterChange("active")}
+              >
+                Active
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="font-sans" 
+                onClick={() => onFilterChange("inactive")}
+              >
+                Inactive
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="font-sans">Monthly</DropdownMenuItem>
-              <DropdownMenuItem className="font-sans">Yearly</DropdownMenuItem>
-              <DropdownMenuItem className="font-sans">Weekly</DropdownMenuItem>
-              {categoriesEnabled && (
+              <DropdownMenuLabel className="font-sans">Filter by Billing</DropdownMenuLabel>
+              <DropdownMenuItem 
+                className="font-sans" 
+                onClick={() => onFilterChange("monthly")}
+              >
+                Monthly
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="font-sans" 
+                onClick={() => onFilterChange("yearly")}
+              >
+                Yearly
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="font-sans" 
+                onClick={() => onFilterChange("weekly")}
+              >
+                Weekly
+              </DropdownMenuItem>
+              {isPremium && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="font-sans flex items-center gap-2">
                     <Tag className="h-4 w-4" /> Categories
                   </DropdownMenuLabel>
-                  <DropdownMenuItem className="font-sans">All Categories</DropdownMenuItem>
-                  {/* Category chips/selection will be wired to Convex in next step */}
+                  <DropdownMenuItem 
+                    className="font-sans" 
+                    onClick={() => onCategoryChange("all")}
+                  >
+                    All Categories
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="font-sans" 
+                    onClick={() => onCategoryChange("uncategorized")}
+                  >
+                    Uncategorized
+                  </DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>

@@ -27,9 +27,10 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     }
   }, []);
 
-  // TEMP: Remove targetCurrency until deployed to correct Convex project
+  // Currency conversion enabled - now deployed to correct production Convex
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
+    targetCurrency: currency,
   });
 
   if (analytics === undefined) {
@@ -175,7 +176,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                   <Badge variant="secondary" className="font-sans">Billing</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">
-                  Most subscriptions are billed <span className="font-semibold text-foreground">{cycleBrekdown[0].cycle.toLowerCase()}</span>
+                  Most subscriptions are billed <span className="font-semibold text-foreground">{cycleBreakdown[0].cycle.toLowerCase()}</span>
                 </p>
               </div>
             )}

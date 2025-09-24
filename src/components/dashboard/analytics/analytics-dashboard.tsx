@@ -1,6 +1,6 @@
 "use client";
 
-// Removed useState, useEffect to improve performance
+import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { SpendingTrendsChart } from "./spending-trends-chart";
@@ -17,9 +17,20 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
-  // Simplified - remove currency state to improve performance
+  const [currency, setCurrency] = useState("USD");
+
+  // Get user's preferred currency from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const preferred = localStorage.getItem('preferred-currency') || 'USD';
+      setCurrency(preferred);
+    }
+  }, []);
+
+  // Use proper currency parameter with 100% accurate conversion
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
+    targetCurrency: currency,
   });
 
   if (analytics === undefined) {
@@ -55,7 +66,11 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     cycleBreakdown,
     upcomingRenewals,
     averagePerSubscription,
+    currency: responseCurrency, // Currency from backend response
   } = analytics;
+
+  // Use the currency from backend response (after conversion) or fallback to user preference
+  const displayCurrency = responseCurrency || currency;
 
   return (
     <div className="space-y-8">
@@ -80,7 +95,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-sans">{formatCurrency(monthlyTotal, "USD")}</div>
+            <div className="text-2xl font-bold font-sans">{formatCurrency(monthlyTotal, displayCurrency)}</div>
             <p className="text-xs text-muted-foreground font-sans">
               Per month
             </p>
@@ -93,7 +108,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-sans">{formatCurrency(yearlyTotal, "USD")}</div>
+            <div className="text-2xl font-bold font-sans">{formatCurrency(yearlyTotal, displayCurrency)}</div>
             <p className="text-xs text-muted-foreground font-sans">
               Annual total
             </p>
@@ -117,12 +132,12 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       {/* Charts Grid */}
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="lg:col-span-2">
-          <SpendingTrendsChart data={spendingTrends} currency="USD" />
+          <SpendingTrendsChart data={spendingTrends} currency={displayCurrency} />
         </div>
         
-        <CategoryBreakdownChart data={categoryBreakdown} currency="USD" />
+        <CategoryBreakdownChart data={categoryBreakdown} currency={displayCurrency} />
         
-        <BillingCycleChart data={cycleBreakdown} currency="USD" />
+        <BillingCycleChart data={cycleBreakdown} currency={displayCurrency} />
       </div>
 
       {/* Insights Card */}
@@ -140,7 +155,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                 <Badge variant="secondary" className="font-sans">Average</Badge>
               </div>
               <p className="text-sm text-muted-foreground font-sans">
-                You spend <span className="font-semibold text-foreground">{formatCurrency(averagePerSubscription, "USD")}</span> per subscription on average
+                You spend <span className="font-semibold text-foreground">{formatCurrency(averagePerSubscription, displayCurrency)}</span> per subscription on average
               </p>
             </div>
 
@@ -150,7 +165,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                   <Badge variant="secondary" className="font-sans">Top Category</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">
-                  <span className="font-semibold text-foreground">{categoryBreakdown[0].category}</span> accounts for {formatCurrency(categoryBreakdown[0].amount, "USD")} monthly
+                  <span className="font-semibold text-foreground">{categoryBreakdown[0].category}</span> accounts for {formatCurrency(categoryBreakdown[0].amount, displayCurrency)} monthly
                 </p>
               </div>
             )}

@@ -35,9 +35,11 @@ interface SubscriptionCardActionsProps {
 export function SubscriptionCardActions({ 
   subscription 
 }: SubscriptionCardActionsProps) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { user } = useUser();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
+  const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 
   const handleDelete = async () => {
     if (!user?.id) return;
@@ -45,9 +47,9 @@ export function SubscriptionCardActions({
     try {
       await deleteSubscription({
         clerkId: user.id,
-        subscriptionId: subscription._id as Id<"subscriptions">
+        subscriptionId: subscription._id as Id<"subscriptions">,
       });
-      toast.success(`${subscription.name} deleted successfully!`);
+      toast.success("Subscription deleted successfully!");
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting subscription:", error);
@@ -55,18 +57,28 @@ export function SubscriptionCardActions({
     }
   };
 
-  // Edit functionality is now handled by EditSubscriptionDialog
+  const handleTogglePause = async () => {
+    if (!user?.id) return;
 
-  const handleTogglePause = () => {
-    // TODO: Implement pause/resume functionality
-    toast.info(`${subscription.isActive ? 'Pause' : 'Resume'} functionality coming soon!`);
+    try {
+      await toggleStatus({
+        clerkId: user.id,
+        subscriptionId: subscription._id as Id<"subscriptions">,
+        isActive: !subscription.isActive,
+      });
+      toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
+    } catch (error) {
+      console.error("Error toggling subscription:", error);
+      toast.error("Failed to update subscription status.");
+    }
+
   };
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             <MoreHorizontal className="h-4 w-4" />
             <span className="sr-only">Open menu</span>
           </Button>
@@ -114,15 +126,12 @@ export function SubscriptionCardActions({
           <AlertDialogHeader>
             <AlertDialogTitle className="font-sans">Delete Subscription</AlertDialogTitle>
             <AlertDialogDescription className="font-sans">
-              Are you sure you want to delete <strong>{subscription.name}</strong>? This action cannot be undone.
+              Are you sure you want to delete "{subscription.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="font-sans">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-sans"
-            >
+            <AlertDialogAction onClick={handleDelete} className="font-sans">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

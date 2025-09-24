@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { PWAPrompt } from "@/components/pwa-prompt";
 import { UserSync } from "@/components/user-sync";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -112,6 +113,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ConvexClientProvider>
+              <ServiceWorkerRegistration />
               <UserSync />
               {children}
               <Toaster />

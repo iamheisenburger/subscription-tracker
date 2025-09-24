@@ -3,13 +3,35 @@ import webpush from 'web-push';
 
 // Configure web-push with VAPID keys
 // In production, these would be environment variables
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'YOUR_VAPID_PUBLIC_KEY_HERE';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'YOUR_VAPID_PRIVATE_KEY_HERE';
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:noreply@usesubwise.app';
 
-// Set VAPID details for web-push
-if (VAPID_PUBLIC_KEY !== 'YOUR_VAPID_PUBLIC_KEY_HERE' && VAPID_PRIVATE_KEY !== 'YOUR_VAPID_PRIVATE_KEY_HERE') {
-  webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+// Helper function to validate and clean VAPID key
+function cleanVapidKey(key: string): string {
+  if (!key) return '';
+  // Remove any padding and ensure URL-safe base64
+  return key.replace(/[=]+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+// Set VAPID details for web-push (only if keys are properly configured)
+function initializeVapidKeys() {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY || 
+      VAPID_PUBLIC_KEY === 'YOUR_VAPID_PUBLIC_KEY_HERE' || 
+      VAPID_PRIVATE_KEY === 'YOUR_VAPID_PRIVATE_KEY_HERE') {
+    return false;
+  }
+
+  try {
+    const cleanPublicKey = cleanVapidKey(VAPID_PUBLIC_KEY);
+    const cleanPrivateKey = cleanVapidKey(VAPID_PRIVATE_KEY);
+    
+    webpush.setVapidDetails(VAPID_EMAIL, cleanPublicKey, cleanPrivateKey);
+    return true;
+  } catch (error) {
+    console.error('❌ Invalid VAPID keys:', error);
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -31,12 +53,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate VAPID keys are configured
-    if (VAPID_PUBLIC_KEY === 'YOUR_VAPID_PUBLIC_KEY_HERE' || VAPID_PRIVATE_KEY === 'YOUR_VAPID_PRIVATE_KEY_HERE') {
-      console.warn('⚠️ VAPID keys not configured - push notifications disabled in development');
+    // Initialize VAPID keys (safe for build time)
+    const vapidInitialized = initializeVapidKeys();
+    if (!vapidInitialized) {
+      console.warn('⚠️ VAPID keys not configured - push notifications disabled');
       return NextResponse.json({ 
         success: false, 
-        error: 'Push notifications not configured (missing VAPID keys)' 
+        error: 'Push notifications not configured (missing or invalid VAPID keys)' 
       });
     }
 

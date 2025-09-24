@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     siteName: "SubWise",
     title: "SubWise - Manage Your Subscriptions",
     description: "Track, analyze, and manage all your subscriptions in one place",
-    url: "https://subscription-tracker-nu.vercel.app",
+    url: "https://usesubwise.app",
     images: [
       {
         url: "/og-image.png",
@@ -101,7 +101,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
+    >
       <html lang="en">
         <body
           className={`${inter.variable} ${jetbrainsMono.variable} ${sourceSerif.variable} font-sans antialiased`}

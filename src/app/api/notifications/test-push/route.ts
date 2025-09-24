@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../../convex/_generated/api';
+import { internal } from '../../../../../convex/_generated/api';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send test push notification via Convex
-    const result = await convex.action(api.push.sendTestPushNotification, {
+    const result = await convex.action(internal.push.sendTestPushNotification, {
       clerkId: userId,
     });
 

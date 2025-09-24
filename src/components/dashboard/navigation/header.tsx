@@ -1,9 +1,8 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Search, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 import { NotificationCenter } from "../notification-center";
 
@@ -18,16 +17,8 @@ export function DashboardHeader() {
           </Button>
         </div>
 
-        {/* Search */}
+        {/* Search removed - duplicate with page search */}
         <div className="flex-1 max-w-md mx-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search subscriptions..."
-              className="pl-10 h-10 bg-muted/30 border-0 focus:bg-background focus:ring-2 focus:ring-primary/20 font-sans rounded-xl transition-all duration-200"
-            />
-          </div>
         </div>
 
         {/* Right Actions */}

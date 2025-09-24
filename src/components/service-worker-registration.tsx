@@ -7,10 +7,12 @@ export function ServiceWorkerRegistration() {
     // Only register service worker in browser environment
     if (typeof window === 'undefined') return;
     
+    let timer: NodeJS.Timeout | null = null;
+    
     // Register service worker for PWA functionality and push notifications
     if ('serviceWorker' in navigator) {
       // Add delay to avoid blocking initial render
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         navigator.serviceWorker
           .register('/sw.js', { 
             scope: '/',
@@ -34,11 +36,16 @@ export function ServiceWorkerRegistration() {
           console.log('📨 SW Message:', event.data);
         });
       }, 100);
-
-      return () => clearTimeout(timer);
     } else {
       console.warn('⚠️ Service Worker not supported in this browser');
     }
+
+    // Cleanup function
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, []);
 
   return null; // This component doesn't render anything

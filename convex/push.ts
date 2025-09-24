@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, internalAction, internalQuery } from "./_generated/server";
+import { internalMutation, internalAction, internalQuery, action } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 // Get users with push subscriptions enabled
@@ -205,8 +205,8 @@ export const sendBulkPushNotifications = internalAction({
   },
 });
 
-// Send test push notification
-export const sendTestPushNotification = internalAction({
+// Send test push notification  
+export const sendTestPushNotification = action({
   args: { clerkId: v.string() },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string; messageId?: string }> => {
     // Send test notification using the internal query

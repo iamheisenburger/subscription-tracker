@@ -122,7 +122,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
         </div>
 
         {/* Notifications */}
-        <PreferencesSettings userId={user?.id || ""} />
+        <PreferencesSettings />
 
         {/* Theme Settings */}
         <div className="p-6 border rounded-lg bg-card">

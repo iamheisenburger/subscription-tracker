@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -13,11 +12,28 @@ import {
   Trash2, 
   Pause, 
   Play,
-  CheckCircle,
-  AlertCircle 
+  MoreVertical
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/lib/currency";
 import { Id, Doc } from "../../../convex/_generated/dataModel";
@@ -27,18 +43,17 @@ interface SubscriptionCardProps {
   subscription: Doc<"subscriptions">;
   showCategory?: boolean;
   currency?: string;
-  onSwipeAction?: (action: 'edit' | 'delete' | 'pause' | 'resume') => void;
 }
 
 export function SubscriptionCard({ 
   subscription, 
   showCategory = true, 
-  currency = 'USD',
-  onSwipeAction
+  currency = 'USD'
 }: SubscriptionCardProps) {
   const { user } = useUser();
   const isMobile = useIsMobile();
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   
@@ -46,31 +61,8 @@ export function SubscriptionCard({
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
   const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 
-  // Framer Motion swipe values
-  const x = useMotionValue(0);
-  const cardRef = useRef<HTMLDivElement>(null);
-  
-  // Swipe thresholds
-  const SWIPE_THRESHOLD = 80;
-  const ACTION_THRESHOLD = 120;
-  
-  // Transform values for background colors
-  const backgroundOpacityLeft = useTransform(
-    x,
-    [-ACTION_THRESHOLD, -SWIPE_THRESHOLD, 0],
-    [1, 0.7, 0]
-  );
-  
-  const backgroundOpacityRight = useTransform(
-    x,
-    [0, SWIPE_THRESHOLD, ACTION_THRESHOLD],
-    [0, 0.7, 1]
-  );
-
-  // Action handlers
   const handleDelete = async () => {
-    if (!user?.id || isDeleting) return;
-    
+    if (!user?.id) return;
     setIsDeleting(true);
     try {
       await deleteSubscription({
@@ -78,18 +70,17 @@ export function SubscriptionCard({
         subscriptionId: subscription._id as Id<"subscriptions">,
       });
       toast.success("Subscription deleted successfully!");
-      onSwipeAction?.('delete');
     } catch (error) {
       console.error("Error deleting subscription:", error);
       toast.error("Failed to delete subscription. Please try again.");
     } finally {
       setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
   const handleTogglePause = async () => {
-    if (!user?.id || isToggling) return;
-    
+    if (!user?.id) return;
     setIsToggling(true);
     try {
       await toggleStatus({
@@ -98,7 +89,6 @@ export function SubscriptionCard({
         isActive: !subscription.isActive,
       });
       toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
-      onSwipeAction?.(subscription.isActive ? 'pause' : 'resume');
     } catch (error) {
       console.error("Error toggling subscription:", error);
       toast.error("Failed to update subscription status.");
@@ -107,229 +97,149 @@ export function SubscriptionCard({
     }
   };
 
-  const handleEdit = () => {
-    setShowEditDialog(true);
-    onSwipeAction?.('edit');
-  };
-
-  // Swipe gesture handlers
-  const handlePanEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const { offset, velocity } = info;
-    const swipe = Math.abs(offset.x) > SWIPE_THRESHOLD || Math.abs(velocity.x) > 500;
-    
-    if (swipe) {
-      if (offset.x > 0) {
-        // Right swipe - Toggle pause/resume
-        handleTogglePause();
-        
-        // Haptic feedback
-        if ('vibrate' in navigator) {
-          navigator.vibrate([10, 50, 10]);
-        }
-      } else if (offset.x < 0) {
-        // Left swipe - Edit action (safer than delete)
-        handleEdit();
-        
-        // Haptic feedback  
-        if ('vibrate' in navigator) {
-          navigator.vibrate([10, 50, 10]);
-        }
-      }
-    }
-    
-    // Reset position
-    x.set(0);
-  };
-
-  const handlePan = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    // Light haptic feedback when reaching thresholds
-    if ('vibrate' in navigator) {
-      const absOffset = Math.abs(info.offset.x);
-      if (absOffset > SWIPE_THRESHOLD && absOffset < SWIPE_THRESHOLD + 5) {
-        navigator.vibrate(1);
-      }
-    }
-  };
-
-  // Format cost with user's preferred currency (use subscription's original currency for now)
+  // Format cost with user's preferred currency
   const formattedCost = formatCurrency(subscription.cost, subscription.currency);
-  
-  if (!isMobile) {
-    // Desktop version - no swipe gestures, traditional card
-    return (
-      <>
-        <div className="group flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-              <CreditCard className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold font-sans">{subscription.name}</h3>
-              <p className="text-sm text-muted-foreground font-sans">
-                Next: {format(subscription.nextBillingDate, "MMM dd, yyyy")} • {subscription.billingCycle}
-              </p>
-              {showCategory && subscription.category && (
-                <Badge variant="secondary" className="mt-1 text-xs">
-                  {subscription.category}
-                </Badge>
-              )}
-            </div>
+
+  return (
+    <>
+      <div className="group flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+            <CreditCard className="h-6 w-6 text-primary" />
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="font-semibold font-sans">{formattedCost}</p>
-              <p className="text-sm text-muted-foreground font-sans capitalize">
-                {subscription.billingCycle}
-              </p>
-            </div>
-            <Badge variant={subscription.isActive ? "default" : "secondary"}>
-              {subscription.isActive ? "Active" : "Paused"}
-            </Badge>
-            
-            {/* Desktop actions */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEdit}
-                disabled={isToggling || isDeleting}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleTogglePause}
-                disabled={isToggling || isDeleting}
-              >
-                {subscription.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                disabled={isToggling || isDeleting}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold font-sans truncate">{subscription.name}</h3>
+            <p className="text-sm text-muted-foreground font-sans">
+              Next: {format(subscription.nextBillingDate, "MMM dd, yyyy")} • {subscription.billingCycle}
+            </p>
+            {showCategory && subscription.category && (
+              <Badge variant="secondary" className="text-xs font-sans mt-1">
+                {subscription.category}
+              </Badge>
+            )}
           </div>
         </div>
         
-        {showEditDialog && (
-          <EditSubscriptionDialog
-            subscription={subscription}
-            open={showEditDialog}
-            onOpenChange={setShowEditDialog}
-          />
-        )}
-      </>
-    );
-  }
-
-  // Mobile version with swipe gestures
-  return (
-    <>
-      <div className="relative overflow-hidden rounded-lg border">
-        {/* Background Action Indicators */}
-        <motion.div 
-          className="absolute inset-0 bg-emerald-500 flex items-center justify-start pl-6"
-          style={{ opacity: backgroundOpacityRight }}
-        >
-          <div className="flex items-center gap-2 text-white">
-            {subscription.isActive ? (
-              <>
-                <Pause className="h-5 w-5" />
-                <span className="font-medium">Pause</span>
-              </>
-            ) : (
-              <>
-                <Play className="h-5 w-5" />
-                <span className="font-medium">Resume</span>
-              </>
-            )}
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          className="absolute inset-0 bg-blue-500 flex items-center justify-end pr-6"
-          style={{ opacity: backgroundOpacityLeft }}
-        >
-          <div className="flex items-center gap-2 text-white">
-            <Edit className="h-5 w-5" />
-            <span className="font-medium">Edit</span>
-          </div>
-        </motion.div>
-
-        {/* Main Card Content */}
-        <motion.div
-          ref={cardRef}
-          className="relative bg-background p-4 cursor-grab active:cursor-grabbing"
-          drag="x"
-          dragConstraints={{ left: -200, right: 200 }}
-          dragElastic={0.1}
-          style={{ x }}
-          onPan={handlePan}
-          onPanEnd={handlePanEnd}
-          whileDrag={{ scale: 1.02 }}
-          animate={{ x: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                {subscription.isActive ? (
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-amber-600" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold font-sans truncate">{subscription.name}</h3>
-                <p className="text-sm text-muted-foreground font-sans">
-                  {format(subscription.nextBillingDate, "MMM dd")} • {subscription.billingCycle}
-                </p>
-                {showCategory && subscription.category && (
-                  <Badge variant="secondary" className="mt-1 text-xs">
-                    {subscription.category}
-                  </Badge>
-                )}
-              </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right space-y-1">
+            <div className="font-bold font-sans">
+              {formattedCost}
             </div>
-            
-            <div className="text-right">
-              <p className="font-semibold font-sans">{formattedCost}</p>
-              <Badge 
-                variant={subscription.isActive ? "default" : "secondary"} 
-                className="text-xs"
+            <Badge 
+              variant={subscription.isActive ? "default" : "secondary"} 
+              className="font-sans"
+            >
+              {subscription.isActive ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+
+          {/* Mobile: Dropdown Menu */}
+          {isMobile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">More actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="font-sans"
+                  onSelect={() => setShowEditDialog(true)}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="font-sans"
+                  onSelect={handleTogglePause}
+                  disabled={isToggling}
+                >
+                  {subscription.isActive ? (
+                    <>
+                      <Pause className="mr-2 h-4 w-4" />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Resume
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive font-sans"
+                  onSelect={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            /* Desktop: Individual Buttons */
+            <>
+              <EditSubscriptionDialog subscription={subscription}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Edit</span>
+                </Button>
+              </EditSubscriptionDialog>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={handleTogglePause}
+                disabled={isToggling}
               >
-                {subscription.isActive ? "Active" : "Paused"}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Mobile Touch Indicator */}
-          <div className="mt-3 flex justify-center">
-            <div className="h-1 w-8 bg-muted-foreground/20 rounded-full"></div>
-          </div>
-        </motion.div>
+                {subscription.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                <span className="sr-only">{subscription.isActive ? "Pause" : "Resume"}</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Delete</span>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Swipe Instructions (only show for first few cards) */}
-      <div className="text-center mt-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          Swipe right to {subscription.isActive ? 'pause' : 'resume'} • Swipe left to edit
-        </span>
-      </div>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-sans">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription className="font-sans">
+              Are you sure you want to delete <strong>{subscription.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-sans">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="font-sans bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {showEditDialog && (
-        <EditSubscriptionDialog
-          subscription={subscription}
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-        />
-      )}
+      {/* Edit Dialog */}
+      <EditSubscriptionDialog 
+        subscription={subscription} 
+        open={showEditDialog} 
+        onOpenChange={setShowEditDialog} 
+      />
     </>
   );
 }

@@ -14,6 +14,9 @@ export default defineSchema({
     subscriptionType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     // User preferences
     preferredCurrency: v.optional(v.string()), // User's preferred display currency (USD, EUR, etc.)
+    // Push notification settings
+    pushSubscription: v.optional(v.record(v.string(), v.any())), // Web Push subscription object
+    pushEnabled: v.optional(v.boolean()), // User's push notification preference
     createdAt: v.number(),
     updatedAt: v.number(),
   })

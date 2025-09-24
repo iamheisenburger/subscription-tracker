@@ -16,6 +16,7 @@ import type {
 import type * as categories from "../categories.js";
 import type * as cron from "../cron.js";
 import type * as notifications from "../notifications.js";
+import type * as push from "../push.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   cron: typeof cron;
   notifications: typeof notifications;
+  push: typeof push;
   subscriptions: typeof subscriptions;
   users: typeof users;
 }>;

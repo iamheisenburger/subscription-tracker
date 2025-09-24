@@ -145,6 +145,84 @@ export const updatePreferredCurrency = mutation({
   },
 });
 
+// Store push notification subscription
+export const storePushSubscription = mutation({
+  args: {
+    clerkId: v.string(),
+    subscription: v.record(v.string(), v.any()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      pushSubscription: args.subscription,
+      pushEnabled: true,
+      updatedAt: Date.now(),
+    });
+
+    console.log(`✅ Stored push subscription for user ${user.email}`);
+    return user._id;
+  },
+});
+
+// Remove push notification subscription
+export const removePushSubscription = mutation({
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      pushSubscription: undefined,
+      pushEnabled: false,
+      updatedAt: Date.now(),
+    });
+
+    console.log(`✅ Removed push subscription for user ${user.email}`);
+    return user._id;
+  },
+});
+
+// Update push notification preference (without changing subscription)
+export const updatePushEnabled = mutation({
+  args: {
+    clerkId: v.string(),
+    pushEnabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      pushEnabled: args.pushEnabled,
+      updatedAt: Date.now(),
+    });
+
+    return user._id;
+  },
+});
+
 // Check if user can add more subscriptions
 export const canAddSubscription = query({
   args: { clerkId: v.string() },

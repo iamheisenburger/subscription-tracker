@@ -28,6 +28,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
 import { EditSubscriptionDialog } from "@/components/dashboard/edit-subscription-dialog";
+import { SubscriptionCard } from "@/components/dashboard/subscription-card";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Id } from "../../../../convex/_generated/dataModel";
 
 interface SubscriptionsTableProps {
@@ -62,6 +64,7 @@ interface SubscriptionsTableContentProps extends SubscriptionsTableProps {
 
 function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableContentProps) {
   // Parse filters for Convex query
+  const isMobile = useIsMobile();
   const billingCycle = ["monthly", "yearly", "weekly"].includes(activeFilter || "") ? activeFilter as "monthly" | "yearly" | "weekly" : undefined;
   const category = categoryFilter && categoryFilter !== "all" ? categoryFilter : undefined;
 
@@ -164,20 +167,34 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-sans">Service</TableHead>
-                <TableHead className="font-sans">Cost</TableHead>
-                <TableHead className="font-sans">Billing</TableHead>
-                <TableHead className="font-sans">Next Payment</TableHead>
-                <TableHead className="font-sans">Status</TableHead>
-                <TableHead className="font-sans w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {subscriptions.map((subscription) => (
+        {isMobile ? (
+          // Mobile Card View with Swipe Gestures
+          <div className="space-y-4">
+            {subscriptions.map((subscription) => (
+              <SubscriptionCard
+                key={subscription._id}
+                subscription={subscription}
+                showCategory={true}
+                currency="USD" // Will be replaced with user preference later
+              />
+            ))}
+          </div>
+        ) : (
+          // Desktop Table View
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-sans">Service</TableHead>
+                  <TableHead className="font-sans">Cost</TableHead>
+                  <TableHead className="font-sans">Billing</TableHead>
+                  <TableHead className="font-sans">Next Payment</TableHead>
+                  <TableHead className="font-sans">Status</TableHead>
+                  <TableHead className="font-sans w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscriptions.map((subscription) => (
                 <TableRow key={subscription._id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
@@ -277,9 +294,10 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                   </TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

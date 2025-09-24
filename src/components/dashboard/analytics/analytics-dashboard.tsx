@@ -27,7 +27,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     }
   }, []);
 
-  // Use proper currency parameter with 100% accurate conversion
+  // Use proper currency parameter with accurate conversion (server now supports it)
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
     targetCurrency: currency,
@@ -66,10 +66,10 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     cycleBreakdown,
     upcomingRenewals,
     averagePerSubscription,
-    currency: responseCurrency, // Currency from backend response
+    currency: responseCurrency,
   } = analytics;
 
-  // Use the currency from backend response (after conversion) or fallback to user preference
+  // Prefer the backend’s confirmed currency
   const displayCurrency = responseCurrency || currency;
 
   return (

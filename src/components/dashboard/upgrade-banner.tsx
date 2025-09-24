@@ -7,24 +7,24 @@ import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
-  const { isPremium, isLoading } = useUserTier();
+  const { isLoading, isMonthlyPremium, isAnnualPremium } = useUserTier();
   
   // Don't show anything while loading to prevent flash
   if (isLoading) {
     return null;
   }
   
-  // Hide banner for ALL premium users for now
-  // TODO: Later show annual upgrade for monthly premium users
-  if (isPremium) {
+  // Hide banner for ALL premium users (they have small sidebar CTA instead)
+  // Much better UX - no intrusive banners for paying customers!
+  if (isMonthlyPremium || isAnnualPremium) {
     return null;
   }
   
-  // Show regular upgrade for free users
+  // Show regular upgrade banner for free users only
   return (
     <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
+      <CardContent className="p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
               <Crown className="h-6 w-6 text-primary" />
@@ -64,7 +64,7 @@ export function UpgradeBanner() {
               </div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-center sm:text-right">
             <div className="text-2xl font-bold text-foreground font-sans">
               $9<span className="text-sm font-normal">/mo</span>
             </div>
@@ -72,7 +72,7 @@ export function UpgradeBanner() {
               or $7.50/mo annually
             </div>
             <Link href="/pricing">
-              <Button className="mt-3 font-sans">
+              <Button className="mt-3 w-full sm:w-auto font-sans">
                 Start 7-Day Free Trial
               </Button>
             </Link>

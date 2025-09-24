@@ -12,6 +12,8 @@ export default defineSchema({
     trialEndsAt: v.optional(v.number()),
     // Track subscription type for premium users
     subscriptionType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
+    // User preferences
+    preferredCurrency: v.optional(v.string()), // User's preferred display currency (USD, EUR, etc.)
     createdAt: v.number(),
     updatedAt: v.number(),
   })

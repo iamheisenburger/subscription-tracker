@@ -11,12 +11,14 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import { formatEmailCurrency, formatEmailPercentage } from '../lib/email-currency';
 
 interface SpendingAlertEmailProps {
   userName: string;
   currentSpending: number;
   threshold: number;
   currency: string;
+  displayCurrency?: string; // User's preferred currency for display
   period: string;
   percentageOfThreshold: number;
   overspent: boolean;
@@ -31,16 +33,23 @@ export const SpendingAlertEmail = ({
   currentSpending = 350.75,
   threshold = 300,
   currency = 'USD',
+  displayCurrency, // User's preferred currency
   period = 'month',
   percentageOfThreshold = 117,
   overspent = true,
 }: SpendingAlertEmailProps) => {
-  const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
-  const previewText = overspent 
-    ? `You've exceeded your ${period}ly budget by ${currencySymbol}${(currentSpending - threshold).toFixed(2)}`
-    : `You're at ${percentageOfThreshold}% of your ${period}ly budget`;
-
+  // Use display currency if provided, otherwise fall back to subscription currency
+  const userCurrency = displayCurrency || currency;
+  
+  // Format amounts using the new currency utilities
+  const formattedCurrentSpending = formatEmailCurrency(currentSpending, userCurrency);
+  const formattedThreshold = formatEmailCurrency(threshold, userCurrency);
   const overspentAmount = currentSpending - threshold;
+  const formattedOverspentAmount = formatEmailCurrency(Math.abs(overspentAmount), userCurrency);
+  
+  const previewText = overspent 
+    ? `You've exceeded your ${period}ly budget by ${formattedOverspentAmount}`
+    : `You're at ${formatEmailPercentage(percentageOfThreshold)} of your ${period}ly budget`;
   
   return (
     <Html>
@@ -78,8 +87,8 @@ export const SpendingAlertEmail = ({
               </Text>
               <Text style={alertSubtext}>
                 {overspent 
-                  ? `You're ${currencySymbol}${overspentAmount.toFixed(2)} over budget this ${period}`
-                  : `You're at ${percentageOfThreshold}% of your ${period}ly limit`
+                  ? `You're ${formattedOverspentAmount} over budget this ${period}`
+                  : `You're at ${formatEmailPercentage(percentageOfThreshold)} of your ${period}ly limit`
                 }
               </Text>
             </Section>
@@ -111,7 +120,7 @@ export const SpendingAlertEmail = ({
                   )}
                 </div>
                 <Text style={progressText}>
-                  {percentageOfThreshold}% of budget used
+                  {formatEmailPercentage(percentageOfThreshold)} of budget used
                 </Text>
               </div>
               
@@ -120,14 +129,14 @@ export const SpendingAlertEmail = ({
                 <div style={spendingRow}>
                   <Text style={spendingLabel}>Current Spending</Text>
                   <Text style={overspent ? currentSpendingOverspent : currentSpendingNormal}>
-                    {currencySymbol}{currentSpending.toFixed(2)}
+                    {formattedCurrentSpending}
                   </Text>
                 </div>
                 
                 <div style={spendingRow}>
                   <Text style={spendingLabel}>Budget Limit</Text>
                   <Text style={budgetLimit}>
-                    {currencySymbol}{threshold.toFixed(2)}
+                    {formattedThreshold}
                   </Text>
                 </div>
                 
@@ -136,7 +145,7 @@ export const SpendingAlertEmail = ({
                     {overspent ? 'Over Budget' : 'Remaining'}
                   </Text>
                   <Text style={overspent ? overBudgetAmount : remainingAmount}>
-                    {overspent ? '+' : ''}{currencySymbol}{Math.abs(overspentAmount).toFixed(2)}
+                    {overspent ? '+' : ''}{formattedOverspentAmount}
                   </Text>
                 </div>
               </div>

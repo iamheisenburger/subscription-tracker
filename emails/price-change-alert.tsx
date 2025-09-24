@@ -11,6 +11,7 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import { formatEmailCurrency, formatEmailCurrencyWithConversion } from '../lib/email-currency';
 
 interface PriceChangeAlertEmailProps {
   userName: string;
@@ -18,6 +19,7 @@ interface PriceChangeAlertEmailProps {
   oldPrice: number;
   newPrice: number;
   currency: string;
+  displayCurrency?: string; // User's preferred currency for display
   billingCycle: 'monthly' | 'yearly' | 'weekly';
   priceIncrease: boolean;
   changeAmount: number;
@@ -34,13 +36,21 @@ export const PriceChangeAlertEmail = ({
   oldPrice = 12.99,
   newPrice = 15.99,
   currency = 'USD',
+  displayCurrency, // User's preferred currency
   billingCycle = 'monthly',
   priceIncrease = true,
   changeAmount = 3.00,
   changePercentage = 23,
 }: PriceChangeAlertEmailProps) => {
+  // Use display currency if provided, otherwise fall back to subscription currency
+  const userCurrency = displayCurrency || currency;
+  
+  // Format prices using the new currency utilities
+  const { displayAmount: oldDisplayAmount } = formatEmailCurrencyWithConversion(oldPrice, currency, userCurrency);
+  const { displayAmount: newDisplayAmount } = formatEmailCurrencyWithConversion(newPrice, currency, userCurrency);
+  const { displayAmount: changeDisplayAmount } = formatEmailCurrencyWithConversion(changeAmount, currency, userCurrency);
+  
   const previewText = `${subscriptionName} price ${priceIncrease ? 'increased' : 'decreased'} by ${changePercentage}%`;
-  const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
 
   return (
     <Html>
@@ -85,7 +95,7 @@ export const PriceChangeAlertEmail = ({
                 <div style={priceColumn}>
                   <Text style={priceLabel}>Previous Price</Text>
                   <Text style={oldPriceStyle}>
-                    {currencySymbol}{oldPrice.toFixed(2)}
+                    {oldDisplayAmount}
                     <span style={billingPeriodStyle}>/{billingCycle}</span>
                   </Text>
                 </div>
@@ -97,7 +107,7 @@ export const PriceChangeAlertEmail = ({
                 <div style={priceColumn}>
                   <Text style={priceLabel}>New Price</Text>
                   <Text style={priceIncrease ? newPriceIncrease : newPriceDecrease}>
-                    {currencySymbol}{newPrice.toFixed(2)}
+                    {newDisplayAmount}
                     <span style={billingPeriodStyle}>/{billingCycle}</span>
                   </Text>
                 </div>
@@ -106,7 +116,7 @@ export const PriceChangeAlertEmail = ({
               <div style={changeDetails}>
                 <Text style={changeText}>
                   <strong>
-                    {priceIncrease ? '+' : '-'}{currencySymbol}{changeAmount.toFixed(2)} 
+                    {priceIncrease ? '+' : '-'}{changeDisplayAmount} 
                     ({priceIncrease ? '+' : '-'}{Math.abs(changePercentage)}%)
                   </strong>
                   {priceIncrease ? ' increase' : ' decrease'} per {billingCycle.replace('ly', '')}

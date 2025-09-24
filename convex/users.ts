@@ -120,6 +120,31 @@ export const setTier = mutation({
   },
 });
 
+// Update user's preferred currency
+export const updatePreferredCurrency = mutation({
+  args: {
+    clerkId: v.string(),
+    preferredCurrency: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      preferredCurrency: args.preferredCurrency,
+      updatedAt: Date.now(),
+    });
+
+    return user._id;
+  },
+});
+
 // Check if user can add more subscriptions
 export const canAddSubscription = query({
   args: { clerkId: v.string() },

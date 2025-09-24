@@ -11,12 +11,14 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import { formatEmailCurrency, formatEmailCurrencyWithConversion, getMonthlyEquivalent } from '../lib/email-currency';
 
 interface RenewalReminderEmailProps {
   userName?: string;
   subscriptionName?: string;
   cost?: number;
   currency?: string;
+  displayCurrency?: string; // User's preferred currency for display
   billingCycle?: 'monthly' | 'yearly' | 'weekly';
   daysUntil?: number;
   category?: string;
@@ -36,6 +38,7 @@ export const RenewalReminderEmail = ({
   subscriptionName = 'Netflix',
   cost = 15.99,
   currency = 'USD',
+  displayCurrency, // User's preferred currency (optional)
   billingCycle = 'monthly',
   daysUntil = 3,
   category,
@@ -44,9 +47,17 @@ export const RenewalReminderEmail = ({
   totalSubscriptions = 1,
   subscriptionId,
 }: RenewalReminderEmailProps) => {
-  const previewText = `${subscriptionName} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`} - $${cost}/${billingCycle}`;
+  // Use display currency if provided, otherwise fall back to subscription currency
+  const userCurrency = displayCurrency || currency;
   
-  const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
+  // Format amounts using the new currency utilities
+  const { displayAmount, originalAmount, showBoth } = formatEmailCurrencyWithConversion(
+    cost, 
+    currency, 
+    userCurrency
+  );
+  
+  const previewText = `${subscriptionName} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`} - ${displayAmount}/${billingCycle}`;
   
   // Calculate next billing date based on daysUntil
   const nextBillingDate = new Date();
@@ -97,8 +108,11 @@ export const RenewalReminderEmail = ({
               
               <div style={cardContent}>
                 <div style={priceSection}>
-                  <Text style={price}>{currencySymbol}{cost.toFixed(2)}</Text>
+                  <Text style={price}>{displayAmount}</Text>
                   <Text style={billingPeriod}>/{billingCycle}</Text>
+                  {showBoth && (
+                    <Text style={originalPrice}>({originalAmount})</Text>
+                  )}
                 </div>
                 
                 <div style={dateSection}>
@@ -113,7 +127,7 @@ export const RenewalReminderEmail = ({
               <Section style={smartInsightCard}>
                 <Text style={insightTitle}>💡 Smart Insight</Text>
                 <Text style={insightText}>
-                  This renewal will bring your monthly spending to <strong>{currencySymbol}{(monthlySpending + (billingCycle === 'monthly' ? cost : billingCycle === 'yearly' ? cost / 12 : cost * 4.33)).toFixed(2)}</strong> 
+                  This renewal will bring your monthly spending to <strong>{formatEmailCurrency(monthlySpending + getMonthlyEquivalent(cost, billingCycle), userCurrency)}</strong> 
                   across {totalSubscriptions} subscription{totalSubscriptions !== 1 ? 's' : ''}.
                 </Text>
               </Section>
@@ -282,6 +296,13 @@ const billingPeriod = {
   fontSize: '16px',
   color: '#64748b',
   margin: '0',
+};
+
+const originalPrice = {
+  fontSize: '14px',
+  color: '#64748b',
+  margin: '4px 0 0 0',
+  fontStyle: 'italic' as const,
 };
 
 const dateSection = {

@@ -5,6 +5,7 @@ import { RecentSubscriptions } from "@/components/dashboard/recent-subscriptions
 import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
+import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -34,6 +35,9 @@ export default async function DashboardPage() {
 
       {/* Stats Overview */}
       <OverviewCards userId={userId} />
+
+      {/* Mobile Annual Upgrade CTA */}
+      <MobileAnnualCTA />
 
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">

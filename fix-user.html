@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix User Tier</title>
+</head>
+<body>
+    <h1>Fix User Tier</h1>
+    <button id="fixBtn" onclick="fixUserTier()">Click to Fix User Tier</button>
+    <div id="result"></div>
+
+    <script>
+        async function fixUserTier() {
+            const btn = document.getElementById('fixBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Fixing...';
+            
+            try {
+                const response = await fetch('/api/admin/set-subscription-type', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscriptionType: 'monthly' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = '<p style="color: green;">✅ SUCCESS! User tier updated to premium_user</p><p>Refresh your dashboard now!</p>';
+                } else {
+                    result.innerHTML = '<p style="color: red;">❌ Error: ' + data.error + '</p>';
+                }
+            } catch (error) {
+                result.innerHTML = '<p style="color: red;">❌ Error: ' + error.message + '</p>';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Click to Fix User Tier';
+        }
+    </script>
+</body>
+</html>

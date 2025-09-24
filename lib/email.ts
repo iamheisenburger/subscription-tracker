@@ -26,6 +26,7 @@ export interface UserData {
   email: string;
   firstName?: string;
   clerkId: string;
+  preferredCurrency?: string; // User's preferred display currency
 }
 
 class EmailService {
@@ -53,6 +54,7 @@ class EmailService {
         subscriptionName: subscription.name,
         cost: subscription.cost,
         currency: subscription.currency,
+        displayCurrency: user.preferredCurrency, // Pass user's preferred currency
         billingCycle: subscription.billingCycle,
         daysUntil,
         category: subscription.category,
@@ -105,6 +107,7 @@ class EmailService {
         oldPrice,
         newPrice,
         currency: subscription.currency,
+        displayCurrency: user.preferredCurrency, // Pass user's preferred currency
         billingCycle: subscription.billingCycle,
         priceIncrease: newPrice > oldPrice,
         changeAmount: Math.abs(newPrice - oldPrice),
@@ -157,6 +160,7 @@ class EmailService {
         currentSpending,
         threshold,
         currency,
+        displayCurrency: user.preferredCurrency, // Pass user's preferred currency
         period,
         percentageOfThreshold: Math.round((currentSpending / threshold) * 100),
         overspent: currentSpending > threshold,

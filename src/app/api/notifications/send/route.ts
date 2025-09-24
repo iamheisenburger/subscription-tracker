@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       firstName: user.email.split('@')[0], // Extract name from email
       clerkId: userId,
+      preferredCurrency: user.preferredCurrency, // Pass user's preferred currency
     };
 
     const subscriptionData = {

@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Settings, Bell, Crown, Sparkles, TestTube } from "lucide-react";
 import { toast } from "sonner";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface PreferencesSettingsProps {
@@ -28,9 +27,6 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
     user?.id ? { clerkId: user.id } : "skip"
   );
   const updatePreferences = useMutation(api.notifications.updateNotificationPreferences);
-  
-  // Push notifications hook
-  const pushNotifications = usePushNotifications();
 
   // Local state for form
   const [emailEnabled, setEmailEnabled] = useState(true);
@@ -130,61 +126,12 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                 <p className="text-sm text-muted-foreground font-sans">
                   Get browser notifications for important updates
                 </p>
-                {/* Show browser support status */}
-                {!pushNotifications.isSupported && (
-                  <p className="text-xs text-destructive font-sans">
-                    Not supported in this browser
-                  </p>
-                )}
-                {pushNotifications.permission === 'denied' && (
-                  <p className="text-xs text-destructive font-sans">
-                    Browser notifications blocked. Enable in browser settings.
-                  </p>
-                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Switch 
-                  id="push-notifications" 
-                  checked={pushNotifications.isSubscribed && !pushNotifications.isLoading}
-                  onCheckedChange={async (checked) => {
-                    if (checked) {
-                      const success = await pushNotifications.subscribe();
-                      if (success) {
-                        toast.success("Push notifications enabled!");
-                      } else {
-                        toast.error("Failed to enable push notifications");
-                      }
-                    } else {
-                      const success = await pushNotifications.unsubscribe();
-                      if (success) {
-                        toast.success("Push notifications disabled");
-                      } else {
-                        toast.error("Failed to disable push notifications");
-                      }
-                    }
-                  }}
-                  disabled={!pushNotifications.isSupported || pushNotifications.isLoading}
-                />
-                {pushNotifications.isSubscribed && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      const success = await pushNotifications.testNotification();
-                      if (success) {
-                        toast.success("Test notification sent!");
-                      } else {
-                        toast.error("Failed to send test notification");
-                      }
-                    }}
-                    disabled={pushNotifications.isLoading}
-                    className="h-8"
-                  >
-                    <TestTube className="h-3 w-3 mr-1" />
-                    Test
-                  </Button>
-                )}
-              </div>
+              <Switch 
+                id="push-notifications" 
+                checked={pushEnabled}
+                onCheckedChange={setPushEnabled}
+              />
             </div>
             
             <div className="flex items-center justify-between">

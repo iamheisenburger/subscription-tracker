@@ -151,8 +151,8 @@ export function SubscriptionCard({
     }
   };
 
-  // Format cost with user's preferred currency
-  const formattedCost = formatCurrency(subscription.cost, currency, subscription.currency);
+  // Format cost with user's preferred currency (use subscription's original currency for now)
+  const formattedCost = formatCurrency(subscription.cost, subscription.currency);
   
   if (!isMobile) {
     // Desktop version - no swipe gestures, traditional card

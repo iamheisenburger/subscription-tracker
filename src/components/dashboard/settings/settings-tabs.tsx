@@ -35,7 +35,7 @@ export function SettingsTabs({ user, userId }: SettingsTabsProps) {
       id: "preferences",
       label: "Preferences", 
       icon: Settings,
-      component: <PreferencesSettings userId={userId} />
+      component: <PreferencesSettings />
     },
     {
       id: "billing",

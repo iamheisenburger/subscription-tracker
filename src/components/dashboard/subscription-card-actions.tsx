@@ -71,7 +71,6 @@ export function SubscriptionCardActions({
       console.error("Error toggling subscription:", error);
       toast.error("Failed to update subscription status.");
     }
-
   };
 
   return (
@@ -126,7 +125,7 @@ export function SubscriptionCardActions({
           <AlertDialogHeader>
             <AlertDialogTitle className="font-sans">Delete Subscription</AlertDialogTitle>
             <AlertDialogDescription className="font-sans">
-              Are you sure you want to delete "{subscription.name}"? This action cannot be undone.
+              Are you sure you want to delete <strong>{subscription.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

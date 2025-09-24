@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+// Removed useState, useEffect to improve performance
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { SpendingTrendsChart } from "./spending-trends-chart";
@@ -17,19 +17,9 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
-  const [currency, setCurrency] = useState("USD");
-
-  // Get user's preferred currency from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const preferred = localStorage.getItem('preferred-currency') || 'USD';
-      setCurrency(preferred);
-    }
-  }, []);
-
+  // Simplified - remove currency state to improve performance
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
-    targetCurrency: currency, // Pass user's preferred currency
   });
 
   if (analytics === undefined) {
@@ -90,7 +80,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-sans">{formatCurrency(monthlyTotal, currency)}</div>
+            <div className="text-2xl font-bold font-sans">{formatCurrency(monthlyTotal, "USD")}</div>
             <p className="text-xs text-muted-foreground font-sans">
               Per month
             </p>
@@ -103,7 +93,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-sans">{formatCurrency(yearlyTotal, currency)}</div>
+            <div className="text-2xl font-bold font-sans">{formatCurrency(yearlyTotal, "USD")}</div>
             <p className="text-xs text-muted-foreground font-sans">
               Annual total
             </p>
@@ -127,12 +117,12 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       {/* Charts Grid */}
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="lg:col-span-2">
-          <SpendingTrendsChart data={spendingTrends} currency={currency} />
+          <SpendingTrendsChart data={spendingTrends} currency="USD" />
         </div>
         
-        <CategoryBreakdownChart data={categoryBreakdown} currency={currency} />
+        <CategoryBreakdownChart data={categoryBreakdown} currency="USD" />
         
-        <BillingCycleChart data={cycleBreakdown} currency={currency} />
+        <BillingCycleChart data={cycleBreakdown} currency="USD" />
       </div>
 
       {/* Insights Card */}
@@ -150,7 +140,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                 <Badge variant="secondary" className="font-sans">Average</Badge>
               </div>
               <p className="text-sm text-muted-foreground font-sans">
-                You spend <span className="font-semibold text-foreground">{formatCurrency(averagePerSubscription, currency)}</span> per subscription on average
+                You spend <span className="font-semibold text-foreground">{formatCurrency(averagePerSubscription, "USD")}</span> per subscription on average
               </p>
             </div>
 
@@ -160,7 +150,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                   <Badge variant="secondary" className="font-sans">Top Category</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">
-                  <span className="font-semibold text-foreground">{categoryBreakdown[0].category}</span> accounts for {formatCurrency(categoryBreakdown[0].amount, currency)} monthly
+                  <span className="font-semibold text-foreground">{categoryBreakdown[0].category}</span> accounts for {formatCurrency(categoryBreakdown[0].amount, "USD")} monthly
                 </p>
               </div>
             )}

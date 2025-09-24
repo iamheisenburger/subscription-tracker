@@ -27,9 +27,10 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     }
   }, []);
 
-  // Production-safe call (server may not yet accept targetCurrency)
+  // Currency conversion enabled - Convex backend now supports targetCurrency
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
+    targetCurrency: currency,
   });
 
   if (analytics === undefined) {
@@ -68,8 +69,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     currency: responseCurrency, // Currency from backend response
   } = analytics;
 
-  // Display the server currency (likely USD) until backend supports conversion in prod
-  const displayCurrency = responseCurrency || "USD";
+  // Use backend's converted currency or user preference
+  const displayCurrency = responseCurrency || currency;
 
   return (
     <div className="space-y-8">

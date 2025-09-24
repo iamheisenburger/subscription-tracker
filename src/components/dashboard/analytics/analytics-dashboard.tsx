@@ -27,10 +27,9 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     }
   }, []);
 
-  // Currency conversion enabled - Convex backend now supports targetCurrency
+  // TEMP: Remove targetCurrency until deployed to correct Convex project
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
-    targetCurrency: currency,
   });
 
   if (analytics === undefined) {
@@ -176,7 +175,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                   <Badge variant="secondary" className="font-sans">Billing</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">
-                  Most subscriptions are billed <span className="font-semibold text-foreground">{cycleBreakdown[0].cycle.toLowerCase()}</span>
+                  Most subscriptions are billed <span className="font-semibold text-foreground">{cycleBrekdown[0].cycle.toLowerCase()}</span>
                 </p>
               </div>
             )}

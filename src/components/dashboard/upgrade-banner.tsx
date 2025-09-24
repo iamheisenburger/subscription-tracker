@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
-  const { isPremium, isLoading, isMonthlyPremium, isAnnualPremium } = useUserTier();
+  const { isLoading, isMonthlyPremium, isAnnualPremium } = useUserTier();
   
   // Don't show anything while loading to prevent flash
   if (isLoading) {

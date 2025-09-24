@@ -42,8 +42,8 @@ interface SubscriptionsTableProps {
 export function SubscriptionsTable({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableProps) {
   return (
     <ConvexErrorBoundary>
-      <SubscriptionsTableContent 
-        userId={userId} 
+      <SubscriptionsTableContent
+        userId={userId}
         search={search}
         activeFilter={activeFilter}
         categoryFilter={categoryFilter}
@@ -62,12 +62,11 @@ interface SubscriptionsTableContentProps extends SubscriptionsTableProps {
 
 function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableContentProps) {
   // Parse filters for Convex query
-  const activeOnly = activeFilter === "active";
   const billingCycle = ["monthly", "yearly", "weekly"].includes(activeFilter || "") ? activeFilter as "monthly" | "yearly" | "weekly" : undefined;
   const category = categoryFilter && categoryFilter !== "all" ? categoryFilter : undefined;
 
   // PERFORMANCE: Simple query, filter client-side for speed
-  const allSubscriptions = useQuery(api.subscriptions.getUserSubscriptions, { 
+  const allSubscriptions = useQuery(api.subscriptions.getUserSubscriptions, {
     clerkId: userId,
     activeOnly: false, // Get all, filter client-side
   });
@@ -75,26 +74,26 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
   // Client-side filtering for better performance
   const subscriptions = useMemo(() => {
     if (!allSubscriptions) return undefined;
-    
+
     return allSubscriptions.filter(sub => {
       // Status filter
       if (activeFilter === "active" && !sub.isActive) return false;
       if (activeFilter === "inactive" && sub.isActive) return false;
-      
+
       // Search filter
       if (search && !sub.name.toLowerCase().includes(search.toLowerCase())) return false;
-      
+
       // Category filter
       if (category && sub.category !== category) return false;
       if (categoryFilter === "uncategorized" && sub.category) return false;
-      
+
       // Billing cycle filter
       if (billingCycle && sub.billingCycle !== billingCycle) return false;
-      
+
       // Multi-select filters
       if (billing && billing.length > 0 && !billing.includes(sub.billingCycle)) return false;
       if (categories && categories.length > 0 && !categories.includes(sub.category || "uncategorized")) return false;
-      
+
       return true;
     });
   }, [allSubscriptions, activeFilter, search, category, categoryFilter, billingCycle, billing, categories]);
@@ -103,9 +102,9 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
 
   const handleDelete = async (subscriptionId: string) => {
     try {
-      await deleteSubscription({ 
-        clerkId: userId, 
-        subscriptionId: subscriptionId as Id<"subscriptions"> 
+      await deleteSubscription({
+        clerkId: userId,
+        subscriptionId: subscriptionId as Id<"subscriptions">
       });
       toast.success("Subscription deleted successfully!");
     } catch (error) {
@@ -215,7 +214,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       variant={subscription.isActive ? "default" : "secondary"}
                       className="font-sans"
                     >
@@ -266,7 +265,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                           )}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-destructive font-sans"
                           onClick={() => handleDelete(subscription._id)}
                         >

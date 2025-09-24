@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
@@ -65,16 +66,38 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
   const billingCycle = ["monthly", "yearly", "weekly"].includes(activeFilter || "") ? activeFilter as "monthly" | "yearly" | "weekly" : undefined;
   const category = categoryFilter && categoryFilter !== "all" ? categoryFilter : undefined;
 
-  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { 
+  // PERFORMANCE: Simple query, filter client-side for speed
+  const allSubscriptions = useQuery(api.subscriptions.getUserSubscriptions, { 
     clerkId: userId,
-    activeOnly,
-    status: activeFilter === "inactive" ? "inactive" : activeFilter === "active" ? "active" : undefined,
-    search: search || undefined,
-    category,
-    billingCycle,
-    billing,
-    categories,
+    activeOnly: false, // Get all, filter client-side
   });
+
+  // Client-side filtering for better performance
+  const subscriptions = useMemo(() => {
+    if (!allSubscriptions) return undefined;
+    
+    return allSubscriptions.filter(sub => {
+      // Status filter
+      if (activeFilter === "active" && !sub.isActive) return false;
+      if (activeFilter === "inactive" && sub.isActive) return false;
+      
+      // Search filter
+      if (search && !sub.name.toLowerCase().includes(search.toLowerCase())) return false;
+      
+      // Category filter
+      if (category && sub.category !== category) return false;
+      if (categoryFilter === "uncategorized" && sub.category) return false;
+      
+      // Billing cycle filter
+      if (billingCycle && sub.billingCycle !== billingCycle) return false;
+      
+      // Multi-select filters
+      if (billing && billing.length > 0 && !billing.includes(sub.billingCycle)) return false;
+      if (categories && categories.length > 0 && !categories.includes(sub.category || "uncategorized")) return false;
+      
+      return true;
+    });
+  }, [allSubscriptions, activeFilter, search, category, categoryFilter, billingCycle, billing, categories]);
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
   const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 

@@ -106,7 +106,8 @@ export function AdminDebugPanel() {
         const payload = {
           type: "spending_alert", 
           currentSpending: realCurrentSpending,
-          threshold: realThreshold
+          threshold: realThreshold,
+          preferredCurrency: userCurrency // Send user's preferred currency to backend
         };
 
         const res = await fetch("/api/notifications/send", {

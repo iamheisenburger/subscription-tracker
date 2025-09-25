@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const { userId } = await auth();
 
     const body = await request.json();
-    const { type, subscriptionId } = body;
+    const { type, subscriptionId, preferredCurrency } = body;
 
     // Allow internal Convex caller via INTERNAL token
     const authz = request.headers.get('authorization');
@@ -54,11 +54,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare email data
+    const actualPreferredCurrency = preferredCurrency || user.preferredCurrency || 'USD';
     const userData = {
       email: user.email,
       firstName: user.email.split('@')[0], // Extract name from email
       clerkId: effectiveUserId as string,
-      preferredCurrency: user.preferredCurrency, // Pass user's preferred currency
+      preferredCurrency: actualPreferredCurrency, // Use frontend currency preference first
     };
 
     const subscriptionData = subscription ? {
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
           userData,
           currentSpending,
           threshold,
-          user.preferredCurrency || 'USD' // Use USER'S preferred currency, not subscription currency
+          actualPreferredCurrency // Use ACTUAL preferred currency from frontend
         );
         break;
 

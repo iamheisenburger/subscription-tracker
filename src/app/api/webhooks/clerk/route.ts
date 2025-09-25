@@ -170,12 +170,12 @@ export async function POST(req: Request) {
         console.log('📦 Subscription event received:', { type, data });
         
         // Try to extract user ID and subscription info
-        const subUserId = data.user_id || data.userId || data.object?.user_id;
-        const subData = data.object || data;
+        const subUserId = (data as any).user_id || (data as any).userId || (data as any).object?.user_id;
+        const subData = (data as any).object || data;
         
         if (subUserId) {
-          const isActive = subData.status === 'active' || subData.active === true;
-          const interval = subData.interval || subData.billing_cycle;
+          const isActive = (subData as any).status === 'active' || (subData as any).active === true;
+          const interval = (subData as any).interval || (subData as any).billing_cycle;
           
           if (isActive) {
             let subscriptionType: "monthly" | "annual" | undefined;
@@ -188,7 +188,7 @@ export async function POST(req: Request) {
             console.log('⬆️ Upgrading user via subscription event:', { 
               userId: subUserId, 
               subscriptionType, 
-              status: subData.status 
+              status: (subData as any).status 
             });
 
             await fetchMutation(api.users.setTier, {
@@ -204,7 +204,7 @@ export async function POST(req: Request) {
       case 'subscription.cancelled':
         console.log('❌ Subscription cancelled:', { type, data });
         
-        const cancelledUserId = data.user_id || data.userId || data.object?.user_id;
+        const cancelledUserId = (data as any).user_id || (data as any).userId || (data as any).object?.user_id;
         if (cancelledUserId) {
           await fetchMutation(api.users.setTier, {
             clerkId: cancelledUserId as string,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import { CategoriesManager } from "./categories-manager";
 import { EmailTestSection } from "./email-test-section";
 import { PreferencesSettings } from "./preferences-settings";
@@ -10,6 +9,9 @@ import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { PlanDetailsButton } from "@clerk/nextjs/experimental";
 
 interface SettingsContentProps {
   user: {
@@ -26,10 +28,6 @@ export function SettingsContent({ user }: SettingsContentProps) {
   const [currency, setCurrency] = useState("USD");
   const { isPremium } = useUserTier();
   const [lastUpdatedTs, setLastUpdatedTs] = useState<number>(0);
-
-  const ManageBillingControl = dynamic(() => import("../../billing/manage-billing-button"), {
-    ssr: false,
-  });
 
 
   useEffect(() => {
@@ -160,10 +158,33 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              {/* Use Clerk billing control */}
-              <div className="px-4 py-2">
-                <ManageBillingControl />
-              </div>
+              {/* Manage Billing Button */}
+              <SignedOut>
+                <SignInButton>
+                  <Button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
+                    Manage Billing
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <PlanDetailsButton 
+                  planId="plan_premium_user"
+                  planDetailsProps={{
+                    appearance: {
+                      variables: {
+                        colorPrimary: "hsl(var(--primary))",
+                        colorText: "hsl(var(--foreground))",
+                        colorBackground: "hsl(var(--background))",
+                        fontFamily: "var(--font-sans)",
+                      }
+                    }
+                  }}
+                >
+                  <Button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
+                    Manage Billing
+                  </Button>
+                </PlanDetailsButton>
+              </SignedIn>
             </div>
           </div>
         </div>

@@ -9,9 +9,7 @@ import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { SubscriptionDetailsButton } from "@clerk/nextjs/experimental";
+import Link from "next/link";
 
 interface SettingsContentProps {
   user: {
@@ -158,26 +156,12 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              {/* Manage Billing Button using Clerk's SubscriptionDetailsButton */}
-              <SignedIn>
-                <SubscriptionDetailsButton
-                  subscriptionDetailsProps={{
-                    appearance: {
-                      variables: {
-                        colorPrimary: "hsl(var(--primary))",
-                        colorText: "hsl(var(--foreground))",
-                        colorBackground: "hsl(var(--background))",
-                        fontFamily: "var(--font-sans)",
-                        borderRadius: "var(--radius)",
-                      }
-                    }
-                  }}
-                >
-                  <button className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors">
-                    Manage Billing
-                  </button>
-                </SubscriptionDetailsButton>
-              </SignedIn>
+              {/* Manage Billing Button - Link to UserProfile */}
+              <Link href="/user-profile">
+                <button className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors">
+                  Manage Billing
+                </button>
+              </Link>
             </div>
           </div>
         </div>

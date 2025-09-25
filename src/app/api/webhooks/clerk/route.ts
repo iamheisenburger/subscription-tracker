@@ -51,8 +51,15 @@ export async function POST(req: Request) {
 
   const { data, type } = evt;
 
-  // Debug logging to see what we're receiving
-  console.log('🔍 Webhook received:', { type, userId: data.id, metadata: data.public_metadata });
+  // Enhanced debug logging to see what we're receiving
+  console.log('🔍 Webhook received:', { 
+    type, 
+    userId: data.id, 
+    publicMetadata: data.public_metadata,
+    privateMetadata: data.private_metadata,
+    externalAccounts: data.external_accounts,
+    subscriptions: data.subscriptions 
+  });
 
   try {
     switch (type) {
@@ -64,23 +71,63 @@ export async function POST(req: Request) {
         break;
 
       case 'user.updated':
-        // Check if user has premium plan in public metadata
+        // Check multiple sources for premium status
         const metadata = data.public_metadata as { 
           plan?: string; 
           tier?: string; 
           subscriptionType?: string;
           billing?: string;
+          subscription?: Record<string, unknown>;
         } | undefined;
-        const hasPremiumMetadata = metadata?.plan === 'premium' || metadata?.tier === 'premium_user';
+
+        const privateMetadata = data.private_metadata as {
+          plan?: string;
+          tier?: string; 
+          subscriptionType?: string;
+          billing?: string;
+          subscription?: Record<string, unknown>;
+        } | undefined;
         
-        if (hasPremiumMetadata) {
-          // Determine subscription type from metadata
+        // Enhanced premium detection - check multiple sources
+        const hasPremiumInPublic = metadata?.plan === 'premium' || 
+                                   metadata?.tier === 'premium_user' ||
+                                   metadata?.tier === 'premium';
+        
+        const hasPremiumInPrivate = privateMetadata?.plan === 'premium' || 
+                                    privateMetadata?.tier === 'premium_user' ||
+                                    privateMetadata?.tier === 'premium';
+
+        // Check for subscription information
+        const hasSubscriptionData = metadata?.subscription || privateMetadata?.subscription;
+        
+        const isPremium = hasPremiumInPublic || hasPremiumInPrivate || hasSubscriptionData;
+        
+        console.log('🔍 Premium detection:', {
+          hasPremiumInPublic,
+          hasPremiumInPrivate, 
+          hasSubscriptionData,
+          isPremium,
+          metadata,
+          privateMetadata
+        });
+        
+        if (isPremium) {
+          // Determine subscription type from multiple sources
           let subscriptionType: "monthly" | "annual" | undefined;
-          if (metadata?.subscriptionType === 'annual' || metadata?.billing === 'annual') {
+          
+          const typeFromPublic = metadata?.subscriptionType || metadata?.billing;
+          const typeFromPrivate = privateMetadata?.subscriptionType || privateMetadata?.billing;
+          
+          if (typeFromPublic === 'annual' || typeFromPrivate === 'annual') {
             subscriptionType = 'annual';
-          } else if (metadata?.subscriptionType === 'monthly' || metadata?.billing === 'monthly') {
+          } else if (typeFromPublic === 'monthly' || typeFromPrivate === 'monthly') {
+            subscriptionType = 'monthly';
+          } else {
+            // Default to monthly if unclear
             subscriptionType = 'monthly';
           }
+
+          console.log('⬆️ Setting user to premium via webhook:', { subscriptionType });
 
           await fetchMutation(api.users.setTier, {
             clerkId: data.id as string,
@@ -112,6 +159,55 @@ export async function POST(req: Request) {
         if (deletedUserId) {
           await fetchMutation(api.users.setTier, {
             clerkId: deletedUserId,
+            tier: 'free_user',
+          });
+        }
+        break;
+
+      // Handle subscription-related events if Clerk sends them
+      case 'subscription.created':
+      case 'subscription.updated':
+        console.log('📦 Subscription event received:', { type, data });
+        
+        // Try to extract user ID and subscription info
+        const subUserId = data.user_id || data.userId || data.object?.user_id;
+        const subData = data.object || data;
+        
+        if (subUserId) {
+          const isActive = subData.status === 'active' || subData.active === true;
+          const interval = subData.interval || subData.billing_cycle;
+          
+          if (isActive) {
+            let subscriptionType: "monthly" | "annual" | undefined;
+            if (interval === 'year' || interval === 'annual') {
+              subscriptionType = 'annual';
+            } else if (interval === 'month' || interval === 'monthly') {
+              subscriptionType = 'monthly';
+            }
+
+            console.log('⬆️ Upgrading user via subscription event:', { 
+              userId: subUserId, 
+              subscriptionType, 
+              status: subData.status 
+            });
+
+            await fetchMutation(api.users.setTier, {
+              clerkId: subUserId as string,
+              tier: 'premium_user',
+              subscriptionType: subscriptionType,
+            });
+          }
+        }
+        break;
+
+      case 'subscription.deleted':
+      case 'subscription.cancelled':
+        console.log('❌ Subscription cancelled:', { type, data });
+        
+        const cancelledUserId = data.user_id || data.userId || data.object?.user_id;
+        if (cancelledUserId) {
+          await fetchMutation(api.users.setTier, {
+            clerkId: cancelledUserId as string,
             tier: 'free_user',
           });
         }

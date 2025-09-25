@@ -33,11 +33,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // Validate required fields
-    if (!type || !subscriptionId) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: type, subscriptionId' 
-      }, { status: 400 });
+    // For renewal/spending emails we require a subscriptionId; for simple test we do not
+    if (!type) {
+      return NextResponse.json({ error: 'Missing type' }, { status: 400 });
     }
 
     // Get user data from Convex
@@ -46,14 +44,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get subscription data
-    const subscriptions = await convex.query(api.subscriptions.getUserSubscriptions, { 
-      clerkId: effectiveUserId 
-    });
-    
-    const subscription = subscriptions.find(sub => sub._id === subscriptionId);
-    if (!subscription) {
-      return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
+    // Get subscription data when provided
+    let subscription: any = null;
+    if (subscriptionId) {
+      const subscriptions = await convex.query(api.subscriptions.getUserSubscriptions, { 
+        clerkId: effectiveUserId 
+      });
+      subscription = subscriptions.find(sub => sub._id === subscriptionId) || subscriptions[0];
     }
 
     // Prepare email data
@@ -116,9 +113,16 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json({ 
-          error: `Unsupported email type: ${type}` 
-        }, { status: 400 });
+        // simple test email: use spending alert template trivially
+        const testSpending = 50;
+        const testThreshold = 100;
+        emailResult = await emailService.sendSpendingAlert(
+          userData,
+          testSpending,
+          testThreshold,
+          'USD'
+        );
+        break;
     }
 
     // Add to notification history if email was sent successfully

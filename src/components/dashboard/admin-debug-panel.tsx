@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ export function AdminDebugPanel() {
   
   const addSubWise = useMutation(api.users.addMissingSubWiseSubscription);
   const sendTestNotification = useMutation(api.notifications.sendTestNotification);
+  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
 
   const handleAddSubWise = async () => {
     if (!user?.id) return;
@@ -39,12 +40,30 @@ export function AdminDebugPanel() {
     setLoading(type);
     
     try {
-      const result = await sendTestNotification({ 
-        clerkId: user.id, 
-        type 
+      // Prefer direct Next API call so you see emails instantly in Resend
+      const subId = subscriptions && subscriptions.length > 0 ? subscriptions[0]._id : undefined;
+      const payload: any = { type };
+      if (type === "renewal_reminder") {
+        payload.subscriptionId = subId;
+        payload.daysUntil = 3;
+      } else if (type === "spending_alert") {
+        payload.subscriptionId = subId;
+        payload.currentSpending = 125;
+        payload.threshold = 100;
+      }
+
+      const res = await fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      toast.success(`✅ ${result.message}`, {
-        description: `Sending to: ${result.willSendTo}`
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Email send failed");
+      }
+
+      toast.success(`✅ Email queued`, {
+        description: `Type: ${type}`
       });
     } catch (error) {
       toast.error(`❌ Failed to send ${type} notification`, {

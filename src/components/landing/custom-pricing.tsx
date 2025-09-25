@@ -45,6 +45,7 @@ export const CustomPricing = () => {
                 // Enhanced card styling
                 rootBox: "bg-card border border-border rounded-lg shadow-sm",
                 card: "bg-card border border-border rounded-lg shadow-sm",
+                cardBox: "bg-card border border-border rounded-lg shadow-sm",
                 
                 // Better text contrast
                 headerTitle: "font-sans font-bold text-foreground",
@@ -54,9 +55,18 @@ export const CustomPricing = () => {
                 // Enhanced pricing text
                 priceText: "font-sans font-bold text-3xl text-foreground",
                 
-                // Improved buttons with better contrast
-                formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-sans font-medium rounded-md transition-all duration-200 shadow-sm border-0 min-h-[44px]",
-                formButtonSecondary: "bg-muted text-foreground hover:bg-muted/80 font-sans font-medium rounded-md transition-all duration-200 shadow-sm border border-border min-h-[44px]",
+                // AGGRESSIVE BUTTON STYLING - TARGET ALL BUTTON VARIATIONS
+                formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border-0 !min-h-[44px] !px-6 !py-3",
+                formButtonSecondary: "!bg-muted !text-foreground hover:!bg-muted/80 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border !border-border !min-h-[44px] !px-6 !py-3",
+                
+                // Additional button targeting
+                button: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border-0 !min-h-[44px] !px-6 !py-3",
+                primaryButton: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border-0 !min-h-[44px] !px-6 !py-3",
+                secondaryButton: "!bg-muted !text-foreground hover:!bg-muted/80 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border !border-border !min-h-[44px] !px-6 !py-3",
+                
+                // Target specific pricing table buttons
+                subscribeButton: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border-0 !min-h-[44px] !px-6 !py-3",
+                ctaButton: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !shadow-sm !border-0 !min-h-[44px] !px-6 !py-3",
                 
                 // Enhanced features list
                 pricingFeature: "font-sans text-sm text-foreground flex items-center gap-2",
@@ -87,13 +97,43 @@ export const CustomPricing = () => {
                   fontFamily: "var(--font-sans)",
                   borderRadius: "var(--radius)",
                   colorBorder: "hsl(var(--border))",
+                  colorNeutral: "hsl(var(--muted))",
+                  colorSuccess: "hsl(var(--primary))",
+                  colorDanger: "hsl(var(--destructive))",
                 },
                 elements: {
+                  // Enhanced checkout page styling
                   rootBox: "bg-background",
                   card: "bg-card border border-border rounded-lg shadow-lg",
-                  formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-sans font-medium rounded-md transition-all duration-200 min-h-[44px]",
+                  cardBox: "bg-card border border-border rounded-lg shadow-lg",
+                  
+                  // AGGRESSIVE BUTTON STYLING FOR CHECKOUT
+                  formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !min-h-[44px] !px-6 !py-3 !shadow-sm",
+                  formButtonSecondary: "!bg-muted !text-foreground hover:!bg-muted/80 !font-sans !font-medium !rounded-md !transition-all !duration-200 !min-h-[44px] !px-6 !py-3 !border !border-border",
+                  
+                  // Additional button targeting for checkout
+                  button: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !min-h-[44px] !px-6 !py-3",
+                  primaryButton: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !min-h-[44px] !px-6 !py-3",
+                  
+                  // Text and form styling
                   text: "text-foreground font-sans",
-                  formFieldInput: "bg-input border border-border text-foreground rounded-md font-sans",
+                  headerTitle: "font-sans font-bold text-foreground",
+                  headerSubtitle: "font-sans text-muted-foreground",
+                  
+                  // Form elements
+                  formFieldInput: "bg-input border border-border text-foreground rounded-md font-sans focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                  formFieldLabel: "text-foreground font-sans font-medium",
+                  
+                  // Enhanced payment form
+                  paymentMethodContainer: "bg-card border border-border rounded-md p-4",
+                  paymentMethodRadio: "text-primary",
+                  
+                  // Better alerts and messages
+                  alert: "bg-muted/50 border border-border rounded-md font-sans text-foreground",
+                  alertText: "text-foreground font-sans",
+                  
+                  // Better dividers
+                  divider: "border-border",
                 }
               }
             }}

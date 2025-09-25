@@ -37,15 +37,15 @@ export const Hero = () => {
           </div>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center sm:justify-center gap-4">
-            {/* Start Free Trial - Direct to pricing/sign-up */}
-            <Link href="/pricing">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto rounded-full text-base"
-              >
-                Start Free Trial <ArrowUpRight className="!h-5 !w-5" />
-              </Button>
-            </Link>
+                   {/* Start Free Trial - Direct to pricing */}
+                   <Link href="/pricing">
+                     <Button
+                       size="lg"
+                       className="w-full sm:w-auto rounded-full text-base"
+                     >
+                       Start Free Trial <ArrowUpRight className="!h-5 !w-5" />
+                     </Button>
+                   </Link>
             
             <Link href="#demo">
               <Button

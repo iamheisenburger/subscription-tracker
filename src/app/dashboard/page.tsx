@@ -8,7 +8,6 @@ import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
-import { DebugTierInfo } from "@/components/dashboard/debug-tier-info";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
 
 export default async function DashboardPage() {
@@ -36,9 +35,6 @@ export default async function DashboardPage() {
 
       {/* Auto Tier Sync - Silent reconciliation */}
       <AutoTierSync />
-
-      {/* DEBUG: Tier Detection */}
-      <DebugTierInfo />
 
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />

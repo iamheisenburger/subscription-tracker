@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
+import { detectTierFromClerkUser, logTierDetection, validateTierDetectionEnvironment } from '@/lib/tier-detection';
 
 export async function POST() {
   try {
@@ -13,97 +14,53 @@ export async function POST() {
 
     console.log('🔄 Manual tier sync requested for user:', userId);
 
-    // Get user from Clerk with subscription data
+    // Validate environment
+    const envCheck = validateTierDetectionEnvironment();
+    if (!envCheck.valid) {
+      console.error('❌ Environment validation failed:', envCheck.missing);
+      return NextResponse.json({ 
+        error: 'Configuration error',
+        details: `Missing environment variables: ${envCheck.missing.join(', ')}`
+      }, { status: 500 });
+    }
+
+    if (envCheck.warnings.length > 0) {
+      console.warn('⚠️ Environment warnings:', envCheck.warnings);
+    }
+
+    // Get user from Clerk
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(userId);
     
-    console.log('📊 Clerk user data:', {
-      id: clerkUser.id,
-      publicMetadata: clerkUser.publicMetadata,
-      privateMetadata: clerkUser.privateMetadata,
-      externalAccounts: clerkUser.externalAccounts?.map(acc => acc.provider),
-    });
+    // Use centralized tier detection
+    const tierResult = detectTierFromClerkUser(clerkUser);
+    logTierDetection(userId, tierResult, 'manual_sync');
 
-    // Check multiple sources for premium status
-    const metadata = clerkUser.publicMetadata as { 
-      plan?: string; 
-      tier?: string; 
-      subscriptionType?: string;
-      billing?: string;
-      subscription?: Record<string, unknown>;
-    };
-
-    const privateMetadata = clerkUser.privateMetadata as {
-      plan?: string;
-      tier?: string; 
-      subscriptionType?: string;
-      billing?: string;
-      subscription?: Record<string, unknown>;
-    };
-
-    // Check all possible indicators of premium status
-    const hasPremiumInPublic = metadata?.plan === 'premium' || 
-                               metadata?.tier === 'premium_user' ||
-                               metadata?.tier === 'premium';
-    
-    const hasPremiumInPrivate = privateMetadata?.plan === 'premium' || 
-                                privateMetadata?.tier === 'premium_user' ||
-                                privateMetadata?.tier === 'premium';
-
-    // Try to get subscription information from external accounts or other sources
-    const hasActiveSubscription = clerkUser.externalAccounts?.some(account => 
-      account.provider === 'stripe' || account.provider === 'billing'
-    );
-
-    // Premium detection - rely on known, supported signals only (metadata + external accounts)
-    const isPremium = hasPremiumInPublic || hasPremiumInPrivate || hasActiveSubscription;
-
-    console.log('🔍 Tier detection:', {
-      hasPremiumInPublic,
-      hasPremiumInPrivate,
-      hasActiveSubscription,
-      isPremium,
-      metadata,
-      privateMetadata
-    });
-
-    if (isPremium) {
-      // Determine subscription type
-      let subscriptionType: "monthly" | "annual" | undefined;
-      
-      const typeFromPublic = metadata?.subscriptionType || metadata?.billing;
-      const typeFromPrivate = privateMetadata?.subscriptionType || privateMetadata?.billing;
-      
-      if (typeFromPublic === 'annual' || typeFromPrivate === 'annual') {
-        subscriptionType = 'annual';
-      } else if (typeFromPublic === 'monthly' || typeFromPrivate === 'monthly') {
-        subscriptionType = 'monthly';
-      } else {
-        // Default to monthly if unclear
-        subscriptionType = 'monthly';
-      }
-
-      console.log('⬆️ Upgrading user to premium:', { subscriptionType });
-
+    // Always update tier if we have medium or high confidence
+    if (tierResult.confidence !== 'low') {
       await fetchMutation(api.users.setTier, {
         clerkId: userId,
-        tier: 'premium_user',
-        subscriptionType: subscriptionType,
+        tier: tierResult.tier,
+        subscriptionType: tierResult.subscriptionType,
       });
 
       return NextResponse.json({ 
         success: true, 
-        tier: 'premium_user',
-        subscriptionType,
-        message: 'User upgraded to premium successfully'
+        tier: tierResult.tier,
+        subscriptionType: tierResult.subscriptionType,
+        confidence: tierResult.confidence,
+        source: tierResult.source,
+        message: `User synced to ${tierResult.tier} (${tierResult.confidence} confidence)`
       });
     } else {
-      console.log('📝 User appears to be free tier, no changes needed');
-      
+      // Low confidence - don't make changes, just report
       return NextResponse.json({ 
-        success: true, 
-        tier: 'free_user',
-        message: 'User confirmed as free tier'
+        success: false, 
+        tier: tierResult.tier,
+        confidence: tierResult.confidence,
+        source: tierResult.source,
+        message: 'Low confidence in tier detection - no changes made',
+        debug: process.env.NODE_ENV === 'development' ? tierResult.debug : undefined
       });
     }
 

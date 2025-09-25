@@ -4,6 +4,7 @@ import { Webhook } from 'svix';
 import { clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
+import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection';
 
 export const runtime = 'nodejs';
 
@@ -207,69 +208,24 @@ export async function POST(req: Request) {
         break;
 
       case 'user.updated':
-        // Check multiple sources for premium status
-        const metadata = data.public_metadata as { 
-          plan?: string; 
-          tier?: string; 
-          subscriptionType?: string;
-          billing?: string;
-          subscription?: Record<string, unknown>;
-        } | undefined;
-
-        const privateMetadata = data.private_metadata as {
-          plan?: string;
-          tier?: string; 
-          subscriptionType?: string;
-          billing?: string;
-          subscription?: Record<string, unknown>;
-        } | undefined;
+        // Use centralized tier detection for user.updated events
+        const clerkClient_updated = await clerkClient();
+        const updatedUser = await clerkClient_updated.users.getUser(data.id as string);
         
-        // Enhanced premium detection - check multiple sources
-        const hasPremiumInPublic = metadata?.plan === 'premium' || 
-                                   metadata?.tier === 'premium_user' ||
-                                   metadata?.tier === 'premium';
+        const tierResult = detectTierFromClerkUser(updatedUser);
+        logTierDetection(data.id as string, tierResult, 'clerk_webhook_user_updated');
         
-        const hasPremiumInPrivate = privateMetadata?.plan === 'premium' || 
-                                    privateMetadata?.tier === 'premium_user' ||
-                                    privateMetadata?.tier === 'premium';
-
-        // Check for subscription information
-        const hasSubscriptionData = metadata?.subscription || privateMetadata?.subscription;
-        
-        const isPremium = hasPremiumInPublic || hasPremiumInPrivate || hasSubscriptionData;
-        
-        console.log('🔍 Premium detection:', {
-          hasPremiumInPublic,
-          hasPremiumInPrivate, 
-          hasSubscriptionData,
-          isPremium,
-          metadata,
-          privateMetadata
-        });
-        
-        if (isPremium) {
-          // Determine subscription type from multiple sources
-          let subscriptionType: "monthly" | "annual" | undefined;
-          
-          const typeFromPublic = metadata?.subscriptionType || metadata?.billing;
-          const typeFromPrivate = privateMetadata?.subscriptionType || privateMetadata?.billing;
-          
-          if (typeFromPublic === 'annual' || typeFromPrivate === 'annual') {
-            subscriptionType = 'annual';
-          } else if (typeFromPublic === 'monthly' || typeFromPrivate === 'monthly') {
-            subscriptionType = 'monthly';
-          } else {
-            // Default to monthly if unclear
-            subscriptionType = 'monthly';
-          }
-
-          console.log('⬆️ Setting user to premium via webhook:', { subscriptionType });
-
+        // Update tier if we have medium or high confidence
+        if (tierResult.confidence !== 'low') {
           await fetchMutation(api.users.setTier, {
             clerkId: data.id as string,
-            tier: 'premium_user',
-            subscriptionType: subscriptionType,
+            tier: tierResult.tier,
+            subscriptionType: tierResult.subscriptionType,
           });
+          
+          console.log(`✅ Webhook: Updated user to ${tierResult.tier} (${tierResult.confidence} confidence)`);
+        } else {
+          console.log(`ℹ️ Webhook: Low confidence tier detection, no update made`);
         }
         break;
 

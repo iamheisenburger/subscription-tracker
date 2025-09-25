@@ -14,8 +14,8 @@ export default function MobileDebugPage() {
     api.users.getUserByClerkId, 
     user?.id ? { clerkId: user.id } : "skip"
   );
-  const [syncResult, setSyncResult] = useState<any>(null);
-  const [apiResult, setApiResult] = useState<any>(null);
+  const [syncResult, setSyncResult] = useState<Record<string, unknown> | null>(null);
+  const [apiResult, setApiResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const testSync = async () => {
@@ -202,10 +202,10 @@ export default function MobileDebugPage() {
                 {JSON.stringify(syncResult, null, 2)}
               </pre>
               
-              {syncResult.success && (
+              {syncResult && (
                 <div className="mt-2 text-center">
                   <Badge className="bg-green-100 text-green-800">
-                    {syncResult.tier === 'premium_user' ? 'SYNC SUCCESSFUL' : 'CONFIRMED FREE TIER'}
+                    SYNC COMPLETED
                   </Badge>
                 </div>
               )}

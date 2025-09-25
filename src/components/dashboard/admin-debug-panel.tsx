@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,23 @@ export function AdminDebugPanel() {
   const addSubWise = useMutation(api.users.addMissingSubWiseSubscription);
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
   const userInfo = useQuery(api.users.getUserByClerkId, user?.id ? { clerkId: user.id } : "skip");
+  
+  // Get user's preferred currency for analytics
+  const [preferredCurrency, setPreferredCurrency] = useState('USD');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const preferred = localStorage.getItem('preferred-currency') || 'USD';
+      setPreferredCurrency(preferred);
+    }
+  }, []);
+  
+  // Get analytics data (same as Budget page)
+  const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, 
+    user?.id ? {
+      clerkId: user.id,
+      targetCurrency: preferredCurrency,
+    } : "skip"
+  );
 
   const handleAddSubWise = async () => {
     if (!user?.id) return;
@@ -75,23 +92,38 @@ export function AdminDebugPanel() {
         });
         
       } else if (type === "spending_alert") {
-        // Call the Convex test notification directly - uses SAME logic as backend
-        const res = await fetch("/api/test-features", {
+        // Get user's ACTUAL preferred currency from localStorage (same as dashboard)
+        const userCurrency = typeof window !== 'undefined' ? (localStorage.getItem('preferred-currency') || 'USD') : 'USD';
+        
+        // Get the REAL spending data from analytics (same source as Budget page)
+        if (!analytics?.monthlyTotal) {
+          throw new Error("Analytics data not loaded yet. Please wait and try again.");
+        }
+        
+        const realCurrentSpending = analytics.monthlyTotal;
+        const realThreshold = 100; // This should come from user preferences, but using 100 for now
+        
+        const payload = {
+          type: "spending_alert", 
+          currentSpending: realCurrentSpending,
+          threshold: realThreshold
+        };
+
+        const res = await fetch("/api/notifications/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "notifications" }),
+          body: JSON.stringify(payload),
         });
         const json = await res.json();
         if (!res.ok || !json.success) {
           throw new Error(json.error || "Email send failed");
         }
-
-        // Show success with user's actual currency preference
-        const userCurrency = userInfo?.preferredCurrency || 'USD';
+        
         const currencySymbol = userCurrency === 'CAD' ? 'C$' : userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'AUD' ? 'A$' : '$';
+        const overage = realCurrentSpending - realThreshold;
         
         toast.success(`✅ Spending alert sent`, {
-          description: `Using real ${userCurrency} amounts from your budget`
+          description: `${currencySymbol}${realCurrentSpending.toFixed(2)} vs ${currencySymbol}${realThreshold} threshold (${currencySymbol}${overage.toFixed(2)} over)`
         });
 
       } else {

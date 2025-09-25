@@ -8,7 +8,10 @@ import { fetchMutation } from 'convex/nextjs';
 export const runtime = 'nodejs';
 
 // Handle Clerk billing subscription events
-async function handleSubscriptionEvent(data: Record<string, unknown>, eventType: 'created' | 'updated') {
+async function handleSubscriptionEvent(
+  data: Record<string, unknown>, 
+  eventType: 'created' | 'updated' | 'active' | 'paused' | 'item_active' | 'item_cancelled'
+) {
   try {
     // Clerk billing subscription event structure
     const subscription = data as {
@@ -52,10 +55,11 @@ async function handleSubscriptionEvent(data: Record<string, unknown>, eventType:
       return;
     }
 
-    // Determine if subscription is active
+    // Determine if subscription should grant premium access
     const isActive = status === 'active' || status === 'trialing';
+    const isPaused = status === 'paused' || eventType === 'paused';
     
-    if (isActive) {
+    if (isActive && !isPaused) {
       // Determine subscription type
       let subscriptionType: 'monthly' | 'annual' = 'monthly';
       if (interval === 'year' || interval === 'annual') {
@@ -91,6 +95,20 @@ async function handleSubscriptionEvent(data: Record<string, unknown>, eventType:
       });
 
       console.log('✅ User upgraded to premium successfully');
+
+    } else if (isPaused) {
+      console.log('⏸️ Subscription paused, maintaining premium access:', { userId, status });
+      
+      // For paused subscriptions, keep premium but update status
+      const client = await clerkClient();
+      await client.users.updateUser(userId, {
+        publicMetadata: {
+          plan: 'premium',
+          tier: 'premium_user',
+          subscription_status: 'paused',
+          paused_at: new Date().toISOString()
+        }
+      });
 
     } else {
       console.log('⚠️ Subscription not active:', { status, userId });
@@ -282,7 +300,7 @@ export async function POST(req: Request) {
         }
         break;
 
-      // Handle Clerk Billing subscription events
+      // Handle ALL Clerk Billing subscription events
       case 'subscription.created':
         console.log('🎉 Subscription created:', { type, data });
         await handleSubscriptionEvent(data, 'created');
@@ -291,6 +309,16 @@ export async function POST(req: Request) {
       case 'subscription.updated':
         console.log('🔄 Subscription updated:', { type, data });
         await handleSubscriptionEvent(data, 'updated');
+        break;
+
+      case 'subscription.active':
+        console.log('✅ Subscription active:', { type, data });
+        await handleSubscriptionEvent(data, 'active');
+        break;
+
+      case 'subscription.paused':
+        console.log('⏸️ Subscription paused:', { type, data });
+        await handleSubscriptionEvent(data, 'paused');
         break;
 
       case 'subscription.cancelled':
@@ -310,6 +338,22 @@ export async function POST(req: Request) {
             tier: 'free_user',
           });
         }
+        break;
+
+      // Handle subscription item events (for analytics and conversion tracking)
+      case 'subscriptionitem.abandon':
+        console.log('🚫 Subscription abandoned:', { type, data });
+        // Track abandoned checkouts for analytics
+        break;
+
+      case 'subscriptionitem.active':
+        console.log('🟢 Subscription item active:', { type, data });
+        await handleSubscriptionEvent(data, 'item_active');
+        break;
+
+      case 'subscriptionitem.cancelled':
+        console.log('🔴 Subscription item cancelled:', { type, data });
+        await handleSubscriptionEvent(data, 'item_cancelled');
         break;
 
       default:

@@ -9,6 +9,7 @@ import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { DebugTierInfo } from "@/components/dashboard/debug-tier-info";
+import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -32,6 +33,9 @@ export default async function DashboardPage() {
         </div>
         <OverviewActions />
       </div>
+
+      {/* Auto Tier Sync - Silent reconciliation */}
+      <AutoTierSync />
 
       {/* DEBUG: Tier Detection */}
       <DebugTierInfo />

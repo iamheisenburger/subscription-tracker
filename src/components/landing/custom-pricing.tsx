@@ -4,7 +4,69 @@ import { PricingTable } from "@clerk/nextjs";
 
 export const CustomPricing = () => {
   return (
-    <div id="pricing" className="w-full py-12 xs:py-20 px-6">
+    <>
+      {/* Mobile Checkout CSS Fixes */}
+      <style jsx global>{`
+        /* Mobile checkout modal fixes */
+        @media (max-width: 768px) {
+          .cl-modal {
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+          }
+          
+          .cl-modalContent {
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            padding: 16px !important;
+            overflow-y: auto !important;
+          }
+          
+          .cl-card {
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            padding: 16px !important;
+          }
+          
+          .cl-formFieldInput {
+            font-size: 16px !important;
+            min-height: 44px !important;
+          }
+          
+          .cl-formButtonPrimary {
+            min-height: 48px !important;
+            font-size: 16px !important;
+            width: 100% !important;
+          }
+          
+          /* Fix overlapping text */
+          .cl-pricing-table {
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+          }
+          
+          .cl-pricing-table h1,
+          .cl-pricing-table h2,
+          .cl-pricing-table h3 {
+            font-size: 18px !important;
+            line-height: 1.3 !important;
+            margin-bottom: 8px !important;
+          }
+          
+          /* Fix checkout form spacing */
+          .cl-formField {
+            margin-bottom: 16px !important;
+          }
+          
+          .cl-formFieldLabel {
+            font-size: 14px !important;
+            margin-bottom: 4px !important;
+          }
+        }
+      `}</style>
+      
+      <div id="pricing" className="w-full py-12 xs:py-20 px-6">
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
@@ -97,10 +159,10 @@ export const CustomPricing = () => {
                   colorDanger: "hsl(var(--destructive))",
                 },
                 elements: {
-                  // Enhanced checkout page styling
-                  rootBox: "bg-background",
-                  card: "bg-card border border-border rounded-lg shadow-lg",
-                  cardBox: "bg-card border border-border rounded-lg shadow-lg",
+                  // Enhanced checkout page styling with mobile fixes
+                  rootBox: "bg-background !p-4 !max-w-full !overflow-x-hidden",
+                  card: "bg-card border border-border rounded-lg shadow-lg !max-w-full !mx-auto",
+                  cardBox: "bg-card border border-border rounded-lg shadow-lg !max-w-full !mx-auto !p-4",
                   
                   // Button styling in checkout
                   formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-sans !font-medium !rounded-md !transition-all !duration-200 !min-h-[44px] !px-6 !py-3 !shadow-sm",
@@ -151,6 +213,7 @@ export const CustomPricing = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };

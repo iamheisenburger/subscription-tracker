@@ -98,6 +98,26 @@ export function DebugTierInfo() {
           <Button onClick={getClerkData} variant="outline">
             📊 Debug Clerk Data
           </Button>
+          <Button 
+            onClick={() => {
+              // Manual admin upgrade - bypass Clerk metadata
+              fetch('/api/admin/set-subscription-type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscriptionType: 'monthly' })
+              }).then(r => r.json()).then(result => {
+                if (result.success) {
+                  toast.success("✅ Manually upgraded to premium!");
+                  window.location.reload();
+                } else {
+                  toast.error("❌ Manual upgrade failed");
+                }
+              });
+            }} 
+            className="bg-green-600 hover:bg-green-700"
+          >
+            🚀 Manual Premium
+          </Button>
         </div>
 
         <div className="text-xs text-muted-foreground">

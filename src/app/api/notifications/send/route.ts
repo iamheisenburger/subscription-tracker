@@ -9,13 +9,21 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const body = await request.json();
     const { type, subscriptionId } = body;
+
+    // Allow internal Convex caller via INTERNAL token
+    const authz = request.headers.get('authorization');
+    const bearer = authz?.startsWith('Bearer ')
+      ? authz.slice('Bearer '.length)
+      : undefined;
+    const isInternal = bearer && bearer === (process.env.INTERNAL_API_KEY || 'internal');
+
+    const effectiveUserId = isInternal && body.clerkId ? body.clerkId : userId;
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Handle test connection request
     if (type === 'test_connection') {
@@ -33,14 +41,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user data from Convex
-    const user = await convex.query(api.users.getUserByClerkId, { clerkId: userId });
+    const user = await convex.query(api.users.getUserByClerkId, { clerkId: effectiveUserId });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get subscription data
     const subscriptions = await convex.query(api.subscriptions.getUserSubscriptions, { 
-      clerkId: userId 
+      clerkId: effectiveUserId 
     });
     
     const subscription = subscriptions.find(sub => sub._id === subscriptionId);
@@ -116,7 +124,7 @@ export async function POST(request: NextRequest) {
     // Add to notification history if email was sent successfully
     if (emailResult.success) {
       await convex.mutation(api.notifications.addNotificationToHistory, {
-        clerkId: userId,
+        clerkId: effectiveUserId,
         type,
         title: getNotificationTitle(type, subscription.name),
         message: getNotificationMessage(type, subscription.name, body),

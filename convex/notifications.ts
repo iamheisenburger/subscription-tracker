@@ -864,8 +864,18 @@ export const sendNotificationEmail = internalAction({
   },
   handler: async (ctx, args) => {
     try {
-      // Call our email API
-      const response = await fetch(`${process.env.SITE_URL || 'http://localhost:3000'}/api/notifications/send`, {
+      // Resolve site URL for calling Next API from Convex
+      const siteUrl =
+        process.env.SITE_URL ||
+        process.env.PUBLIC_SITE_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
+      if (!siteUrl) {
+        return { success: false, error: 'SITE_URL not configured on Convex environment' };
+      }
+
+      // Call our email API with INTERNAL bearer and clerkId
+      const response = await fetch(`${siteUrl}/api/notifications/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -875,6 +885,7 @@ export const sendNotificationEmail = internalAction({
         body: JSON.stringify({
           type: args.type,
           subscriptionId: args.subscriptionId,
+          clerkId: args.userId,
           ...args.emailData?.templateData,
         }),
       });

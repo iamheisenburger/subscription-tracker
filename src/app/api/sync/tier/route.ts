@@ -55,16 +55,8 @@ export async function POST() {
       account.provider === 'stripe' || account.provider === 'billing'
     );
 
-    // AGGRESSIVE PREMIUM DETECTION - if user has ANY indication of premium, treat as premium
-    const clerkUserData = clerkUser as Record<string, unknown>;
-    const hasAnyPremiumIndicator = hasPremiumInPublic || hasPremiumInPrivate || hasActiveSubscription ||
-      // Check if user has subscriptions field or any billing-related data
-      (clerkUserData.subscriptions as unknown[])?.length > 0 ||
-      clerkUserData.billing ||
-      // If they're calling this API, they probably ARE premium but system isn't detecting it
-      true; // TEMPORARY: Force everyone to premium for debugging
-
-    const isPremium = hasAnyPremiumIndicator;
+    // Premium detection - rely on known, supported signals only (metadata + external accounts)
+    const isPremium = hasPremiumInPublic || hasPremiumInPrivate || hasActiveSubscription;
 
     console.log('🔍 Tier detection:', {
       hasPremiumInPublic,

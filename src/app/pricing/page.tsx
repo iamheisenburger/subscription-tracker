@@ -24,7 +24,8 @@ export default function PricingPage() {
                   colorPrimary: "hsl(var(--primary))",
                   colorText: "hsl(var(--foreground))",
                   colorBackground: "hsl(var(--background))",
-                  borderRadius: "0.5rem",
+                  fontFamily: "var(--font-sans)",
+                  borderRadius: "var(--radius)",
                 }
               }
             }}
@@ -33,17 +34,41 @@ export default function PricingPage() {
                 colorPrimary: "hsl(var(--primary))",
                 colorText: "hsl(var(--foreground))",
                 colorBackground: "hsl(var(--background))",
-                borderRadius: "0.5rem",
+                fontFamily: "var(--font-sans)",
+                borderRadius: "var(--radius)",
               },
               elements: {
                 card: {
                   border: "1px solid hsl(var(--border))",
                   backgroundColor: "hsl(var(--card))",
-                  borderRadius: "0.5rem",
-                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)"
+                  borderRadius: "var(--radius)",
+                  boxShadow: "var(--shadow)",
+                  fontFamily: "var(--font-sans)"
                 },
                 cardHeader: {
-                  color: "hsl(var(--card-foreground))"
+                  color: "hsl(var(--card-foreground))",
+                  fontFamily: "var(--font-sans)"
+                },
+                cardContent: {
+                  color: "hsl(var(--card-foreground))",
+                  fontFamily: "var(--font-sans)"
+                },
+                button: {
+                  fontFamily: "var(--font-sans)",
+                  borderRadius: "var(--radius)",
+                },
+                buttonPrimary: {
+                  backgroundColor: "hsl(var(--primary))",
+                  color: "hsl(var(--primary-foreground))",
+                  fontFamily: "var(--font-sans)",
+                  borderRadius: "var(--radius)",
+                },
+                buttonSecondary: {
+                  backgroundColor: "hsl(var(--secondary))",
+                  color: "hsl(var(--secondary-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  fontFamily: "var(--font-sans)",
+                  borderRadius: "var(--radius)",
                 }
               }
             }}
@@ -54,15 +79,15 @@ export default function PricingPage() {
         <div className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>
-            <span>7-day free trial</span>
+            <span className="font-sans">7-day free trial</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>
-            <span>No credit card required</span>
+            <span className="font-sans">No credit card required</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>
-            <span>Cancel anytime</span>
+            <span className="font-sans">Cancel anytime</span>
           </div>
         </div>
         

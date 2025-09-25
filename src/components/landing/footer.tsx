@@ -5,9 +5,9 @@ import { Twitter, Twitch, Youtube } from "lucide-react";
 import { Logo } from "./logo";
 
 const footerLinks = [
-  { name: "Features", href: "#features" },
-  { name: "Pricing", href: "#pricing" },
-  { name: "FAQ", href: "#faq" },
+  { name: "Features", href: "/landing#features" },
+  { name: "Pricing", href: "/landing#pricing" },
+  { name: "FAQ", href: "/landing#faq" },
   { name: "Contact", href: "/contact" },
   { name: "Privacy", href: "/legal/privacy" },
   { name: "Terms", href: "/legal/terms" },

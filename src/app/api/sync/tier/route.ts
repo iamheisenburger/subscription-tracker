@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { clerkClient } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
 
@@ -15,7 +14,8 @@ export async function POST() {
     console.log('🔄 Manual tier sync requested for user:', userId);
 
     // Get user from Clerk with subscription data
-    const clerkUser = await clerkClient().users.getUser(userId);
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(userId);
     
     console.log('📊 Clerk user data:', {
       id: clerkUser.id,
@@ -124,7 +124,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const clerkUser = await clerkClient().users.getUser(userId);
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(userId);
     
     return NextResponse.json({
       userId: clerkUser.id,

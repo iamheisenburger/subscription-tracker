@@ -158,12 +158,29 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              {/* Manage Billing Instructions */}
-              <div className="px-4 py-2 border border-muted rounded-lg bg-muted/20">
-                <p className="text-sm font-sans text-muted-foreground">
-                  Click your profile picture (top right) → <strong>&quot;Manage account&quot;</strong> to access billing, payment methods, and subscription management.
-                </p>
-              </div>
+              {/* Manage Billing Button */}
+              <button 
+                onClick={() => {
+                  // Try to trigger the UserButton's account management
+                  const userButton = document.querySelector('[data-clerk-element="userButton"] button');
+                  if (userButton) {
+                    (userButton as HTMLElement).click();
+                    // Small delay to let the menu open, then click "Manage account"
+                    setTimeout(() => {
+                      const manageAccountButton = document.querySelector('button[data-testid="userButton-manageAccount"]');
+                      if (manageAccountButton) {
+                        (manageAccountButton as HTMLElement).click();
+                      }
+                    }, 100);
+                  } else {
+                    // Fallback to Clerk account URL
+                    window.open('https://dashboard.clerk.com/last-active', '_blank');
+                  }
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors"
+              >
+                Manage Billing
+              </button>
             </div>
           </div>
         </div>

@@ -1,10 +1,128 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { Webhook } from 'svix';
+import { clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
 
 export const runtime = 'nodejs';
+
+// Handle Clerk billing subscription events
+async function handleSubscriptionEvent(data: Record<string, unknown>, eventType: 'created' | 'updated') {
+  try {
+    // Clerk billing subscription event structure
+    const subscription = data as {
+      id?: string;
+      user_id?: string;
+      status?: string;
+      plan_id?: string;
+      interval?: string;
+      current_period_start?: number;
+      current_period_end?: number;
+      trial_start?: number;
+      trial_end?: number;
+      created_at?: number;
+      updated_at?: number;
+    };
+
+    const userId = subscription.user_id;
+    const status = subscription.status;
+    const planId = subscription.plan_id;
+    const interval = subscription.interval;
+
+    if (!userId) {
+      console.log('❌ No user_id in subscription event');
+      return;
+    }
+
+    console.log('📦 Processing subscription event:', {
+      eventType,
+      userId,
+      status,
+      planId,
+      interval,
+      subscriptionId: subscription.id
+    });
+
+    // Check if this is our premium plan
+    const isPremiumPlan = planId === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID;
+    
+    if (!isPremiumPlan) {
+      console.log('❌ Not our premium plan, ignoring:', planId);
+      return;
+    }
+
+    // Determine if subscription is active
+    const isActive = status === 'active' || status === 'trialing';
+    
+    if (isActive) {
+      // Determine subscription type
+      let subscriptionType: 'monthly' | 'annual' = 'monthly';
+      if (interval === 'year' || interval === 'annual') {
+        subscriptionType = 'annual';
+      }
+
+      console.log('⬆️ Upgrading user to premium:', {
+        userId,
+        subscriptionType,
+        status,
+        eventType
+      });
+
+      // Update user to premium in Convex
+      await fetchMutation(api.users.setTier, {
+        clerkId: userId,
+        tier: 'premium_user',
+        subscriptionType: subscriptionType,
+      });
+
+      // Update user metadata in Clerk for consistency
+      const client = await clerkClient();
+      await client.users.updateUser(userId, {
+        publicMetadata: {
+          plan: 'premium',
+          tier: 'premium_user',
+          subscriptionType,
+          billing: subscriptionType,
+          subscription_id: subscription.id,
+          subscription_status: status,
+          upgraded_at: new Date().toISOString()
+        }
+      });
+
+      console.log('✅ User upgraded to premium successfully');
+
+    } else {
+      console.log('⚠️ Subscription not active:', { status, userId });
+      
+      // If subscription is cancelled/inactive, downgrade user
+      if (status === 'cancelled' || status === 'expired' || status === 'unpaid') {
+        console.log('⬇️ Downgrading user to free:', { userId, status });
+        
+        await fetchMutation(api.users.setTier, {
+          clerkId: userId,
+          tier: 'free_user',
+          subscriptionType: undefined,
+        });
+
+        // Update Clerk metadata
+        const client = await clerkClient();
+        await client.users.updateUser(userId, {
+          publicMetadata: {
+            plan: 'free',
+            tier: 'free_user',
+            subscription_status: status,
+            downgraded_at: new Date().toISOString()
+          }
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Error handling subscription event:', error);
+    throw error;
+  }
+}
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -164,56 +282,19 @@ export async function POST(req: Request) {
         }
         break;
 
-      // Handle subscription-related events if Clerk sends them
+      // Handle Clerk Billing subscription events
       case 'subscription.created':
-      case 'subscription.updated':
-        console.log('📦 Subscription event received:', { type, data });
-        
-        type SubPayload = Record<string, unknown> & {
-          user_id?: string;
-          userId?: string;
-          object?: Record<string, unknown> & {
-            user_id?: string;
-            status?: string;
-            active?: boolean;
-            interval?: string;
-            billing_cycle?: string;
-          };
-        };
-
-        const d = data as SubPayload;
-        const subUserId = d.user_id || d.userId || d.object?.user_id;
-        const subData = d.object || {};
-        
-        if (subUserId) {
-          const isActive = subData.status === 'active' || subData.active === true;
-          const interval = subData.interval || subData.billing_cycle;
-          
-          if (isActive) {
-            let subscriptionType: "monthly" | "annual" | undefined;
-            if (interval === 'year' || interval === 'annual') {
-              subscriptionType = 'annual';
-            } else if (interval === 'month' || interval === 'monthly') {
-              subscriptionType = 'monthly';
-            }
-
-            console.log('⬆️ Upgrading user via subscription event:', { 
-              userId: subUserId, 
-              subscriptionType, 
-              status: subData.status 
-            });
-
-            await fetchMutation(api.users.setTier, {
-              clerkId: subUserId as string,
-              tier: 'premium_user',
-              subscriptionType: subscriptionType,
-            });
-          }
-        }
+        console.log('🎉 Subscription created:', { type, data });
+        await handleSubscriptionEvent(data, 'created');
         break;
 
-      case 'subscription.deleted':
+      case 'subscription.updated':
+        console.log('🔄 Subscription updated:', { type, data });
+        await handleSubscriptionEvent(data, 'updated');
+        break;
+
       case 'subscription.cancelled':
+      case 'subscription.deleted':
         console.log('❌ Subscription cancelled:', { type, data });
         
         type CancelPayload = Record<string, unknown> & {

@@ -14,6 +14,9 @@ NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url_here
 # Resend Email Service
 RESEND_API_KEY=your_resend_api_key_here
 
+# Clerk Billing (add the plan ID you created in Clerk Dashboard)
+NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID=your_premium_plan_id_here
+
 # IMPORTANT SETUP STEPS:
 # 1. In Clerk Dashboard, create a JWT Template named "convex"
 # 2. Set the JWT Template's "Audience" (aud) to "convex"

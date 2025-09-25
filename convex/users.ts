@@ -100,6 +100,7 @@ export const setTier = mutation({
 
     const now = Date.now();
     const isPremium = args.tier === "premium_user";
+    const wasAlreadyPremium = user.tier === "premium_user";
 
     const updateData: any = {
       tier: args.tier,
@@ -116,9 +117,59 @@ export const setTier = mutation({
 
     await ctx.db.patch(user._id, updateData);
 
+    // Auto-add SubWise subscription when user FIRST upgrades to premium
+    if (isPremium && !wasAlreadyPremium) {
+      await addSubWiseSubscription(ctx, user._id, args.subscriptionType || "monthly");
+    }
+
     return user._id;
   },
 });
+
+// Helper function to auto-add SubWise subscription
+async function addSubWiseSubscription(
+  ctx: any, 
+  userId: any, 
+  subscriptionType: "monthly" | "annual"
+) {
+  // Check if SubWise subscription already exists
+  const existingSubWise = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("name"), "SubWise"))
+    .unique();
+
+  if (existingSubWise) {
+    console.log("✅ SubWise subscription already exists for user");
+    return;
+  }
+
+  const now = Date.now();
+  const cost = subscriptionType === "annual" ? 90.00 : 9.00; // $90/year or $9/month
+  const billingCycle = subscriptionType === "annual" ? "yearly" : "monthly";
+  
+  // Calculate next billing date (30 days or 365 days from now)
+  const daysToAdd = subscriptionType === "annual" ? 365 : 30;
+  const nextBillingDate = now + (daysToAdd * 24 * 60 * 60 * 1000);
+
+  // Add SubWise subscription
+  const subscriptionId = await ctx.db.insert("subscriptions", {
+    userId: userId,
+    name: "SubWise",
+    cost: cost,
+    currency: "USD",
+    billingCycle: billingCycle,
+    nextBillingDate: nextBillingDate,
+    category: "Productivity", // Category for organization
+    description: "Subscription tracking and management platform",
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  console.log(`✅ Auto-added SubWise ${subscriptionType} subscription ($${cost}/${billingCycle}) for user`);
+  return subscriptionId;
+}
 
 // Update user's preferred currency
 export const updatePreferredCurrency = mutation({

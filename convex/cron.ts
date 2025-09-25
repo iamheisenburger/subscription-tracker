@@ -24,11 +24,18 @@ crons.weekly(
   internal.notifications.cleanupOldNotifications,
 );
 
-// Check spending thresholds daily at 10 AM UTC
+// Check spending thresholds daily at 10 AM UTC (Premium Smart Alerts)
 crons.daily(
   "check spending thresholds",
   { hourUTC: 10, minuteUTC: 0 },
   internal.notifications.checkSpendingThresholds,
+);
+
+// Check advanced spending insights for premium users (Enhanced system)
+crons.daily(
+  "check advanced spending insights",
+  { hourUTC: 11, minuteUTC: 0 },
+  internal.spendingInsights.checkAdvancedSpendingThresholds,
 );
 
 export default crons;

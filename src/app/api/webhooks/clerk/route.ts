@@ -65,13 +65,27 @@ export async function POST(req: Request) {
 
       case 'user.updated':
         // Check if user has premium plan in public metadata
-        const metadata = data.public_metadata as { plan?: string; tier?: string } | undefined;
+        const metadata = data.public_metadata as { 
+          plan?: string; 
+          tier?: string; 
+          subscriptionType?: string;
+          billing?: string;
+        } | undefined;
         const hasPremiumMetadata = metadata?.plan === 'premium' || metadata?.tier === 'premium_user';
         
         if (hasPremiumMetadata) {
+          // Determine subscription type from metadata
+          let subscriptionType: "monthly" | "annual" | undefined;
+          if (metadata?.subscriptionType === 'annual' || metadata?.billing === 'annual') {
+            subscriptionType = 'annual';
+          } else if (metadata?.subscriptionType === 'monthly' || metadata?.billing === 'monthly') {
+            subscriptionType = 'monthly';
+          }
+
           await fetchMutation(api.users.setTier, {
             clerkId: data.id as string,
             tier: 'premium_user',
+            subscriptionType: subscriptionType,
           });
         }
         break;

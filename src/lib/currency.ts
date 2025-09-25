@@ -95,24 +95,35 @@ function writeCache(entry: CachedRates): void {
 
 async function fetchFromApi(baseCurrency: string): Promise<CachedRates> {
   const base = (baseCurrency || "USD").toUpperCase();
-  const symbols = SUPPORTED_CURRENCIES.join(",");
-  const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${symbols}`;
+  
+  // Use free exchangerate-api.com service (no API key required)
+  const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Exchange API error: ${res.status}`);
   }
   const json = await res.json();
+  
+  // Check if API call was successful
+  if (json.result !== "success" || !json.rates) {
+    throw new Error(`Exchange API returned error: ${json.error?.info || 'Invalid response'}`);
+  }
+  
   // Start from fallback to guarantee coverage, then overlay API values
   const fallback = EXCHANGE_RATES[base] || EXCHANGE_RATES.USD;
   const rates: ExchangeRates = { ...fallback };
+  
+  // Map supported currencies from API response
   for (const symbol of SUPPORTED_CURRENCIES) {
     if (symbol === base) {
       rates[symbol] = 1;
-    } else if (json?.rates?.[symbol] != null && typeof json.rates[symbol] === "number") {
+    } else if (json.rates[symbol] != null && typeof json.rates[symbol] === "number") {
       rates[symbol] = json.rates[symbol];
     }
   }
+  
   const timestamp = Date.now();
+  console.log(`✅ Updated currency rates for ${base} from API at ${new Date(timestamp).toISOString()}`);
   return { base, rates, timestamp };
 }
 

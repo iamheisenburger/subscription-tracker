@@ -566,12 +566,12 @@ export const processNotificationQueue = internalAction({
   },
 });
 
-// Check spending thresholds for premium users (called by cron job)
+// Check spending thresholds for PREMIUM users (Smart Alerts - Premium Feature)
 export const checkSpendingThresholds = internalMutation({
   handler: async (ctx) => {
-    console.log("💰 Checking spending thresholds...");
+    console.log("💰 Checking spending thresholds for premium users...");
     
-    // Get premium users with spending alerts enabled
+    // Get premium users only (Smart Alerts are premium feature per project rules)
     const premiumUsers = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("tier"), "premium_user"))
@@ -645,7 +645,7 @@ export const checkSpendingThresholds = internalMutation({
                 templateData: {
                   currentSpending: monthlySpending,
                   threshold: preferences.spendingThreshold,
-                  currency: "USD", // TODO: Get from user preferences
+                  currency: user.preferredCurrency || "USD", // Use user's preferred currency
                   period: "month",
                   percentageOfThreshold: Math.round(thresholdPercentage),
                   overspent: monthlySpending > preferences.spendingThreshold,

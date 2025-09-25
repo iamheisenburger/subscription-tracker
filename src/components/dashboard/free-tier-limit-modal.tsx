@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Crown, Check } from "lucide-react";
+import { Crown, CheckCircle as Check } from "lucide-react";
 import Link from "next/link";
 
 interface FreeTierLimitModalProps {

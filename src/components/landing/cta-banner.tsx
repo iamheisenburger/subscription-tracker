@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight as ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 export const CTABanner = () => {

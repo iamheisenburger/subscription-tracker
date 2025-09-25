@@ -4,7 +4,8 @@ import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { RecentSubscriptions } from "@/components/dashboard/recent-subscriptions";
 import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
 import { AdminDebugPanel } from "@/components/dashboard/admin-debug-panel";
-// import { RenewalConfirmationPanel } from "@/components/dashboard/renewal-confirmation-panel";
+import { RenewalConfirmationSystem } from "@/components/dashboard/renewal-confirmation-system";
+import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
@@ -34,6 +35,12 @@ export default async function DashboardPage() {
 
       {/* Debug Panel */}
       <AdminDebugPanel />
+
+      {/* Renewal Confirmation System */}
+      <RenewalConfirmationSystem />
+
+      {/* Savings Celebration */}
+      <SavingsCelebration />
 
       {/* Upgrade Banner */}
       <UpgradeBanner />

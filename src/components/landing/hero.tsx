@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, CirclePlay, CreditCard, TrendingUp, Bell } from "lucide-react";
+import { ArrowRight as ArrowUpRight, Play as CirclePlay, CreditCard, TrendingUp, Bell } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 

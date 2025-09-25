@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CategoriesManager } from "./categories-manager";
 import { EmailTestSection } from "./email-test-section";
 import { PreferencesSettings } from "./preferences-settings";
+import { EnhancedSpendingSettings } from "../enhanced-spending-settings";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
@@ -123,6 +124,16 @@ export function SettingsContent({ user }: SettingsContentProps) {
 
         {/* Notifications */}
         <PreferencesSettings />
+
+        {/* Enhanced Spending (Premium Only) */}
+        {isPremium && (
+          <div className="p-6 border rounded-lg bg-card">
+            <h2 className="text-lg font-semibold font-sans mb-4">
+              💎 Enhanced Spending Management
+            </h2>
+            <EnhancedSpendingSettings />
+          </div>
+        )}
 
         {/* Theme Settings */}
         <div className="p-6 border rounded-lg bg-card">

@@ -39,31 +39,92 @@ export function AdminDebugPanel() {
     setLoading(type);
     
     try {
-      // Prefer direct Next API call so you see emails instantly in Resend
-      const subId = subscriptions && subscriptions.length > 0 ? subscriptions[0]._id : undefined;
-      const payload: { type: string; subscriptionId?: string; daysUntil?: number; currentSpending?: number; threshold?: number } = { type };
       if (type === "renewal_reminder") {
-        payload.subscriptionId = subId;
-        payload.daysUntil = 3;
+        // Find actual subscription that's due soon
+        const upcomingSubs = subscriptions?.filter(sub => {
+          const daysUntil = Math.ceil((sub.nextBillingDate - Date.now()) / (1000 * 60 * 60 * 24));
+          return daysUntil >= 0 && daysUntil <= 7; // Due within 7 days
+        }).sort((a, b) => a.nextBillingDate - b.nextBillingDate);
+        
+        const targetSub = upcomingSubs?.[0] || subscriptions?.[0];
+        if (!targetSub) {
+          throw new Error("No subscriptions found to test renewal reminder");
+        }
+        
+        const actualDaysUntil = Math.ceil((targetSub.nextBillingDate - Date.now()) / (1000 * 60 * 60 * 24));
+        
+        const payload = {
+          type: "renewal_reminder",
+          subscriptionId: targetSub._id,
+          daysUntil: actualDaysUntil
+        };
+
+        const res = await fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || "Email send failed");
+        }
+
+        toast.success(`✅ Renewal reminder sent`, {
+          description: `${targetSub.name} renews in ${actualDaysUntil} days`
+        });
+        
       } else if (type === "spending_alert") {
-        payload.subscriptionId = subId;
-        payload.currentSpending = 125;
-        payload.threshold = 100;
-      }
+        // Calculate REAL monthly spending
+        let realMonthlySpending = 0;
+        if (subscriptions) {
+          for (const sub of subscriptions) {
+            let monthlyCost = sub.cost;
+            if (sub.billingCycle === "yearly") {
+              monthlyCost = sub.cost / 12;
+            } else if (sub.billingCycle === "weekly") {
+              monthlyCost = sub.cost * 4.33;
+            }
+            realMonthlySpending += monthlyCost;
+          }
+        }
 
-      const res = await fetch("/api/notifications/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || "Email send failed");
-      }
+        const payload = {
+          type: "spending_alert",
+          currentSpending: Math.round(realMonthlySpending * 100) / 100, // Real spending: $198.23
+          threshold: 100 // Your actual threshold
+        };
 
-      toast.success(`✅ Email queued`, {
-        description: `Type: ${type}`
-      });
+        const res = await fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || "Email send failed");
+        }
+
+        toast.success(`✅ Spending alert sent`, {
+          description: `$${realMonthlySpending.toFixed(2)} vs $100 threshold`
+        });
+
+      } else {
+        // Simple test email
+        const res = await fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "test" }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || "Email send failed");
+        }
+
+        toast.success(`✅ Test email sent`, {
+          description: "Check your inbox"
+        });
+      }
+      
     } catch (error) {
       toast.error(`❌ Failed to send ${type} notification`, {
         description: error instanceof Error ? error.message : String(error)

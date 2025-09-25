@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 
 export default function TestPage() {
-  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function TestPage() {
         <ol>
           <li>Take a screenshot of this page</li>
           <li>Check browser console (F12) for errors</li>
-          <li>Go back to: <a href="/" style={{ color: '#1976d2' }}>Home Page</a></li>
+          <li>Go back to: <span style={{ color: '#1976d2', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>Home Page</span></li>
           <li>If home is still blank, we have the root cause!</li>
         </ol>
       </div>

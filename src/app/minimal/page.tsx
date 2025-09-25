@@ -3,6 +3,8 @@
  * DELETE AFTER DEBUGGING
  */
 
+"use client";
+
 export default function MinimalPage() {
   return (
     <div style={{ 
@@ -34,35 +36,37 @@ export default function MinimalPage() {
         <p>Time: {new Date().toLocaleTimeString()}</p>
         
         <div style={{ marginTop: '30px' }}>
-          <a 
-            href="/test" 
+          <button 
+            onClick={() => window.location.href = '/test'}
             style={{
               display: 'inline-block',
               padding: '12px 24px',
               backgroundColor: '#2563eb',
               color: 'white',
-              textDecoration: 'none',
+              border: 'none',
               borderRadius: '6px',
-              margin: '0 10px'
+              margin: '0 10px',
+              cursor: 'pointer'
             }}
           >
             🔍 Diagnostic Page
-          </a>
+          </button>
           
-          <a 
-            href="/" 
+          <button 
+            onClick={() => window.location.href = '/'}
             style={{
               display: 'inline-block',
               padding: '12px 24px',
               backgroundColor: '#dc2626',
               color: 'white',
-              textDecoration: 'none',
+              border: 'none',
               borderRadius: '6px',
-              margin: '0 10px'
+              margin: '0 10px',
+              cursor: 'pointer'
             }}
           >
             🏠 Home (Broken?)
-          </a>
+          </button>
         </div>
       </div>
       

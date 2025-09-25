@@ -31,8 +31,12 @@ crons.daily(
   internal.notifications.checkSpendingThresholds,
 );
 
-// Note: Advanced spending insights will be added in future update
-// For now, the enhanced spending threshold checking is handled in notifications.ts
+// Check for expired subscriptions daily at 12 PM UTC
+crons.daily(
+  "check expired subscriptions",
+  { hourUTC: 12, minuteUTC: 0 },
+  internal.subscription_renewal.checkExpiredSubscriptions,
+);
 
 export default crons;
 

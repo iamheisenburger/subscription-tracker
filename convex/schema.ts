@@ -37,6 +37,11 @@ export default defineSchema({
     category: v.optional(v.string()),
     description: v.optional(v.string()),
     isActive: v.boolean(),
+    renewalStatus: v.optional(v.union(
+      v.literal("pending_confirmation"),
+      v.literal("confirmed_renewed"), 
+      v.literal("confirmed_cancelled")
+    )),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

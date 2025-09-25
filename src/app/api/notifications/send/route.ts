@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const userData = {
       email: user.email,
       firstName: user.email.split('@')[0], // Extract name from email
-      clerkId: userId,
+      clerkId: effectiveUserId as string,
       preferredCurrency: user.preferredCurrency, // Pass user's preferred currency
     };
 

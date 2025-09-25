@@ -9,15 +9,16 @@ const plans = [
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "Perfect for getting started with subscription tracking",
+    description: "Perfect for individuals getting started with subscription tracking",
     features: [
       "Track up to 3 subscriptions",
-      "Basic spending overview",
+      "Multi-currency support (5 currencies)",
+      "Basic spending analytics",
       "Email renewal reminders",
       "Manual subscription entry",
-      "Email support",
+      "Standard email support",
     ],
-    buttonText: "Get Started Free",
+    buttonText: "Start Free - No Credit Card",
     buttonVariant: "outline" as const,
     href: "/sign-up",
   },
@@ -26,18 +27,19 @@ const plans = [
     price: "$9",
     period: "per month",
     yearlyPrice: "$7.50",
-    description: "Everything you need to master your subscriptions",
+    description: "For power users who want complete subscription control",
     features: [
       "Unlimited subscriptions",
-      "Advanced spending analytics",
-      "Smart alerts & notifications",
-      "Export to CSV/PDF",
-      "Custom categories",
-      "Advanced notifications",
-      "Priority support",
-      "7-day free trial",
+      "Advanced analytics dashboard",
+      "Smart spending threshold alerts",
+      "Real-time budget management",
+      "Export to CSV/PDF reports",
+      "Custom categories & tagging",
+      "Priority email support (12hr response)",
+      "Savings tracking & celebration",
+      "7-day free trial included",
     ],
-    buttonText: "Start Free Trial",
+    buttonText: "Start 7-Day Free Trial",
     buttonVariant: "default" as const,
     href: "/sign-up",
     popular: true,
@@ -50,10 +52,11 @@ export const Pricing = () => {
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
-            Simple, transparent pricing
+            Start free, upgrade when ready
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-            Choose the plan that&apos;s right for you. Start free and upgrade when you need more features.
+            No hidden fees, no long-term contracts. Try Premium free for 7 days, then decide. 
+            Cancel anytime with one click.
           </p>
         </div>
 

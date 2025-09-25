@@ -8,8 +8,9 @@ const footerLinks = [
   { name: "Features", href: "#features" },
   { name: "Pricing", href: "#pricing" },
   { name: "FAQ", href: "#faq" },
-  { name: "Testimonials", href: "#testimonials" },
+  { name: "Contact", href: "/contact" },
   { name: "Privacy", href: "/legal/privacy" },
+  { name: "Terms", href: "/legal/terms" },
 ];
 
 export const Footer = () => {
@@ -32,7 +33,10 @@ export const Footer = () => {
             </div>
           </div>
           <div className="lg:col-span-7 lg:justify-self-end">
-            <h3 className="font-semibold text-lg">Stay up to date</h3>
+            <h3 className="font-semibold text-lg">Get SubWise updates</h3>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">
+              New features, tips, and subscription management insights
+            </p>
             <div className="mt-4 flex flex-col sm:flex-row items-center gap-2 max-w-md">
               <Input
                 type="email"
@@ -41,6 +45,9 @@ export const Footer = () => {
               />
               <Button className="w-full sm:w-auto">Subscribe</Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              No spam, unsubscribe anytime. We respect your privacy.
+            </p>
           </div>
         </div>
 

@@ -11,39 +11,39 @@ import React from "react";
 const features = [
   {
     icon: CreditCard,
-    title: "Track All Subscriptions",
+    title: "Multi-Currency Tracking",
     description:
-      "Manage all your subscriptions in one place. Never lose track of what you're paying for again.",
+      "Track subscriptions in USD, EUR, GBP, CAD, and AUD with real-time exchange rates updated hourly from the European Central Bank.",
   },
   {
     icon: TrendingUp,
-    title: "Spending Analytics",
+    title: "Advanced Analytics",
     description:
-      "Get detailed insights into your subscription spending with beautiful charts and trends.",
+      "Visualize your spending patterns with interactive charts, track monthly/yearly trends, and identify cost-saving opportunities.",
   },
   {
     icon: Bell,
-    title: "Smart Notifications",
+    title: "Intelligent Alerts",
     description:
-      "Receive timely alerts before renewals, price changes, and when you're overspending.",
+      "Get renewal reminders, spending threshold alerts, and budget notifications in your preferred currency. Never overspend again.",
   },
   {
     icon: Shield,
-    title: "Secure & Private",
+    title: "Enterprise Security",
     description:
-      "Your financial data is encrypted and secure. We never share your information with third parties.",
+      "Bank-level encryption, secure authentication via Clerk, and SOC 2 compliant infrastructure. Your financial data stays private.",
   },
   {
     icon: Smartphone,
-    title: "Mobile Optimized",
+    title: "Mobile-First Design",
     description:
-      "Access your subscription dashboard anywhere with our mobile-first responsive design.",
+      "Native mobile experience with offline capability, touch-optimized interface, and Progressive Web App support.",
   },
   {
     icon: Zap,
-    title: "Quick Setup",
+    title: "Instant Setup",
     description:
-      "Get started in minutes. Add subscriptions manually or import from your bank statements.",
+      "Create your account in 30 seconds. Add subscriptions manually with smart category detection and automatic renewal calculations.",
   },
 ];
 
@@ -53,11 +53,11 @@ export const Features = () => {
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
-            Everything you need to manage subscriptions
+            Built for the global subscription economy
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-            SubWise provides all the tools you need to take control of your recurring payments
-            and optimize your spending.
+            From Netflix to Notion, track every recurring payment with precision. 
+            Real-time currency conversion, intelligent alerts, and powerful analytics in one platform.
           </p>
         </div>
         

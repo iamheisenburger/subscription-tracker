@@ -10,30 +10,29 @@ export const Hero = () => {
       <div className="md:mt-6 flex items-center justify-center">
         <div className="text-center max-w-4xl">
           <Badge className="bg-primary rounded-full py-1 border-none">
-            ✨ Track your subscriptions like a pro
+            🚀 Save money, stay organized
           </Badge>
           <h1 className="mt-6 max-w-[20ch] mx-auto text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-bold !leading-[1.2] tracking-tight font-sans">
-            Never lose track of your{" "}
-            <span className="text-primary">subscriptions</span> again
+            Stop overpaying for{" "}
+            <span className="text-primary">subscriptions</span> you forgot about
           </h1>
           <p className="mt-6 max-w-[60ch] mx-auto xs:text-lg text-muted-foreground font-sans">
-            SubWise helps you manage all your subscriptions in one place. 
-            Get insights, set budgets, and never miss a renewal with smart notifications.
+            SubWise tracks your recurring payments, sends intelligent alerts, and helps you save money with real-time spending analytics across 5 global currencies.
           </p>
           
           {/* Key Features Preview */}
           <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground font-sans">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-primary" />
-              <span>Track unlimited subscriptions</span>
+              <span>5 global currencies (USD, EUR, GBP, CAD, AUD)</span>
             </div>
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
-              <span>Spending analytics</span>
+              <span>Real-time spending analytics</span>
             </div>
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-primary" />
-              <span>Smart renewal alerts</span>
+              <span>Smart budget & renewal alerts</span>
             </div>
           </div>
 

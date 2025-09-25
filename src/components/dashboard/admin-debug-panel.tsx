@@ -14,7 +14,6 @@ export function AdminDebugPanel() {
   const [loading, setLoading] = useState<string | null>(null);
   
   const addSubWise = useMutation(api.users.addMissingSubWiseSubscription);
-  const sendTestNotification = useMutation(api.notifications.sendTestNotification);
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
 
   const handleAddSubWise = async () => {
@@ -42,7 +41,7 @@ export function AdminDebugPanel() {
     try {
       // Prefer direct Next API call so you see emails instantly in Resend
       const subId = subscriptions && subscriptions.length > 0 ? subscriptions[0]._id : undefined;
-      const payload: any = { type };
+      const payload: { type: string; subscriptionId?: string; daysUntil?: number; currentSpending?: number; threshold?: number } = { type };
       if (type === "renewal_reminder") {
         payload.subscriptionId = subId;
         payload.daysUntil = 3;

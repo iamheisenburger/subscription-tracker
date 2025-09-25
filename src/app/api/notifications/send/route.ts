@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get subscription data when provided
-    let subscription: any = null;
+    let subscription: { _id: string; name: string; cost: number; currency: string; billingCycle: string; category?: string } | null = null;
     if (subscriptionId) {
       const subscriptions = await convex.query(api.subscriptions.getUserSubscriptions, { 
         clerkId: effectiveUserId 
@@ -61,12 +61,18 @@ export async function POST(request: NextRequest) {
       preferredCurrency: user.preferredCurrency, // Pass user's preferred currency
     };
 
-    const subscriptionData = {
+    const subscriptionData = subscription ? {
       name: subscription.name,
       cost: subscription.cost,
       currency: subscription.currency,
-      billingCycle: subscription.billingCycle,
+      billingCycle: subscription.billingCycle as "monthly" | "yearly" | "weekly",
       category: subscription.category,
+    } : {
+      name: "Test Subscription",
+      cost: 9.99,
+      currency: "USD",
+      billingCycle: "monthly" as const,
+      category: "Test",
     };
 
     let emailResult: { success: boolean; messageId?: string; error?: string };
@@ -108,7 +114,7 @@ export async function POST(request: NextRequest) {
           userData,
           currentSpending,
           threshold,
-          subscription.currency
+          subscription?.currency || 'USD'
         );
         break;
 
@@ -130,8 +136,8 @@ export async function POST(request: NextRequest) {
       await convex.mutation(api.notifications.addNotificationToHistory, {
         clerkId: effectiveUserId,
         type,
-        title: getNotificationTitle(type, subscription.name),
-        message: getNotificationMessage(type, subscription.name, body),
+        title: getNotificationTitle(type, subscription?.name || "Test Subscription"),
+        message: getNotificationMessage(type, subscription?.name || "Test Subscription", body),
         metadata: {
           subscriptionId,
           emailMessageId: emailResult.messageId,

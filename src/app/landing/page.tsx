@@ -1,25 +1,12 @@
-import { Hero } from "@/components/landing/hero";
-import { Features } from "@/components/landing/features";
-import { Pricing } from "@/components/landing/pricing";
-import { FAQ } from "@/components/landing/faq";
-import { Testimonials } from "@/components/landing/testimonials";
-import { CTABanner } from "@/components/landing/cta-banner";
-import { Footer } from "@/components/landing/footer";
-import { Navbar } from "@/components/landing/navbar";
-
+// Temporarily disabled for deployment
 export default function LandingPage() {
   return (
-    <>
-      <Navbar />
-      <main className="pt-16 xs:pt-20 sm:pt-24">
-        <Hero />
-        <Features />
-        <Pricing />
-        <FAQ />
-        <Testimonials />
-        <CTABanner />
-        <Footer />
-      </main>
-    </>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">SubWise</h1>
+        <p className="text-muted-foreground">Landing page temporarily disabled for deployment</p>
+        <a href="/dashboard" className="text-blue-500 underline mt-4 block">Go to Dashboard</a>
+      </div>
+    </div>
   );
 }

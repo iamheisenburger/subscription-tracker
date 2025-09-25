@@ -8,6 +8,19 @@
 import { User } from '@clerk/nextjs/server';
 import { UserResource } from '@clerk/types';
 
+// Type definitions for organization membership data
+interface OrganizationMembership {
+  organization?: {
+    slug?: string;
+    name?: string;
+  };
+  role?: string;
+}
+
+interface ExtendedUser extends User {
+  organizationMemberships?: OrganizationMembership[];
+}
+
 export interface TierDetectionResult {
   tier: 'free_user' | 'premium_user';
   subscriptionType?: 'monthly' | 'annual';
@@ -20,10 +33,11 @@ export interface TierDetectionResult {
  * Comprehensive tier detection from Clerk user data (server-side User)
  */
 export function detectTierFromClerkUser(user: User): TierDetectionResult {
+  const extendedUser = user as ExtendedUser;
   const debug = {
     publicMetadata: user.publicMetadata,
     privateMetadata: user.privateMetadata,
-    organizationMemberships: (user as any).organizationMemberships?.map((m: any) => ({
+    organizationMemberships: extendedUser.organizationMemberships?.map((m: OrganizationMembership) => ({
       slug: m.organization?.slug,
       name: m.organization?.name,
       role: m.role
@@ -83,9 +97,8 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
   }
 
   // 3. Check Organization Memberships (medium confidence)  
-  const userWithOrgs = user as any;
-  const premiumOrgMembership = userWithOrgs.organizationMemberships?.find(
-    (membership: any) => 
+  const premiumOrgMembership = extendedUser.organizationMemberships?.find(
+    (membership: OrganizationMembership) => 
       membership.organization?.slug === 'premium' || 
       membership.organization?.name?.toLowerCase().includes('premium')
   );

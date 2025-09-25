@@ -56,6 +56,9 @@ export function AdminDebugPanel() {
     if (!user?.id) return;
     setLoading(type);
     
+    // Get user's preferred currency (available for all notification types)
+    const userCurrency = typeof window !== 'undefined' ? (localStorage.getItem('preferred-currency') || 'USD') : 'USD';
+    
     try {
       if (type === "renewal_reminder") {
         // Find actual subscription that's due soon
@@ -93,9 +96,6 @@ export function AdminDebugPanel() {
         });
         
       } else if (type === "spending_alert") {
-        // Get user's ACTUAL preferred currency from localStorage (same as dashboard)
-        const userCurrency = typeof window !== 'undefined' ? (localStorage.getItem('preferred-currency') || 'USD') : 'USD';
-        
         // Get the REAL spending data from analytics (same source as Budget page)
         if (!analytics?.monthlyTotal) {
           throw new Error("Analytics data not loaded yet. Please wait and try again.");

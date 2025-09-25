@@ -704,20 +704,19 @@ export const checkSpendingThresholds = internalMutation({
             monthlyCost = sub.cost * 4.33; // Average weeks per month
           }
           
-          // Use simple conversion rates for now (will improve with server-side conversion)
+          // Use SAME fallback rates as frontend and backend for consistency
           if (sub.currency !== userCurrency) {
-            // Basic conversion rates (approximate)
-            const conversionRates: Record<string, Record<string, number>> = {
-              'USD': { 'GBP': 0.79, 'EUR': 0.92, 'CAD': 1.36, 'AUD': 1.52 },
-              'GBP': { 'USD': 1.27, 'EUR': 1.16, 'CAD': 1.72, 'AUD': 1.93 },
-              'EUR': { 'USD': 1.09, 'GBP': 0.86, 'CAD': 1.48, 'AUD': 1.66 },
-              'CAD': { 'USD': 0.74, 'GBP': 0.58, 'EUR': 0.68, 'AUD': 1.12 },
-              'AUD': { 'USD': 0.66, 'GBP': 0.52, 'EUR': 0.60, 'CAD': 0.89 }
+            const CONSISTENT_RATES: Record<string, Record<string, number>> = {
+              'USD': { 'USD': 1.00, 'EUR': 0.92, 'GBP': 0.79, 'CAD': 1.36, 'AUD': 1.52 },
+              'EUR': { 'USD': 1.09, 'EUR': 1.00, 'GBP': 0.86, 'CAD': 1.48, 'AUD': 1.65 },
+              'GBP': { 'USD': 1.27, 'EUR': 1.16, 'GBP': 1.00, 'CAD': 1.73, 'AUD': 1.93 },
+              'CAD': { 'USD': 0.74, 'EUR': 0.68, 'GBP': 0.58, 'CAD': 1.00, 'AUD': 1.12 },
+              'AUD': { 'USD': 0.66, 'EUR': 0.61, 'GBP': 0.52, 'CAD': 0.89, 'AUD': 1.00 },
             };
             
             const fromCurrency = (sub.currency || 'USD').toUpperCase();
             const toCurrency = userCurrency.toUpperCase();
-            const rate = conversionRates[fromCurrency]?.[toCurrency] || 1;
+            const rate = CONSISTENT_RATES[fromCurrency]?.[toCurrency] || 1;
             
             monthlyCost = monthlyCost * rate;
           }

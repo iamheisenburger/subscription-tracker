@@ -10,21 +10,21 @@ interface CurrencyConversionResult {
   rate: number;
 }
 
-// Hardcoded fallback rates for when API is unavailable (updated Sept 2025)
+// EXACT SAME fallback rates as frontend lib (src/lib/currency.ts) for consistency
 const FALLBACK_RATES: Record<string, Record<string, number>> = {
-  USD: { USD: 1.00, EUR: 0.91, GBP: 0.75, CAD: 1.392, AUD: 1.53 },
-  EUR: { USD: 1.10, EUR: 1.00, GBP: 0.82, CAD: 1.53, AUD: 1.68 },
-  GBP: { USD: 1.33, EUR: 1.22, GBP: 1.00, CAD: 1.85, AUD: 2.04 },
-  CAD: { USD: 0.718, EUR: 0.654, GBP: 0.541, CAD: 1.00, AUD: 1.10 },
-  AUD: { USD: 0.653, EUR: 0.595, GBP: 0.490, CAD: 0.909, AUD: 1.00 },
+  USD: { USD: 1.00, EUR: 0.92, GBP: 0.79, CAD: 1.36, AUD: 1.52 },
+  EUR: { USD: 1.09, EUR: 1.00, GBP: 0.86, CAD: 1.48, AUD: 1.65 },
+  GBP: { USD: 1.27, EUR: 1.16, GBP: 1.00, CAD: 1.73, AUD: 1.93 },
+  CAD: { USD: 0.74, EUR: 0.68, GBP: 0.58, CAD: 1.00, AUD: 1.12 },
+  AUD: { USD: 0.66, EUR: 0.61, GBP: 0.52, CAD: 0.89, AUD: 1.00 },
 };
 
 async function fetchLiveExchangeRates(baseCurrency: string): Promise<Record<string, number>> {
   try {
     const base = baseCurrency.toUpperCase();
-    const symbols = "USD,EUR,GBP,CAD,AUD";
+    // USE SAME API AS FRONTEND: open.er-api.com (not exchangerate.host)
     const response = await fetch(
-      `https://api.exchangerate.host/latest?base=${base}&symbols=${symbols}`,
+      `https://open.er-api.com/v6/latest/${base}`,
       { 
         method: 'GET',
         headers: { 'Accept': 'application/json' }
@@ -37,7 +37,7 @@ async function fetchLiveExchangeRates(baseCurrency: string): Promise<Record<stri
     
     const data = await response.json();
     
-    if (!data.success || !data.rates) {
+    if (data.result !== "success" || !data.rates) {
       throw new Error('Invalid API response format');
     }
     

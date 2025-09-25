@@ -46,45 +46,35 @@ export function EnhancedSpendingSettings() {
     }
   }, [preferences]);
 
-  // Calculate current spending with proper currency conversion
+  // Calculate current spending with proper currency conversion - SAME AS OVERVIEW CARDS
   useEffect(() => {
     if (!subscriptions || !userCurrency) return;
     
     const calculateConvertedSpending = async () => {
       setConversionLoading(true);
-      let totalConverted = 0;
       
       try {
-        // Use same conversion rates as backend for consistency
-        const conversionRates: Record<string, Record<string, number>> = {
-          'USD': { 'GBP': 0.79, 'EUR': 0.92, 'CAD': 1.36, 'AUD': 1.52 },
-          'GBP': { 'USD': 1.27, 'EUR': 1.16, 'CAD': 1.72, 'AUD': 1.93 },
-          'EUR': { 'USD': 1.09, 'GBP': 0.86, 'CAD': 1.48, 'AUD': 1.66 },
-          'CAD': { 'USD': 0.74, 'GBP': 0.58, 'EUR': 0.68, 'AUD': 1.12 },
-          'AUD': { 'USD': 0.66, 'GBP': 0.52, 'EUR': 0.60, 'CAD': 0.89 }
-        };
-
-        for (const sub of subscriptions) {
-          // Calculate monthly cost in original currency
-          let monthlyCost = sub.cost;
+        // Use EXACT SAME logic as overview-cards.tsx for consistency
+        const monthlyAmounts = subscriptions.map(sub => {
+          let monthlyAmount = sub.cost;
           if (sub.billingCycle === "yearly") {
-            monthlyCost = sub.cost / 12;
+            monthlyAmount = sub.cost / 12;
           } else if (sub.billingCycle === "weekly") {
-            monthlyCost = sub.cost * 4.33;
+            monthlyAmount = sub.cost * 4.33; // Average weeks per month
           }
-          
-          // Convert to user's preferred currency
-          if (sub.currency !== userCurrency) {
-            const fromCurrency = (sub.currency || 'USD').toUpperCase();
-            const toCurrency = userCurrency.toUpperCase();
-            const rate = conversionRates[fromCurrency]?.[toCurrency] || 1;
-            monthlyCost = monthlyCost * rate;
-          }
-          
-          totalConverted += monthlyCost;
-        }
+
+          return {
+            amount: monthlyAmount,
+            currency: sub.currency || 'USD'
+          };
+        });
+
+        // Use the SAME convertMultipleCurrencies function as overview-cards
+        const { convertMultipleCurrencies } = await import('@/lib/currency');
+        const conversions = await convertMultipleCurrencies(monthlyAmounts, userCurrency);
+        const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
         
-        setCurrentSpending(totalConverted);
+        setCurrentSpending(Math.round(monthlyTotal * 100) / 100);
       } catch (error) {
         console.error("Currency conversion failed:", error);
         setCurrentSpending(0);
@@ -261,21 +251,6 @@ export function EnhancedSpendingSettings() {
             </div>
           </div>
 
-          {/* Smart Recommendations */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <h5 className="font-medium text-blue-600 mb-2">💡 Smart Recommendations</h5>
-            <div className="space-y-1 text-sm">
-              {currentSpending > monthlyThreshold && (
-                <p>• Consider reviewing your highest-cost subscriptions</p>
-              )}
-              {subscriptions && subscriptions.length > 10 && (
-                <p>• You have {subscriptions.length} subscriptions - consider consolidating similar services</p>
-              )}
-              {currentSpending < monthlyThreshold * 0.5 && (
-                <p>• Your spending is healthy - consider increasing your budget if needed</p>
-              )}
-            </div>
-          </div>
 
           <Button 
             onClick={handleSaveThresholds}

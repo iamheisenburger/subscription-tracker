@@ -101,10 +101,18 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignInUrl="/dashboard"
-      afterSignUpUrl="/dashboard"
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+      appearance={{
+        variables: {
+          colorPrimary: "hsl(var(--primary))",
+          fontFamily: "var(--font-sans)",
+        },
+        elements: {
+          formButtonPrimary: 
+            "bg-primary text-primary-foreground hover:bg-primary/90 text-sm normal-case font-medium",
+          card: "bg-card shadow-lg border border-border",
+        },
+      }}
     >
       <html lang="en">
         <body

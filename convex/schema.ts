@@ -75,7 +75,8 @@ export default defineSchema({
       v.literal("renewal_reminder"),
       v.literal("price_change"),
       v.literal("spending_alert"),
-      v.literal("trial_expiry")
+      v.literal("trial_expiry"),
+      v.literal("test")
     ),
     scheduledFor: v.number(), // timestamp
     status: v.union(

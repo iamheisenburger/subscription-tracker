@@ -276,6 +276,47 @@ export const updatePushEnabled = mutation({
   },
 });
 
+// Add SubWise subscription for existing premium users who don't have it
+export const addMissingSubWiseSubscription = mutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.tier !== "premium_user") {
+      throw new Error("Only premium users get SubWise subscription");
+    }
+
+    // Check if SubWise already exists
+    const subscriptions = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q: any) => q.eq("userId", user._id))
+      .collect();
+    
+    const existingSubWise = subscriptions.find((sub: any) => sub.name === "SubWise");
+
+    if (existingSubWise) {
+      return { message: "SubWise subscription already exists", subscriptionId: existingSubWise._id };
+    }
+
+    // Add SubWise subscription (default to monthly for existing users)
+    const subscriptionType = user.subscriptionType || "monthly";
+    const subscriptionId = await addSubWiseSubscription(ctx, user._id, subscriptionType);
+
+    return { 
+      message: `Added SubWise ${subscriptionType} subscription`, 
+      subscriptionId,
+      cost: subscriptionType === "annual" ? 90.00 : 9.00
+    };
+  },
+});
+
 // Check if user can add more subscriptions
 export const canAddSubscription = query({
   args: { clerkId: v.string() },

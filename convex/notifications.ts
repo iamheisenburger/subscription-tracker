@@ -453,6 +453,87 @@ export const generateRenewalReminders = internalMutation({
   },
 });
 
+// Test notification system - send test email to user
+export const sendTestNotification = mutation({
+  args: { 
+    clerkId: v.string(),
+    type: v.union(v.literal("renewal_reminder"), v.literal("spending_alert"), v.literal("test"))
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const now = Date.now();
+    let emailData;
+
+    switch (args.type) {
+      case "renewal_reminder":
+        emailData = {
+          subject: "🧪 TEST: Subscription Renewal Reminder",
+          template: "renewal_reminder",
+          templateData: {
+            userName: user.email?.split('@')[0] || 'there',
+            subscriptionName: "Test Subscription",
+            cost: 9.99,
+            currency: "USD",
+            billingCycle: "monthly",
+            daysUntil: 3,
+            category: "Test"
+          }
+        };
+        break;
+      
+      case "spending_alert":
+        emailData = {
+          subject: "🧪 TEST: Monthly Spending Alert",
+          template: "spending_alert", 
+          templateData: {
+            userName: user.email?.split('@')[0] || 'there',
+            currentSpending: 125.00,
+            threshold: 100.00,
+            currency: "USD",
+            percentageOfThreshold: 125,
+            overspent: true
+          }
+        };
+        break;
+
+      default:
+        emailData = {
+          subject: "🧪 TEST: SubWise Notification System",
+          template: "test_notification",
+          templateData: {
+            userName: user.email?.split('@')[0] || 'there',
+            message: "Your notification system is working correctly!"
+          }
+        };
+    }
+
+    // Add to notification queue for immediate processing
+    const queueId = await ctx.db.insert("notificationQueue", {
+      userId: user._id,
+      type: args.type,
+      scheduledFor: now + (10 * 1000), // Send in 10 seconds
+      status: "pending",
+      emailData,
+      attempts: 0,
+      createdAt: now,
+    });
+
+    return { 
+      message: `Test ${args.type} notification scheduled`, 
+      queueId,
+      willSendTo: user.email 
+    };
+  },
+});
+
 // Process the notification queue (called by cron job every 5 minutes)
 export const processNotificationQueue = internalAction({
   handler: async (ctx) => {

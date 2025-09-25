@@ -4,8 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle as Check } from "lucide-react";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
-import { CheckoutButton } from "@clerk/nextjs/experimental";
+// Temporarily removed Clerk checkout components
 import Link from "next/link";
 
 const plans = [
@@ -113,28 +112,9 @@ export const CustomPricing = () => {
                   </Link>
                 )}
 
-                {/* Premium Plan Buttons */}
+                {/* Premium Plan Buttons - Temporary fallback to sign-up */}
                 {plan.planId && (
-                  <CheckoutButton 
-                    planId={plan.planId}
-                    planPeriod="month"
-                    newSubscriptionRedirectUrl="/dashboard"
-                    onSubscriptionComplete={() => {
-                      console.log('Premium subscription completed!')
-                      window.location.href = '/dashboard'
-                    }}
-                    checkoutProps={{
-                      appearance: {
-                        variables: {
-                          colorPrimary: "hsl(var(--primary))",
-                          colorText: "hsl(var(--foreground))",
-                          colorBackground: "hsl(var(--background))",
-                          fontFamily: "var(--font-sans)",
-                          borderRadius: "var(--radius)",
-                        }
-                      }
-                    }}
-                  >
+                  <Link href="/sign-up" className="block">
                     <Button 
                       variant={plan.buttonVariant} 
                       className="w-full font-sans"
@@ -142,7 +122,7 @@ export const CustomPricing = () => {
                     >
                       {plan.buttonText}
                     </Button>
-                  </CheckoutButton>
+                  </Link>
                 )}
               </CardContent>
             </Card>

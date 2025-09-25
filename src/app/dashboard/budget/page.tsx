@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { EnhancedSpendingSettings } from "@/components/dashboard/enhanced-spending-settings";
+import { BudgetPremiumGate } from "@/components/dashboard/budget-premium-gate";
 
 export default async function BudgetPage() {
   const { userId } = await auth();
@@ -24,8 +25,10 @@ export default async function BudgetPage() {
         </div>
       </div>
 
-      {/* Enhanced Spending Management */}
-      <EnhancedSpendingSettings />
+      {/* Premium Gate or Enhanced Spending Management */}
+      <BudgetPremiumGate>
+        <EnhancedSpendingSettings />
+      </BudgetPremiumGate>
     </div>
   );
 }

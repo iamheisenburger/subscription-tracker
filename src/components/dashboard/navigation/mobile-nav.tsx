@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
-import { useUserTier } from "@/hooks/use-user-tier";
+// import { useUserTier } from "@/hooks/use-user-tier";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
@@ -18,7 +18,8 @@ const navigation = [
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { isLoading, isPremium } = useUserTier();
+  // Remove unused tier detection since we're showing all features now
+  // const { isLoading, isPremium } = useUserTier();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t">

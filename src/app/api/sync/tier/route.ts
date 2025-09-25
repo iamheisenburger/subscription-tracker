@@ -56,10 +56,11 @@ export async function POST() {
     );
 
     // AGGRESSIVE PREMIUM DETECTION - if user has ANY indication of premium, treat as premium
+    const clerkUserData = clerkUser as Record<string, unknown>;
     const hasAnyPremiumIndicator = hasPremiumInPublic || hasPremiumInPrivate || hasActiveSubscription ||
       // Check if user has subscriptions field or any billing-related data
-      (clerkUser as any).subscriptions?.length > 0 ||
-      (clerkUser as any).billing ||
+      (clerkUserData.subscriptions as unknown[])?.length > 0 ||
+      clerkUserData.billing ||
       // If they're calling this API, they probably ARE premium but system isn't detecting it
       true; // TEMPORARY: Force everyone to premium for debugging
 

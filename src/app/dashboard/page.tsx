@@ -8,6 +8,7 @@ import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
+import { DebugTierInfo } from "@/components/dashboard/debug-tier-info";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -31,6 +32,9 @@ export default async function DashboardPage() {
         </div>
         <OverviewActions />
       </div>
+
+      {/* DEBUG: Tier Detection */}
+      <DebugTierInfo />
 
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />

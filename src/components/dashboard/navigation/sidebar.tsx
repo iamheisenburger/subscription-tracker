@@ -50,11 +50,7 @@ export function DashboardSidebar() {
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           
-          // Hide premium features for free users
-          if (item.premium && !isPremium && !isLoading) {
-            return null;
-          }
-          
+          // SHOW ALL FEATURES - don't hide premium features, tease them instead
           return (
             <Link key={item.name} href={item.href}>
               <Button

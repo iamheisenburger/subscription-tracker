@@ -158,33 +158,12 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              {/* Manage Billing Button */}
-              <SignedOut>
-                <SignInButton>
-                  <Button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
-                    Manage Billing
-                  </Button>
-                </SignInButton>
-              </SignedOut>
-              <SignedIn>
-                <PlanDetailsButton 
-                  planId="plan_premium_user"
-                  planDetailsProps={{
-                    appearance: {
-                      variables: {
-                        colorPrimary: "hsl(var(--primary))",
-                        colorText: "hsl(var(--foreground))",
-                        colorBackground: "hsl(var(--background))",
-                        fontFamily: "var(--font-sans)",
-                      }
-                    }
-                  }}
-                >
-                  <Button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
-                    Manage Billing
-                  </Button>
-                </PlanDetailsButton>
-              </SignedIn>
+              {/* Manage Billing Instructions */}
+              <div className="px-4 py-2 border border-muted rounded-lg bg-muted/20">
+                <p className="text-sm font-sans text-muted-foreground">
+                  Click your profile picture (top right) → <strong>"Manage account"</strong> to access billing, payment methods, and subscription management.
+                </p>
+              </div>
             </div>
           </div>
         </div>

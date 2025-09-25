@@ -43,7 +43,7 @@ const plans = [
       "Savings tracking & celebration",
       "7-day free trial included",
     ],
-    planId: "plan_premium_user", // Your Clerk plan ID
+    planId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID || "plan_premium_user", // Your Clerk plan ID
     buttonText: "Start 7-Day Free Trial",
     buttonVariant: "default" as const,
     popular: true,
@@ -115,51 +115,34 @@ export const CustomPricing = () => {
 
                 {/* Premium Plan Buttons */}
                 {plan.planId && (
-                  <>
-                    {/* When user is signed out - go to sign-up */}
-                    <SignedOut>
-                      <Link href="/sign-up" className="block">
-                        <Button 
-                          variant={plan.buttonVariant} 
-                          className="w-full font-sans"
-                          size="lg"
-                        >
-                          {plan.buttonText}
-                        </Button>
-                      </Link>
-                    </SignedOut>
-
-                    {/* When user is signed in - go to checkout */}
-                    <SignedIn>
-                      <CheckoutButton 
-                        planId={plan.planId}
-                        planPeriod="month"
-                        newSubscriptionRedirectUrl="/dashboard"
-                        onSubscriptionComplete={() => {
-                          console.log('Premium subscription completed!')
-                        }}
-                        checkoutProps={{
-                          appearance: {
-                            variables: {
-                              colorPrimary: "hsl(var(--primary))",
-                              colorText: "hsl(var(--foreground))",
-                              colorBackground: "hsl(var(--background))",
-                              fontFamily: "var(--font-sans)",
-                              borderRadius: "var(--radius)",
-                            }
-                          }
-                        }}
-                      >
-                        <Button 
-                          variant={plan.buttonVariant} 
-                          className="w-full font-sans"
-                          size="lg"
-                        >
-                          {plan.buttonText}
-                        </Button>
-                      </CheckoutButton>
-                    </SignedIn>
-                  </>
+                  <CheckoutButton 
+                    planId={plan.planId}
+                    planPeriod="month"
+                    newSubscriptionRedirectUrl="/dashboard"
+                    onSubscriptionComplete={() => {
+                      console.log('Premium subscription completed!')
+                      window.location.href = '/dashboard'
+                    }}
+                    checkoutProps={{
+                      appearance: {
+                        variables: {
+                          colorPrimary: "hsl(var(--primary))",
+                          colorText: "hsl(var(--foreground))",
+                          colorBackground: "hsl(var(--background))",
+                          fontFamily: "var(--font-sans)",
+                          borderRadius: "var(--radius)",
+                        }
+                      }
+                    }}
+                  >
+                    <Button 
+                      variant={plan.buttonVariant} 
+                      className="w-full font-sans"
+                      size="lg"
+                    >
+                      {plan.buttonText}
+                    </Button>
+                  </CheckoutButton>
                 )}
               </CardContent>
             </Card>

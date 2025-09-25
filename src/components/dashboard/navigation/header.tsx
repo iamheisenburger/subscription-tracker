@@ -33,7 +33,18 @@ export function DashboardHeader() {
                 avatarBox: "w-8 h-8"
               }
             }}
-          />
+          >
+            <UserButton.UserProfilePage 
+              label="Billing" 
+              labelIcon={<span>💳</span>}
+              url="billing"
+            >
+              <div className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Billing & Subscription</h3>
+                <p>Manage your subscription, payment methods, and billing history.</p>
+              </div>
+            </UserButton.UserProfilePage>
+          </UserButton>
         </div>
       </div>
     </header>

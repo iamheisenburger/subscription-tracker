@@ -43,7 +43,7 @@ const plans = [
       "Savings tracking & celebration",
       "7-day free trial included",
     ],
-    planId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID || "plan_premium_user", // Your Clerk plan ID
+           planId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID || "cplan_32xfUNaavPmbOI3V7AtOq7EiPqM", // Your Clerk plan ID
     buttonText: "Start 7-Day Free Trial",
     buttonVariant: "default" as const,
     popular: true,

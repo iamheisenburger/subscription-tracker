@@ -13,7 +13,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { convertCurrency } from "@/lib/currency";
+import { convertCurrency, getPreferredCurrency } from "@/lib/currency";
 
 // Helper function to format currency based on user preference
 const formatCurrency = (amount: number, currency: string) => {
@@ -30,7 +30,8 @@ export function EnhancedSpendingSettings() {
   const userInfo = useQuery(api.users.getUserByClerkId, user?.id ? { clerkId: user.id } : "skip");
 
   // Get user's preferred currency and current threshold
-  const userCurrency = userInfo?.preferredCurrency || 'USD';
+  // Prefer client-selected currency for consistency across dashboard
+  const userCurrency = (typeof window !== 'undefined' ? getPreferredCurrency() : null) || userInfo?.preferredCurrency || 'USD';
   const [monthlyThreshold, setMonthlyThreshold] = useState<number>(100);
   const [yearlyThreshold, setYearlyThreshold] = useState<number>(1200);
   const [alertPercentages, setAlertPercentages] = useState<number[]>([80, 100, 120]);

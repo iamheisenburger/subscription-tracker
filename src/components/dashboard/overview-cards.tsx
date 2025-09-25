@@ -107,7 +107,7 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
               }, 0);
               return formatCurrency(total, "USD");
             })()
-          : "$0.00",
+          : formatCurrency(0, (typeof window !== 'undefined' ? getPreferredCurrency() : 'USD')),
       description: convertedTotals?.currency
         ? `Current monthly cost (${convertedTotals.currency})`
         : "Current monthly cost",
@@ -125,9 +125,10 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
                 else if (sub.billingCycle === "weekly") monthly = sub.amount * 4.33;
                 return sum + monthly;
               }, 0);
-              return formatCurrency(monthlyTotal * 12, "USD");
+              const cur = (typeof window !== 'undefined' ? getPreferredCurrency() : 'USD');
+              return formatCurrency(monthlyTotal * 12, cur);
             })()
-          : "$0.00",
+          : formatCurrency(0, (typeof window !== 'undefined' ? getPreferredCurrency() : 'USD')),
       description: convertedTotals?.currency
         ? `Projected annual cost (${convertedTotals.currency})`
         : "Projected annual cost",

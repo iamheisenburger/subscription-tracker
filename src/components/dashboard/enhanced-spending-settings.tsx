@@ -13,6 +13,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
+import { convertCurrency } from "@/lib/currency";
 
 // Helper function to format currency based on user preference
 const formatCurrency = (amount: number, currency: string) => {
@@ -33,6 +34,8 @@ export function EnhancedSpendingSettings() {
   const [monthlyThreshold, setMonthlyThreshold] = useState<number>(100);
   const [yearlyThreshold, setYearlyThreshold] = useState<number>(1200);
   const [alertPercentages, setAlertPercentages] = useState<number[]>([80, 100, 120]);
+  const [currentSpending, setCurrentSpending] = useState<number>(0);
+  const [conversionLoading, setConversionLoading] = useState(false);
 
   // Sync with preferences when loaded
   useEffect(() => {
@@ -42,19 +45,55 @@ export function EnhancedSpendingSettings() {
     }
   }, [preferences]);
 
-  // Memoize current spending calculation for performance
-  const currentSpending = useMemo(() => {
-    if (!subscriptions) return 0;
-    return subscriptions.reduce((total, sub) => {
-      let monthlyCost = sub.cost;
-      if (sub.billingCycle === "yearly") {
-        monthlyCost = sub.cost / 12;
-      } else if (sub.billingCycle === "weekly") {
-        monthlyCost = sub.cost * 4.33;
+  // Calculate current spending with proper currency conversion
+  useEffect(() => {
+    if (!subscriptions || !userCurrency) return;
+    
+    const calculateConvertedSpending = async () => {
+      setConversionLoading(true);
+      let totalConverted = 0;
+      
+      try {
+        // Use same conversion rates as backend for consistency
+        const conversionRates: Record<string, Record<string, number>> = {
+          'USD': { 'GBP': 0.79, 'EUR': 0.92, 'CAD': 1.36, 'AUD': 1.52 },
+          'GBP': { 'USD': 1.27, 'EUR': 1.16, 'CAD': 1.72, 'AUD': 1.93 },
+          'EUR': { 'USD': 1.09, 'GBP': 0.86, 'CAD': 1.48, 'AUD': 1.66 },
+          'CAD': { 'USD': 0.74, 'GBP': 0.58, 'EUR': 0.68, 'AUD': 1.12 },
+          'AUD': { 'USD': 0.66, 'GBP': 0.52, 'EUR': 0.60, 'CAD': 0.89 }
+        };
+
+        for (const sub of subscriptions) {
+          // Calculate monthly cost in original currency
+          let monthlyCost = sub.cost;
+          if (sub.billingCycle === "yearly") {
+            monthlyCost = sub.cost / 12;
+          } else if (sub.billingCycle === "weekly") {
+            monthlyCost = sub.cost * 4.33;
+          }
+          
+          // Convert to user's preferred currency
+          if (sub.currency !== userCurrency) {
+            const fromCurrency = (sub.currency || 'USD').toUpperCase();
+            const toCurrency = userCurrency.toUpperCase();
+            const rate = conversionRates[fromCurrency]?.[toCurrency] || 1;
+            monthlyCost = monthlyCost * rate;
+          }
+          
+          totalConverted += monthlyCost;
+        }
+        
+        setCurrentSpending(totalConverted);
+      } catch (error) {
+        console.error("Currency conversion failed:", error);
+        setCurrentSpending(0);
+      } finally {
+        setConversionLoading(false);
       }
-      return total + monthlyCost;
-    }, 0);
-  }, [subscriptions]);
+    };
+
+    calculateConvertedSpending();
+  }, [subscriptions, userCurrency]);
 
   const spendingPercentage = monthlyThreshold > 0 ? (currentSpending / monthlyThreshold) * 100 : 0;
   const isOverBudget = currentSpending > monthlyThreshold;
@@ -127,10 +166,17 @@ export function EnhancedSpendingSettings() {
             <h4 className="font-semibold">Current Monthly Spending</h4>
             <div className="text-right">
               <div className="text-2xl font-bold">
-                {formatCurrency(currentSpending, userCurrency)}
+                {conversionLoading ? (
+                  <span className="text-muted-foreground">Converting...</span>
+                ) : (
+                  formatCurrency(currentSpending, userCurrency)
+                )}
               </div>
               <div className="text-sm text-muted-foreground">
                 {Math.round(spendingPercentage)}% of budget
+                {userCurrency !== 'USD' && !conversionLoading && (
+                  <span className="block text-xs">Converted to {userCurrency}</span>
+                )}
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 
 // Currency conversion logic embedded directly in Convex (no external imports)
 interface CurrencyConversionResult {
@@ -649,5 +649,60 @@ export const deleteSubscription = mutation({
     await ctx.db.delete(args.subscriptionId);
     
     return { success: true };
+  },
+});
+
+// Convert single currency amount using the live exchange rates
+export const convertSingleCurrency = action({
+  args: {
+    amount: v.number(),
+    fromCurrency: v.string(),
+    toCurrency: v.string(),
+  },
+  handler: async (ctx, args): Promise<CurrencyConversionResult> => {
+    if (args.fromCurrency === args.toCurrency) {
+      return {
+        originalAmount: args.amount,
+        originalCurrency: args.fromCurrency,
+        convertedAmount: args.amount,
+        targetCurrency: args.toCurrency,
+        rate: 1,
+      };
+    }
+
+    try {
+      // Use the live exchange rates
+      const rates = await fetchLiveExchangeRates(args.fromCurrency);
+      const rate = rates[args.toCurrency.toUpperCase()];
+      
+      if (!rate) {
+        throw new Error(`Exchange rate not found for ${args.fromCurrency} to ${args.toCurrency}`);
+      }
+
+      const convertedAmount = args.amount * rate;
+      
+      return {
+        originalAmount: args.amount,
+        originalCurrency: args.fromCurrency,
+        convertedAmount,
+        targetCurrency: args.toCurrency,
+        rate,
+      };
+    } catch (error) {
+      console.warn(`Currency conversion failed: ${error}. Using fallback rates.`);
+      
+      // Use fallback rates
+      const fallbackRates = FALLBACK_RATES[args.fromCurrency.toUpperCase()] || FALLBACK_RATES.USD;
+      const rate = fallbackRates[args.toCurrency.toUpperCase()] || 1;
+      const convertedAmount = args.amount * rate;
+      
+      return {
+        originalAmount: args.amount,
+        originalCurrency: args.fromCurrency,
+        convertedAmount,
+        targetCurrency: args.toCurrency,
+        rate,
+      };
+    }
   },
 });

@@ -691,16 +691,37 @@ export const checkSpendingThresholds = internalMutation({
           .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
           .collect();
         
+        // Calculate spending in user's preferred currency
         let monthlySpending = 0;
+        const userCurrency = user.preferredCurrency || 'USD';
         
         for (const sub of subscriptions) {
-          // Calculate how much this subscription costs per month
+          // Calculate how much this subscription costs per month in original currency
           let monthlyCost = sub.cost;
           if (sub.billingCycle === "yearly") {
             monthlyCost = sub.cost / 12;
           } else if (sub.billingCycle === "weekly") {
             monthlyCost = sub.cost * 4.33; // Average weeks per month
           }
+          
+          // Use simple conversion rates for now (will improve with server-side conversion)
+          if (sub.currency !== userCurrency) {
+            // Basic conversion rates (approximate)
+            const conversionRates: Record<string, Record<string, number>> = {
+              'USD': { 'GBP': 0.79, 'EUR': 0.92, 'CAD': 1.36, 'AUD': 1.52 },
+              'GBP': { 'USD': 1.27, 'EUR': 1.16, 'CAD': 1.72, 'AUD': 1.93 },
+              'EUR': { 'USD': 1.09, 'GBP': 0.86, 'CAD': 1.48, 'AUD': 1.66 },
+              'CAD': { 'USD': 0.74, 'GBP': 0.58, 'EUR': 0.68, 'AUD': 1.12 },
+              'AUD': { 'USD': 0.66, 'GBP': 0.52, 'EUR': 0.60, 'CAD': 0.89 }
+            };
+            
+            const fromCurrency = (sub.currency || 'USD').toUpperCase();
+            const toCurrency = userCurrency.toUpperCase();
+            const rate = conversionRates[fromCurrency]?.[toCurrency] || 1;
+            
+            monthlyCost = monthlyCost * rate;
+          }
+          
           monthlySpending += monthlyCost;
         }
         
@@ -734,12 +755,13 @@ export const checkSpendingThresholds = internalMutation({
                   : `Spending Alert: You're at ${Math.round(thresholdPercentage)}% of your monthly budget`,
                 template: "spending_alert",
                 templateData: {
-                  currentSpending: monthlySpending,
+                  currentSpending: monthlySpending, // Already converted to user's preferred currency
                   threshold: preferences.spendingThreshold,
-                  currency: user.preferredCurrency || "USD", // Use user's preferred currency
+                  currency: userCurrency, // User's preferred currency (GBP, EUR, etc.)
                   period: "month",
                   percentageOfThreshold: Math.round(thresholdPercentage),
                   overspent: monthlySpending > preferences.spendingThreshold,
+                  conversionNote: userCurrency !== 'USD' ? `Converted to ${userCurrency}` : undefined,
                 },
               },
               attempts: 0,

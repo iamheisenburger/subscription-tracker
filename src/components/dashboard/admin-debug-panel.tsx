@@ -15,6 +15,7 @@ export function AdminDebugPanel() {
   
   const addSubWise = useMutation(api.users.addMissingSubWiseSubscription);
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
+  const userInfo = useQuery(api.users.getUserByClerkId, user?.id ? { clerkId: user.id } : "skip");
 
   const handleAddSubWise = async () => {
     if (!user?.id) return;
@@ -74,44 +75,23 @@ export function AdminDebugPanel() {
         });
         
       } else if (type === "spending_alert") {
-        // Calculate REAL monthly spending with proper currency conversion
-        let realMonthlySpending = 0;
-        if (subscriptions) {
-          // Note: In production, this should use proper async currency conversion
-          // For testing, we'll use the approximate converted amount from the dashboard
-          for (const sub of subscriptions) {
-            let monthlyCost = sub.cost;
-            if (sub.billingCycle === "yearly") {
-              monthlyCost = sub.cost / 12;
-            } else if (sub.billingCycle === "weekly") {
-              monthlyCost = sub.cost * 4.33;
-            }
-            // Simple conversion approximation for test (real conversion happens server-side)
-            if (sub.currency !== 'GBP' && sub.currency === 'USD') {
-              monthlyCost = monthlyCost * 0.79; // Approximate USD to GBP
-            }
-            realMonthlySpending += monthlyCost;
-          }
-        }
-
-        const payload = {
-          type: "spending_alert",
-          currentSpending: Math.round(realMonthlySpending * 100) / 100, // Real spending converted to GBP
-          threshold: 100 // Your actual threshold
-        };
-
-        const res = await fetch("/api/notifications/send", {
+        // Call the Convex test notification directly - uses SAME logic as backend
+        const res = await fetch("/api/test-features", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ action: "notifications" }),
         });
         const json = await res.json();
         if (!res.ok || !json.success) {
           throw new Error(json.error || "Email send failed");
         }
 
+        // Show success with user's actual currency preference
+        const userCurrency = userInfo?.preferredCurrency || 'USD';
+        const currencySymbol = userCurrency === 'CAD' ? 'C$' : userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'AUD' ? 'A$' : '$';
+        
         toast.success(`✅ Spending alert sent`, {
-          description: `£${realMonthlySpending.toFixed(2)} vs £100 threshold (converted to GBP)`
+          description: `Using real ${userCurrency} amounts from your budget`
         });
 
       } else {

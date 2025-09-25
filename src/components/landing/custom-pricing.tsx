@@ -16,45 +16,65 @@ export const CustomPricing = () => {
           </p>
         </div>
 
-        {/* Clerk's PricingTable - Fully Customized */}
+        {/* Clerk's PricingTable - Enhanced Theme & Visibility */}
         <div className="max-w-4xl mx-auto">
           <PricingTable 
             newSubscriptionRedirectUrl="/dashboard"
             appearance={{
               variables: {
-                // Use your theme colors
+                // Enhanced theme colors for better visibility
                 colorPrimary: "hsl(var(--primary))",
                 colorText: "hsl(var(--foreground))",
                 colorTextSecondary: "hsl(var(--muted-foreground))",
-                colorBackground: "hsl(var(--background))",
-                colorInputBackground: "hsl(var(--background))",
+                colorBackground: "hsl(var(--card))",
+                colorInputBackground: "hsl(var(--input))",
                 colorInputText: "hsl(var(--foreground))",
                 fontFamily: "var(--font-sans)",
                 borderRadius: "var(--radius)",
-                // Card styling
+                
+                // Improved contrast for switches and toggles
                 colorNeutral: "hsl(var(--muted))",
                 colorSuccess: "hsl(var(--primary))",
                 colorDanger: "hsl(var(--destructive))",
-                colorWarning: "hsl(var(--warning))",
-                // Spacing
-                spacingUnit: "1rem",
+                
+                // Enhanced border and shadow
+                colorBorder: "hsl(var(--border))",
+                colorShimmer: "hsl(var(--muted))",
               },
               elements: {
-                // Style the pricing table container
-                card: "shadow-lg border border-border bg-card",
-                headerTitle: "font-sans font-bold",
+                // Enhanced card styling
+                rootBox: "bg-card border border-border rounded-lg shadow-sm",
+                card: "bg-card border border-border rounded-lg shadow-sm",
+                
+                // Better text contrast
+                headerTitle: "font-sans font-bold text-foreground",
                 headerSubtitle: "font-sans text-muted-foreground",
-                // Style pricing text
-                priceText: "font-sans font-bold text-4xl",
-                // Style buttons
-                formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-sans rounded-md transition-colors",
-                formButtonSecondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 font-sans rounded-md transition-colors",
-                // Style features list
-                pricingFeature: "font-sans text-sm",
-                // Style the overall layout
-                rootBox: "rounded-lg",
-                // Badge for popular plan
-                badge: "bg-primary text-primary-foreground font-sans text-xs",
+                text: "font-sans text-foreground",
+                
+                // Enhanced pricing text
+                priceText: "font-sans font-bold text-3xl text-foreground",
+                
+                // Improved buttons with better contrast
+                formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-sans font-medium rounded-md transition-all duration-200 shadow-sm border-0 min-h-[44px]",
+                formButtonSecondary: "bg-muted text-foreground hover:bg-muted/80 font-sans font-medium rounded-md transition-all duration-200 shadow-sm border border-border min-h-[44px]",
+                
+                // Enhanced features list
+                pricingFeature: "font-sans text-sm text-foreground flex items-center gap-2",
+                
+                // Better badge styling
+                badge: "bg-primary text-primary-foreground font-sans text-xs font-medium px-2 py-1 rounded-full",
+                
+                // Improved switch/toggle visibility - CRITICAL FIX
+                switchThumb: "bg-background border-2 border-primary shadow-sm",
+                switchTrackChecked: "bg-primary",
+                switchTrackUnchecked: "bg-muted border border-border",
+                
+                // Enhanced input styling
+                formFieldInput: "bg-input border border-border text-foreground rounded-md font-sans",
+                formFieldLabel: "text-foreground font-sans font-medium",
+                
+                // Better dividers and separators
+                divider: "border-border",
               }
             }}
             checkoutProps={{
@@ -63,8 +83,17 @@ export const CustomPricing = () => {
                   colorPrimary: "hsl(var(--primary))",
                   colorText: "hsl(var(--foreground))",
                   colorBackground: "hsl(var(--background))",
+                  colorInputBackground: "hsl(var(--input))",
                   fontFamily: "var(--font-sans)",
                   borderRadius: "var(--radius)",
+                  colorBorder: "hsl(var(--border))",
+                },
+                elements: {
+                  rootBox: "bg-background",
+                  card: "bg-card border border-border rounded-lg shadow-lg",
+                  formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-sans font-medium rounded-md transition-all duration-200 min-h-[44px]",
+                  text: "text-foreground font-sans",
+                  formFieldInput: "bg-input border border-border text-foreground rounded-md font-sans",
                 }
               }
             }}

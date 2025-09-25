@@ -51,6 +51,27 @@ export function UserSync() {
             subscriptionType: tierResult.subscriptionType
           });
           console.log('✅ Tier updated to premium via UserSync');
+        } else if (tierResult.tier === 'free_user') {
+          // If client-side detection shows free user, try automatic server-side detection
+          // This catches users who paid but webhooks failed
+          console.log('🔍 Client shows free user, triggering automatic premium detection...');
+          
+          try {
+            const autoDetectResponse = await fetch('/api/auto-detect-premium', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (autoDetectResponse.ok) {
+              const result = await autoDetectResponse.json();
+              if (result.upgraded) {
+                console.log('✅ Automatic premium detection successful - refreshing page');
+                setTimeout(() => window.location.reload(), 1000);
+              }
+            }
+          } catch (error) {
+            console.log('⚠️ Automatic premium detection failed:', error);
+          }
         }
 
         // Initialize notification preferences for new users (idempotent)

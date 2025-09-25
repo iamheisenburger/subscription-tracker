@@ -154,6 +154,30 @@ export default function MobileDebugPage() {
             </Button>
             
             <Button 
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const response = await fetch('/api/auto-detect-premium', { method: 'POST' });
+                  const result = await response.json();
+                  if (result.upgraded) {
+                    setSyncResult({ ...result, message: '🎉 AUTOMATIC PREMIUM DETECTION SUCCESSFUL!' });
+                    setTimeout(() => window.location.reload(), 2000);
+                  } else {
+                    setSyncResult({ ...result, message: 'No premium status detected automatically' });
+                  }
+                } catch (error) {
+                  setSyncResult({ error: String(error) });
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              {loading ? "Detecting..." : "🔮 Auto-Detect Premium"}
+            </Button>
+            
+            <Button 
               onClick={() => window.location.reload()} 
               variant="outline"
               className="w-full"
@@ -233,10 +257,17 @@ export default function MobileDebugPage() {
             <CardTitle>📱 What This Shows</CardTitle>
           </CardHeader>
           <CardContent className="text-sm space-y-2">
-            <p><strong>🔄 Test Sync:</strong> Runs tier detection manually</p>
+            <p><strong>🔄 Test Sync:</strong> Runs basic tier detection manually</p>
             <p><strong>📊 Check Clerk Data:</strong> Shows raw data from your Clerk account</p>  
-            <p><strong>🚀 Force Override:</strong> Bypasses detection and sets premium status</p>
-            <p className="text-orange-600"><strong>Problem?</strong> Screenshot this entire page and share it!</p>
+            <p><strong>🔮 Auto-Detect Premium:</strong> Advanced detection that checks Clerk billing system</p>
+            <p><strong>🚀 Force Override:</strong> Emergency bypass - sets premium immediately</p>
+            
+            <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">
+              <p><strong>💡 New Auto-Detection System:</strong></p>
+              <p>The app now automatically detects premium users even when webhooks fail. Try &quot;Auto-Detect Premium&quot; first!</p>
+            </div>
+            
+            <p className="text-orange-600"><strong>Still broken?</strong> Screenshot this page and report it!</p>
           </CardContent>
         </Card>
 

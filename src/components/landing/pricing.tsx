@@ -1,50 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle as Check } from "lucide-react";
-import Link from "next/link";
-
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    description: "Perfect for individuals getting started with subscription tracking",
-    features: [
-      "Track up to 3 subscriptions",
-      "Multi-currency support (5 currencies)",
-      "Basic spending analytics",
-      "Email renewal reminders",
-      "Manual subscription entry",
-      "Standard email support",
-    ],
-    buttonText: "Start Free - No Credit Card",
-    buttonVariant: "outline" as const,
-    href: "/sign-up",
-  },
-  {
-    name: "Premium",
-    price: "$9",
-    period: "per month",
-    yearlyPrice: "$7.50",
-    description: "For power users who want complete subscription control",
-    features: [
-      "Unlimited subscriptions",
-      "Advanced analytics dashboard",
-      "Smart spending threshold alerts",
-      "Real-time budget management",
-      "Export to CSV/PDF reports",
-      "Custom categories & tagging",
-      "Priority email support (12hr response)",
-      "Savings tracking & celebration",
-      "7-day free trial included",
-    ],
-    buttonText: "Start 7-Day Free Trial",
-    buttonVariant: "default" as const,
-    href: "/sign-up",
-    popular: true,
-  },
-];
+import { PricingTable } from "@clerk/nextjs";
 
 export const Pricing = () => {
   return (
@@ -60,60 +14,58 @@ export const Pricing = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {plans.map((plan) => (
-            <Card key={plan.name} className={`relative ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
-              {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                  Most Popular
-                </Badge>
-              )}
-              
-              <CardHeader className="text-center pb-6">
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <CardDescription className="text-base">{plan.description}</CardDescription>
-                
-                <div className="mt-4">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">/{plan.period}</span>
-                  </div>
-                  {plan.yearlyPrice && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      or {plan.yearlyPrice}/month billed annually
-                    </p>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3">
-                      <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href={plan.href} className="block">
-                  <Button 
-                    variant={plan.buttonVariant} 
-                    className="w-full"
-                    size="lg"
-                  >
-                    {plan.buttonText}
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Clerk Pricing Table */}
+        <div className="max-w-4xl mx-auto">
+          <PricingTable 
+            newSubscriptionRedirectUrl="/dashboard"
+            ctaPosition="bottom"
+            collapseFeatures={false}
+            checkoutProps={{
+              appearance: {
+                variables: {
+                  colorPrimary: "hsl(var(--primary))",
+                  colorText: "hsl(var(--foreground))",
+                  colorBackground: "hsl(var(--background))",
+                  borderRadius: "0.5rem",
+                }
+              }
+            }}
+            appearance={{
+              variables: {
+                colorPrimary: "hsl(var(--primary))",
+                colorText: "hsl(var(--foreground))",
+                colorBackground: "hsl(var(--background))",
+                borderRadius: "0.5rem",
+              },
+              elements: {
+                card: {
+                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "hsl(var(--card))",
+                  borderRadius: "0.5rem",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)"
+                },
+                cardHeader: {
+                  color: "hsl(var(--card-foreground))"
+                }
+              }
+            }}
+          />
         </div>
 
-        <div className="text-center mt-12">
-          <p className="text-sm text-muted-foreground">
-            ✅ 7-day free trial • ✅ No credit card required • ✅ Cancel anytime
-          </p>
+        {/* Trust indicators */}
+        <div className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="text-green-600">✓</span>
+            <span>7-day free trial</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600">✓</span>
+            <span>No credit card required</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600">✓</span>
+            <span>Cancel anytime</span>
+          </div>
         </div>
       </div>
     </div>

@@ -292,7 +292,7 @@ export default function ContactPage() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Direct email for all inquiries
                 </p>
-                <p className="text-sm font-mono">support@subwise.app</p>
+                <p className="text-sm font-mono">usesubwiseapp@gmail.com</p>
               </CardContent>
             </Card>
 
@@ -305,7 +305,7 @@ export default function ContactPage() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Data protection and privacy
                 </p>
-                <p className="text-sm font-mono">privacy@subwise.app</p>
+                <p className="text-sm font-mono">usesubwiseapp@gmail.com</p>
               </CardContent>
             </Card>
 
@@ -318,7 +318,7 @@ export default function ContactPage() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Ideas and suggestions
                 </p>
-                <p className="text-sm font-mono">feedback@subwise.app</p>
+                <p className="text-sm font-mono">usesubwiseapp@gmail.com</p>
               </CardContent>
             </Card>
           </div>

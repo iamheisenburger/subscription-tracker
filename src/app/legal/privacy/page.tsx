@@ -215,8 +215,8 @@ export default function PrivacyPolicyPage() {
                 If you have any questions about this Privacy Policy or our privacy practices, please contact us:
               </p>
               <div className="mt-4 p-4 border rounded-lg bg-muted/10">
-                <p className="text-sm"><strong>Email:</strong> privacy@subwise.app</p>
-                <p className="text-sm"><strong>Support:</strong> support@subwise.app</p>
+                <p className="text-sm"><strong>Email:</strong> usesubwiseapp@gmail.com</p>
+                <p className="text-sm"><strong>Support:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Address:</strong> SubWise Privacy Team</p>
                 <p className="text-sm">123 Privacy Street, Data City, DC 12345</p>
               </div>

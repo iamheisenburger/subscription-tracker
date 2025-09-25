@@ -285,8 +285,8 @@ export default function TermsOfServicePage() {
                 If you have any questions about these Terms of Service, please contact us:
               </p>
               <div className="mt-4 p-4 border rounded-lg bg-muted/10">
-                <p className="text-sm"><strong>Email:</strong> legal@subwise.app</p>
-                <p className="text-sm"><strong>Support:</strong> support@subwise.app</p>
+                <p className="text-sm"><strong>Email:</strong> usesubwiseapp@gmail.com</p>
+                <p className="text-sm"><strong>Support:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Address:</strong> SubWise Legal Team</p>
                 <p className="text-sm">123 Legal Street, Terms City, TC 12345</p>
               </div>

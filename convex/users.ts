@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 // Create or update user from Clerk webhook
 export const createOrUpdateUser = mutation({
@@ -129,15 +130,16 @@ export const setTier = mutation({
 // Helper function to auto-add SubWise subscription
 async function addSubWiseSubscription(
   ctx: any, 
-  userId: any, 
+  userId: Id<"users">, 
   subscriptionType: "monthly" | "annual"
 ) {
-  // Check if SubWise subscription already exists
-  const existingSubWise = await ctx.db
+  // Check if SubWise subscription already exists  
+  const subscriptions = await ctx.db
     .query("subscriptions")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .filter((q) => q.eq(q.field("name"), "SubWise"))
-    .unique();
+    .withIndex("by_user", (q: any) => q.eq("userId", userId))
+    .collect();
+  
+  const existingSubWise = subscriptions.find((sub: any) => sub.name === "SubWise");
 
   if (existingSubWise) {
     console.log("✅ SubWise subscription already exists for user");

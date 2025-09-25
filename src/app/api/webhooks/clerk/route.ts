@@ -169,13 +169,25 @@ export async function POST(req: Request) {
       case 'subscription.updated':
         console.log('📦 Subscription event received:', { type, data });
         
-        // Try to extract user ID and subscription info
-        const subUserId = (data as any).user_id || (data as any).userId || (data as any).object?.user_id;
-        const subData = (data as any).object || data;
+        type SubPayload = Record<string, unknown> & {
+          user_id?: string;
+          userId?: string;
+          object?: Record<string, unknown> & {
+            user_id?: string;
+            status?: string;
+            active?: boolean;
+            interval?: string;
+            billing_cycle?: string;
+          };
+        };
+
+        const d = data as SubPayload;
+        const subUserId = d.user_id || d.userId || d.object?.user_id;
+        const subData = d.object || {};
         
         if (subUserId) {
-          const isActive = (subData as any).status === 'active' || (subData as any).active === true;
-          const interval = (subData as any).interval || (subData as any).billing_cycle;
+          const isActive = subData.status === 'active' || subData.active === true;
+          const interval = subData.interval || subData.billing_cycle;
           
           if (isActive) {
             let subscriptionType: "monthly" | "annual" | undefined;
@@ -188,7 +200,7 @@ export async function POST(req: Request) {
             console.log('⬆️ Upgrading user via subscription event:', { 
               userId: subUserId, 
               subscriptionType, 
-              status: (subData as any).status 
+              status: subData.status 
             });
 
             await fetchMutation(api.users.setTier, {
@@ -204,7 +216,13 @@ export async function POST(req: Request) {
       case 'subscription.cancelled':
         console.log('❌ Subscription cancelled:', { type, data });
         
-        const cancelledUserId = (data as any).user_id || (data as any).userId || (data as any).object?.user_id;
+        type CancelPayload = Record<string, unknown> & {
+          user_id?: string;
+          userId?: string;
+          object?: { user_id?: string };
+        };
+        const dc = data as CancelPayload;
+        const cancelledUserId = dc.user_id || dc.userId || dc.object?.user_id;
         if (cancelledUserId) {
           await fetchMutation(api.users.setTier, {
             clerkId: cancelledUserId as string,

@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight as ArrowUpRight, Play as CirclePlay, CreditCard, TrendingUp, Bell } from "lucide-react";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { CheckoutButton } from "@clerk/nextjs/experimental";
 import Link from "next/link";
 import React from "react";
 
@@ -37,14 +39,47 @@ export const Hero = () => {
           </div>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center sm:justify-center gap-4">
-            <Link href="/sign-up">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto rounded-full text-base"
+            {/* Start Free Trial - CheckoutButton when signed in, sign-up when signed out */}
+            <SignedOut>
+              <Link href="/sign-up">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto rounded-full text-base"
+                >
+                  Start Free Trial <ArrowUpRight className="!h-5 !w-5" />
+                </Button>
+              </Link>
+            </SignedOut>
+
+            <SignedIn>
+              <CheckoutButton
+                planId={process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID || "cplan_32xfUNaavPmbOI3V7AtOq7EiPqM"}
+                planPeriod="month"
+                newSubscriptionRedirectUrl="/dashboard"
+                onSubscriptionComplete={() => {
+                  console.log('Premium subscription completed from hero!')
+                }}
+                checkoutProps={{
+                  appearance: {
+                    variables: {
+                      colorPrimary: "hsl(var(--primary))",
+                      colorText: "hsl(var(--foreground))",
+                      colorBackground: "hsl(var(--background))",
+                      fontFamily: "var(--font-sans)",
+                      borderRadius: "var(--radius)",
+                    }
+                  }
+                }}
               >
-                Start Free Trial <ArrowUpRight className="!h-5 !w-5" />
-              </Button>
-            </Link>
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto rounded-full text-base"
+                >
+                  Start Free Trial <ArrowUpRight className="!h-5 !w-5" />
+                </Button>
+              </CheckoutButton>
+            </SignedIn>
+
             <Link href="#demo">
               <Button
                 variant="outline"

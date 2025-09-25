@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { PlanDetailsButton } from "@clerk/nextjs/experimental";
+import { SubscriptionDetailsButton } from "@clerk/nextjs/experimental";
 
 interface SettingsContentProps {
   user: {
@@ -158,29 +158,26 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              {/* Manage Billing Button */}
-              <button 
-                onClick={() => {
-                  // Try to trigger the UserButton's account management
-                  const userButton = document.querySelector('[data-clerk-element="userButton"] button');
-                  if (userButton) {
-                    (userButton as HTMLElement).click();
-                    // Small delay to let the menu open, then click "Manage account"
-                    setTimeout(() => {
-                      const manageAccountButton = document.querySelector('button[data-testid="userButton-manageAccount"]');
-                      if (manageAccountButton) {
-                        (manageAccountButton as HTMLElement).click();
+              {/* Manage Billing Button using Clerk's SubscriptionDetailsButton */}
+              <SignedIn>
+                <SubscriptionDetailsButton
+                  subscriptionDetailsProps={{
+                    appearance: {
+                      variables: {
+                        colorPrimary: "hsl(var(--primary))",
+                        colorText: "hsl(var(--foreground))",
+                        colorBackground: "hsl(var(--background))",
+                        fontFamily: "var(--font-sans)",
+                        borderRadius: "var(--radius)",
                       }
-                    }, 100);
-                  } else {
-                    // Fallback to Clerk account URL
-                    window.open('https://dashboard.clerk.com/last-active', '_blank');
-                  }
-                }}
-                className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors"
-              >
-                Manage Billing
-              </button>
+                    }
+                  }}
+                >
+                  <button className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors">
+                    Manage Billing
+                  </button>
+                </SubscriptionDetailsButton>
+              </SignedIn>
             </div>
           </div>
         </div>

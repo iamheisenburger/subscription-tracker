@@ -23,7 +23,6 @@ import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
 export function MobileFirstPricing() {
   const { user } = useUser();
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
 
   const handleUpgradeToPremium = async (subscriptionType: 'monthly' | 'annual') => {
     if (!user?.id) return;
@@ -208,11 +207,7 @@ export function MobileFirstPricing() {
                   ) : (
                     <>
                       <SignedOut>
-                        <SignInButton 
-                          mode="modal"
-                          afterSignInUrl="/pricing"
-                          afterSignUpUrl="/pricing"
-                        >
+                        <SignInButton mode="modal">
                           <Button 
                             className="w-full h-12 text-base font-medium"
                             size="lg"

@@ -365,6 +365,9 @@ export const generateRenewalReminders = internalMutation({
           .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
           .collect();
         
+        // Group subscriptions by renewal day to send consolidated emails
+        const reminderGroups: Record<number, Array<{ subscription: any; daysUntil: number }>> = {};
+        
         for (const subscription of subscriptions) {
           const renewalDate = new Date(subscription.nextBillingDate);
           const now = new Date();
@@ -373,74 +376,81 @@ export const generateRenewalReminders = internalMutation({
           const timeDiff = renewalDate.getTime() - now.getTime();
           const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
           
-          // Check if we should send a reminder for this subscription
+          // Check if this matches any reminder day
           for (const reminderDay of preferences.reminderDays) {
             if (daysUntil === reminderDay) {
-              // Check if we already have a pending notification for this
-              const existingNotification = await ctx.db
-                .query("notificationQueue")
-                .withIndex("by_user_type", (q) => q.eq("userId", user._id).eq("type", "renewal_reminder"))
-                .filter((q) => 
-                  q.and(
-                    q.eq(q.field("subscriptionId"), subscription._id),
-                    q.eq(q.field("status"), "pending")
-                  )
-                )
-                .unique();
-              
-              if (!existingNotification) {
-                // Calculate smart context for premium users
-                let smartData = {};
-                if (user.tier === "premium_user") {
-                  // Calculate total monthly spending
-                  let monthlySpending = 0;
-                  for (const sub of subscriptions) {
-                    let monthlyCost = sub.cost;
-                    if (sub.billingCycle === "yearly") {
-                      monthlyCost = sub.cost / 12;
-                    } else if (sub.billingCycle === "weekly") {
-                      monthlyCost = sub.cost * 4.33;
-                    }
-                    monthlySpending += monthlyCost;
-                  }
-                  
-                  smartData = {
-                    isPremium: true,
-                    monthlySpending,
-                    totalSubscriptions: subscriptions.length,
-                    subscriptionId: subscription._id,
-                  };
-                }
-
-                // Schedule the reminder
-                await ctx.db.insert("notificationQueue", {
-                  userId: user._id,
-                  subscriptionId: subscription._id,
-                  type: "renewal_reminder",
-                  scheduledFor: now.getTime() + (5 * 60 * 1000), // Send in 5 minutes
-                  status: "pending",
-                  emailData: {
-                    subject: `${subscription.name} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`}`,
-                    template: "renewal_reminder",
-                    templateData: {
-                      userName: user.email?.split('@')[0] || 'there',
-                      daysUntil,
-                      subscriptionName: subscription.name,
-                      cost: subscription.cost,
-                      currency: subscription.currency || 'USD',
-                      billingCycle: subscription.billingCycle,
-                      category: subscription.category,
-                      ...smartData,
-                    },
-                  },
-                  attempts: 0,
-                  createdAt: now.getTime(),
-                });
-                
-                scheduledCount++;
-                console.log(`📅 Scheduled renewal reminder for ${user.email} - ${subscription.name} (${daysUntil} days)`);
+              if (!reminderGroups[reminderDay]) {
+                reminderGroups[reminderDay] = [];
               }
+              reminderGroups[reminderDay].push({ subscription, daysUntil });
             }
+          }
+        }
+
+        // Send consolidated emails for each reminder day
+        for (const [reminderDay, subscriptionsToRemind] of Object.entries(reminderGroups)) {
+          const daysUntil = parseInt(reminderDay);
+          
+          // Check if we already sent a reminder for this day
+          const existingReminderForDay = await ctx.db
+            .query("notificationQueue")
+            .withIndex("by_user_type", (q) => q.eq("userId", user._id).eq("type", "renewal_reminder"))
+            .filter((q) => 
+              q.and(
+                q.eq(q.field("status"), "pending"),
+                q.eq(q.field("emailData.templateData.daysUntil"), daysUntil)
+              )
+            )
+            .unique();
+
+          if (!existingReminderForDay) {
+            // Calculate total cost for all renewals
+            let totalCost = 0;
+            const userCurrency = user.preferredCurrency || 'USD';
+            
+            for (const { subscription } of subscriptionsToRemind) {
+              // Convert to user's preferred currency here if needed
+              totalCost += subscription.cost; // Will implement currency conversion
+            }
+
+            const now = new Date();
+            const multiple = subscriptionsToRemind.length > 1;
+            
+            const subject = multiple 
+              ? `${subscriptionsToRemind.length} subscriptions renew ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`}`
+              : `${subscriptionsToRemind[0].subscription.name} renews ${daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`}`;
+
+            // Schedule consolidated reminder
+            await ctx.db.insert("notificationQueue", {
+              userId: user._id,
+              type: "renewal_reminder",
+              scheduledFor: now.getTime() + (5 * 60 * 1000), // Send in 5 minutes
+              status: "pending",
+              emailData: {
+                subject,
+                template: "renewal_reminder",
+                templateData: {
+                  userName: user.email?.split('@')[0] || 'there',
+                  daysUntil,
+                  multiple,
+                  subscriptions: subscriptionsToRemind.map(({ subscription }) => ({
+                    name: subscription.name,
+                    cost: subscription.cost,
+                    currency: subscription.currency || 'USD',
+                    billingCycle: subscription.billingCycle,
+                    category: subscription.category,
+                  })),
+                  totalCost,
+                  userCurrency,
+                  subscriptionCount: subscriptionsToRemind.length,
+                },
+              },
+              attempts: 0,
+              createdAt: now.getTime(),
+            });
+            
+            scheduledCount++;
+            console.log(`📅 Scheduled consolidated renewal reminder for ${user.email} - ${subscriptionsToRemind.length} subscription(s) (${daysUntil} days)`);
           }
         }
       } catch (error) {

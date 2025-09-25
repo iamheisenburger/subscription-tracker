@@ -13,14 +13,28 @@ import {
 import * as React from 'react';
 import { formatEmailCurrency, formatEmailCurrencyWithConversion, getMonthlyEquivalent } from '../lib/email-currency';
 
+interface SubscriptionRenewal {
+  name: string;
+  cost: number;
+  currency: string;
+  billingCycle: 'monthly' | 'yearly' | 'weekly';
+  category?: string;
+}
+
 interface RenewalReminderEmailProps {
   userName?: string;
+  daysUntil?: number;
+  userCurrency?: string; // User's preferred currency
+  multiple?: boolean; // Multiple subscriptions renewing
+  subscriptions?: SubscriptionRenewal[]; // Array of subscriptions
+  totalCost?: number;
+  subscriptionCount?: number;
+  // Legacy single subscription support
   subscriptionName?: string;
   cost?: number;
   currency?: string;
-  displayCurrency?: string; // User's preferred currency for display
+  displayCurrency?: string;
   billingCycle?: 'monthly' | 'yearly' | 'weekly';
-  daysUntil?: number;
   category?: string;
   // Smart premium features
   isPremium?: boolean;

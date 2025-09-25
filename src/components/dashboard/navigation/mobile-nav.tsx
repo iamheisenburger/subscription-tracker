@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, CreditCard, BarChart3, Settings, Plus } from "lucide-react";
+import { Home, CreditCard, BarChart3, Settings, Plus, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-d
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
   { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
+  { name: "Budget", href: "/dashboard/budget", icon: DollarSign },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

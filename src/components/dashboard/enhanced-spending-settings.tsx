@@ -50,6 +50,30 @@ export function EnhancedSpendingSettings() {
         spendingAlerts: true,
       });
 
+      // If user is over the new threshold, send immediate alert
+      if (currentSpending > monthlyThreshold) {
+        const overage = currentSpending - monthlyThreshold;
+        toast.warning(`💰 New budget alert!`, {
+          description: `You're $${overage.toFixed(2)} over your new $${monthlyThreshold} budget`,
+          duration: 5000
+        });
+
+        // Send email notification about new threshold
+        try {
+          await fetch("/api/notifications/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "spending_alert",
+              currentSpending: Math.round(currentSpending * 100) / 100,
+              threshold: monthlyThreshold
+            }),
+          });
+        } catch (emailError) {
+          console.log("Failed to send threshold update email:", emailError);
+        }
+      }
+
       toast.success("✅ Spending thresholds updated", {
         description: `Monthly: $${monthlyThreshold}, Yearly: $${yearlyThreshold}`
       });

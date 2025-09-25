@@ -1,8 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -32,78 +30,25 @@ export function SavingsCelebration() {
   }
 
   return (
-    <Card className="border-green-500/20 bg-green-500/5">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          🎉 Your Money-Saving Journey
-          <Badge variant="outline" className="text-green-600">
-            {cancelledSubscriptions.length} cancelled
-          </Badge>
-        </CardTitle>
-        <CardDescription>
-          SubWise helped you identify and cancel unnecessary subscriptions
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {/* Monthly Savings */}
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              ${totalSavings.toFixed(2)}
-            </div>
-            <p className="text-sm text-muted-foreground">Monthly Savings</p>
+    <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+            <span className="text-lg">💰</span>
           </div>
-
-          {/* Yearly Savings */}
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              ${yearlySavings.toFixed(2)}
-            </div>
-            <p className="text-sm text-muted-foreground">Yearly Savings</p>
-          </div>
-
-          {/* Cancelled Count */}
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              {cancelledSubscriptions.length}
-            </div>
-            <p className="text-sm text-muted-foreground">Subscriptions Cancelled</p>
+          <div>
+            <h4 className="font-semibold text-green-700 text-sm">
+              You&apos;re saving ${totalSavings.toFixed(2)}/month
+            </h4>
+            <p className="text-xs text-green-600/80">
+              ${yearlySavings.toFixed(2)}/year from {cancelledSubscriptions.length} cancelled subscription{cancelledSubscriptions.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
-
-        {/* Cancelled Subscriptions List */}
-        <div className="space-y-2 mb-6">
-          <h4 className="font-semibold text-sm">Cancelled Subscriptions:</h4>
-          <div className="flex flex-wrap gap-2">
-            {cancelledSubscriptions.map((sub) => (
-              <Badge key={sub._id} variant="outline" className="text-green-600">
-                {sub.name} (${sub.cost}/{sub.billingCycle})
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Motivational Message */}
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
-          <h5 className="font-semibold text-green-600 mb-2">
-            🌟 Great Job Managing Your Subscriptions!
-          </h5>
-          <p className="text-sm text-green-600/80">
-            By staying on top of your subscriptions with SubWise, you&apos;ve saved <strong>${yearlySavings.toFixed(2)} per year</strong>. 
-            This shows how valuable it is to track and manage your recurring expenses!
-          </p>
-        </div>
-
-        {/* Call to Action */}
-        <div className="flex justify-center gap-2 mt-4">
-          <Button variant="outline" size="sm">
-            📊 View Analytics
-          </Button>
-          <Button variant="outline" size="sm">
-            ➕ Add New Subscription
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        <Badge variant="outline" className="text-green-600 text-xs">
+          {cancelledSubscriptions.length} cancelled
+        </Badge>
+      </div>
+    </div>
   );
 }

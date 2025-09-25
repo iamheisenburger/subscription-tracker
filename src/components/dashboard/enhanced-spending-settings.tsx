@@ -207,16 +207,27 @@ export function EnhancedSpendingSettings() {
               Get notified when you reach these percentages of your budget
             </p>
             <div className="flex gap-2 flex-wrap">
-              {alertPercentages.map((percentage, index) => (
+              {[80, 100, 120].map((percentage) => (
                 <Badge 
-                  key={index}
+                  key={percentage}
                   variant={percentage >= 100 ? "destructive" : "secondary"}
-                  className="text-sm"
+                  className="text-sm cursor-pointer hover:opacity-80"
+                  onClick={() => {
+                    // Trigger immediate alert for testing
+                    if (currentSpending > (monthlyThreshold * percentage / 100)) {
+                      toast.info(`🔔 Alert triggered at ${percentage}%`, {
+                        description: `You're currently at ${Math.round((currentSpending / monthlyThreshold) * 100)}% of your budget`
+                      });
+                    }
+                  }}
                 >
                   {percentage}%
                 </Badge>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Click triggers to test alerts
+            </p>
           </div>
 
 

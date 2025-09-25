@@ -74,7 +74,8 @@ export function AdminDebugPanel() {
         const payload = {
           type: "renewal_reminder",
           subscriptionId: targetSub._id,
-          daysUntil: actualDaysUntil
+          daysUntil: actualDaysUntil,
+          preferredCurrency: userCurrency // Add preferred currency
         };
 
         const res = await fetch("/api/notifications/send", {
@@ -132,7 +133,10 @@ export function AdminDebugPanel() {
         const res = await fetch("/api/notifications/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "test" }),
+          body: JSON.stringify({ 
+            type: "test", 
+            preferredCurrency: userCurrency // Add preferred currency
+          }),
         });
         const json = await res.json();
         if (!res.ok || !json.success) {

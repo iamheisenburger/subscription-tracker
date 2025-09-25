@@ -484,6 +484,7 @@ export const sendTestNotification = mutation({
 
     switch (args.type) {
       case "renewal_reminder":
+        const renewalUserCurrency = user.preferredCurrency || 'USD';
         emailData = {
           subject: "🧪 TEST: Subscription Renewal Reminder",
           template: "renewal_reminder",
@@ -491,7 +492,7 @@ export const sendTestNotification = mutation({
             userName: user.email?.split('@')[0] || 'there',
             subscriptionName: "Test Subscription",
             cost: 9.99,
-            currency: "USD",
+            currency: renewalUserCurrency, // Use user's preferred currency
             billingCycle: "monthly",
             daysUntil: 3,
             category: "Test"

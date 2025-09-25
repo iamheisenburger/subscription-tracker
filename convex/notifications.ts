@@ -500,16 +500,67 @@ export const sendTestNotification = mutation({
         break;
       
       case "spending_alert":
+        // GET REAL ANALYTICS DATA - SAME AS DASHBOARD
+        const preferences = await ctx.db
+          .query("notificationPreferences")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .unique();
+        
+        // Get user's preferred currency and threshold
+        const userCurrency = user.preferredCurrency || 'USD';
+        const thresholdAmount = preferences?.spendingThreshold || 100;
+        
+        // Get all active subscriptions
+        const subscriptions = await ctx.db
+          .query("subscriptions")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .filter((q) => q.eq(q.field("isActive"), true))
+          .collect();
+
+        // Calculate REAL monthly spending using SAME logic as backend analytics
+        let realMonthlySpending = 0;
+        for (const sub of subscriptions) {
+          let monthlyCost = sub.cost;
+          if (sub.billingCycle === "yearly") {
+            monthlyCost = sub.cost / 12;
+          } else if (sub.billingCycle === "weekly") {
+            monthlyCost = sub.cost * 4.33;
+          }
+          
+          // Use SAME fallback rates as other parts of the system
+          if (sub.currency !== userCurrency) {
+            const CONSISTENT_RATES: Record<string, Record<string, number>> = {
+              'USD': { 'USD': 1.00, 'EUR': 0.92, 'GBP': 0.79, 'CAD': 1.36, 'AUD': 1.52 },
+              'EUR': { 'USD': 1.09, 'EUR': 1.00, 'GBP': 0.86, 'CAD': 1.48, 'AUD': 1.65 },
+              'GBP': { 'USD': 1.27, 'EUR': 1.16, 'GBP': 1.00, 'CAD': 1.73, 'AUD': 1.93 },
+              'CAD': { 'USD': 0.74, 'EUR': 0.68, 'GBP': 0.58, 'CAD': 1.00, 'AUD': 1.12 },
+              'AUD': { 'USD': 0.66, 'EUR': 0.61, 'GBP': 0.52, 'CAD': 0.89, 'AUD': 1.00 },
+            };
+            
+            const fromCurrency = (sub.currency || 'USD').toUpperCase();
+            const toCurrency = userCurrency.toUpperCase();
+            const rate = CONSISTENT_RATES[fromCurrency]?.[toCurrency] || 1;
+            
+            monthlyCost = monthlyCost * rate;
+          }
+          
+          realMonthlySpending += monthlyCost;
+        }
+
+        const actualPercentage = thresholdAmount > 0 ? (realMonthlySpending / thresholdAmount) * 100 : 0;
+        const isOverBudget = realMonthlySpending > thresholdAmount;
+
         emailData = {
-          subject: "🧪 TEST: Monthly Spending Alert",
+          subject: `🧪 TEST: ${isOverBudget ? 'You\'ve exceeded' : 'Monthly spending update for'} your budget`,
           template: "spending_alert", 
           templateData: {
             userName: user.email?.split('@')[0] || 'there',
-            currentSpending: 125.00,
-            threshold: 100.00,
-            currency: "USD",
-            percentageOfThreshold: 125,
-            overspent: true
+            currentSpending: Math.round(realMonthlySpending * 100) / 100,
+            threshold: thresholdAmount,
+            currency: userCurrency,
+            percentageOfThreshold: Math.round(actualPercentage),
+            overspent: isOverBudget,
+            conversionNote: userCurrency !== 'USD' ? `Converted to ${userCurrency}` : undefined,
           }
         };
         break;

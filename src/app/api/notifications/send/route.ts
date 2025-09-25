@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           userData,
           currentSpending,
           threshold,
-          subscription?.currency || 'USD'
+          user.preferredCurrency || 'USD' // Use USER'S preferred currency, not subscription currency
         );
         break;
 

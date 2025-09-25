@@ -32,7 +32,6 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [renewalReminders, setRenewalReminders] = useState(true);
-  const [priceChangeAlerts, setPriceChangeAlerts] = useState(false);
   const [spendingAlerts, setSpendingAlerts] = useState(false);
   const [spendingThreshold, setSpendingThreshold] = useState<string>("");
   const [reminderDays, setReminderDays] = useState<number[]>([7, 3, 1]);
@@ -44,7 +43,7 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
       setEmailEnabled(preferences.emailEnabled);
       setPushEnabled(preferences.pushEnabled);
       setRenewalReminders(preferences.renewalReminders);
-      setPriceChangeAlerts(preferences.priceChangeAlerts);
+      // Price change alerts disabled - feature not ready
       setSpendingAlerts(preferences.spendingAlerts);
       setSpendingThreshold(preferences.spendingThreshold?.toString() || "");
       setReminderDays(preferences.reminderDays);
@@ -61,7 +60,7 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
         emailEnabled,
         pushEnabled,
         renewalReminders,
-        priceChangeAlerts: isPremium ? priceChangeAlerts : false,
+        priceChangeAlerts: false, // Disabled for now - feature not ready
         spendingAlerts: isPremium ? spendingAlerts : false,
         spendingThreshold: spendingThreshold ? parseFloat(spendingThreshold) : undefined,
         reminderDays,
@@ -204,34 +203,6 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
 
             {/* Advanced Alerts */}
             <div className="space-y-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="price-change-alerts" className="font-sans">
-                      Price Change Alerts
-                    </Label>
-                    {!isPremium && <Crown className="h-4 w-4 text-primary" />}
-                  </div>
-                  <p className="text-sm text-muted-foreground font-sans">
-                    {isPremium 
-                      ? "Instant notifications when subscription prices change"
-                      : "Get notified when prices change"
-                    }
-                  </p>
-                  {!isPremium && (
-                    <p className="text-xs text-muted-foreground font-sans">
-                      Available with Premium plan
-                    </p>
-                  )}
-                </div>
-                <Switch 
-                  id="price-change-alerts" 
-                  checked={isPremium && priceChangeAlerts}
-                  onCheckedChange={setPriceChangeAlerts}
-                  disabled={!isPremium}
-                />
-              </div>
-              
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { RecentSubscriptions } from "@/components/dashboard/recent-subscriptions";
 import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
-import { AdminDebugPanel } from "@/components/dashboard/admin-debug-panel";
 import { RenewalConfirmationSystem } from "@/components/dashboard/renewal-confirmation-system";
 import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
@@ -32,9 +31,6 @@ export default async function DashboardPage() {
         </div>
         <OverviewActions />
       </div>
-
-      {/* Debug Panel */}
-      <AdminDebugPanel />
 
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />

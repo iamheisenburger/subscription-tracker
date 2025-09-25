@@ -27,7 +27,10 @@ export function SettingsContent({ user }: SettingsContentProps) {
   const { isPremium } = useUserTier();
   const [lastUpdatedTs, setLastUpdatedTs] = useState<number>(0);
 
-  const ManageBillingControl = dynamic(() => import("../../billing/manage-billing-button").then(m => m.ManageBillingButton), { ssr: false });
+  const ManageBillingControl = dynamic(() => import("../../billing/manage-billing-button"), {
+    ssr: false,
+  });
+
 
   useEffect(() => {
     // Get preferred currency from localStorage on client side
@@ -159,7 +162,6 @@ export function SettingsContent({ user }: SettingsContentProps) {
               </div>
               {/* Use Clerk billing control */}
               <div className="px-4 py-2">
-                {/* @ts-expect-error Server/Client boundary imported component */}
                 <ManageBillingControl />
               </div>
             </div>

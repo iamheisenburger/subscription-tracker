@@ -7,72 +7,89 @@ export const CustomPricing = () => {
     <div id="pricing" className="w-full py-12 xs:py-20 px-6">
       {/* CUSTOM CSS FOR ULTRA-VISIBLE BILLING TOGGLE */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* Target Clerk's billing toggle elements directly */
+        /* PROPER TOGGLE SWITCH - NOT RADIO BUTTON */
         .cl-pricing-table [role="switch"] {
-          width: 56px !important;
-          height: 32px !important;
-          background-color: #e5e7eb !important;
-          border: 2px solid #9ca3af !important;
-          border-radius: 9999px !important;
+          width: 52px !important;
+          height: 28px !important;
+          background-color: #d1d5db !important;
+          border: none !important;
+          border-radius: 14px !important;
           position: relative !important;
           cursor: pointer !important;
-          transition: all 0.3s ease !important;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+          transition: background-color 0.2s ease !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          padding: 2px !important;
+          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1) !important;
         }
         
         .cl-pricing-table [role="switch"][data-state="checked"] {
           background-color: hsl(var(--primary)) !important;
-          border-color: hsl(var(--primary)) !important;
         }
         
-        .cl-pricing-table [role="switch"] span {
+        /* THE SLIDING THUMB - THIS IS THE IMPORTANT PART */
+        .cl-pricing-table [role="switch"] span,
+        .cl-pricing-table [role="switch"] > div,
+        .cl-pricing-table [role="switch"]:after {
+          content: '' !important;
           width: 24px !important;
           height: 24px !important;
           background-color: white !important;
-          border: 3px solid hsl(var(--primary)) !important;
           border-radius: 50% !important;
           position: absolute !important;
           top: 2px !important;
           left: 2px !important;
-          transition: all 0.3s ease !important;
+          transition: transform 0.2s ease !important;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+          display: block !important;
         }
         
-        .cl-pricing-table [role="switch"][data-state="checked"] span {
+        /* SLIDING ANIMATION - MOVE THE THUMB */
+        .cl-pricing-table [role="switch"][data-state="checked"] span,
+        .cl-pricing-table [role="switch"][data-state="checked"] > div,
+        .cl-pricing-table [role="switch"][data-state="checked"]:after {
           transform: translateX(24px) !important;
         }
         
-        /* Target billing period labels and containers */
-        .cl-pricing-table [data-testid="billing-period"] {
-          background-color: hsl(var(--muted) / 0.3) !important;
-          border: 1px solid hsl(var(--border)) !important;
-          border-radius: 8px !important;
-          padding: 12px !important;
-          margin: 8px 0 !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+        /* Clean up any conflicting radio button styling */
+        .cl-pricing-table input[type="radio"] {
+          appearance: none !important;
+          width: 16px !important;
+          height: 16px !important;
+          border: 2px solid hsl(var(--border)) !important;
+          border-radius: 50% !important;
+          background-color: transparent !important;
+          position: relative !important;
+          cursor: pointer !important;
+          margin-right: 8px !important;
         }
         
-        .cl-pricing-table [data-testid="billing-period"] label {
+        .cl-pricing-table input[type="radio"]:checked {
+          border-color: hsl(var(--primary)) !important;
+          background-color: hsl(var(--primary)) !important;
+        }
+        
+        .cl-pricing-table input[type="radio"]:checked:after {
+          content: '' !important;
+          width: 6px !important;
+          height: 6px !important;
+          border-radius: 50% !important;
+          background-color: white !important;
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+        }
+        
+        /* Better labels */
+        .cl-pricing-table label {
           color: hsl(var(--foreground)) !important;
           font-weight: 500 !important;
           font-family: var(--font-sans) !important;
           cursor: pointer !important;
-          user-select: none !important;
-        }
-        
-        /* Radio button styling for billing period */
-        .cl-pricing-table input[type="radio"] {
-          width: 20px !important;
-          height: 20px !important;
-          border: 3px solid hsl(var(--primary)) !important;
-          background-color: hsl(var(--background)) !important;
-          border-radius: 50% !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        .cl-pricing-table input[type="radio"]:checked {
-          background-color: hsl(var(--primary)) !important;
-          border-color: hsl(var(--primary)) !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
         }
       `}} />
       

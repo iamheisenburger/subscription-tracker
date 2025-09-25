@@ -25,9 +25,9 @@ export function AdminDebugPanel() {
       toast.success(`✅ ${result.message}`, {
         description: `Cost: $${result.cost}/${result.subscriptionId ? 'added' : 'existing'}`
       });
-    } catch (error: any) {
+    } catch (error) {
       toast.error("❌ Failed to add SubWise subscription", {
-        description: error.message
+        description: error instanceof Error ? error.message : String(error)
       });
     } finally {
       setLoading(null);
@@ -46,9 +46,9 @@ export function AdminDebugPanel() {
       toast.success(`✅ ${result.message}`, {
         description: `Sending to: ${result.willSendTo}`
       });
-    } catch (error: any) {
+    } catch (error) {
       toast.error(`❌ Failed to send ${type} notification`, {
-        description: error.message
+        description: error instanceof Error ? error.message : String(error)
       });
     } finally {
       setLoading(null);

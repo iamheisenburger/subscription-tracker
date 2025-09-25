@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { format, formatDistance } from "date-fns";
+import { formatDistance } from "date-fns";
 import { Calendar, DollarSign, TrendingDown, Trophy, CheckCircle, XCircle } from "lucide-react";
 
 export function RenewalConfirmationPanel() {
@@ -19,13 +20,13 @@ export function RenewalConfirmationPanel() {
   const [newCosts, setNewCosts] = useState<Record<string, number>>({});
 
   const subscriptionsNeedingConfirmation = useQuery(
-    api.subscriptionRenewal.getSubscriptionsNeedingConfirmation,
+    api.subscription_renewal.getSubscriptionsNeedingConfirmation,
     user?.id ? { clerkId: user.id } : "skip"
   );
 
-  const confirmRenewal = useMutation(api.subscriptionRenewal.confirmSubscriptionRenewal);
+  const confirmRenewal = useMutation(api.subscription_renewal.confirmSubscriptionRenewal);
   const savingsStats = useQuery(
-    api.subscriptionRenewal.getSavingsStats,
+    api.subscription_renewal.getSavingsStats,
     user?.id ? { clerkId: user.id } : "skip"
   );
 
@@ -42,7 +43,7 @@ export function RenewalConfirmationPanel() {
     try {
       const result = await confirmRenewal({
         clerkId: user.id,
-        subscriptionId: subscriptionId as any,
+        subscriptionId: subscriptionId as Id<"subscriptions">,
         action,
         newCost
       });
@@ -65,9 +66,9 @@ export function RenewalConfirmationPanel() {
         return updated;
       });
 
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to update subscription", {
-        description: error.message
+        description: error instanceof Error ? error.message : String(error)
       });
     } finally {
       setProcessing(null);

@@ -60,9 +60,12 @@ class EmailService {
         category: subscription.category,
       }));
 
+      const userCurrency = user.preferredCurrency || 'USD';
+      const currencySymbol = userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$';
+      
       const subject = daysUntil === 1 
-        ? `${subscription.name} renews tomorrow - $${subscription.cost}/${subscription.billingCycle}`
-        : `${subscription.name} renews in ${daysUntil} days - $${subscription.cost}/${subscription.billingCycle}`;
+        ? `${subscription.name} renews tomorrow - ${currencySymbol}${subscription.cost}/${subscription.billingCycle}`
+        : `${subscription.name} renews in ${daysUntil} days - ${currencySymbol}${subscription.cost}/${subscription.billingCycle}`;
 
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
@@ -114,8 +117,11 @@ class EmailService {
         changePercentage: Math.round(((newPrice - oldPrice) / oldPrice) * 100),
       }));
 
+      const userCurrency = user.preferredCurrency || 'USD';
+      const currencySymbol = userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$';
+      
       const priceDirection = newPrice > oldPrice ? 'increased' : 'decreased';
-      const subject = `Price Alert: ${subscription.name} ${priceDirection} to $${newPrice}/${subscription.billingCycle}`;
+      const subject = `Price Alert: ${subscription.name} ${priceDirection} to ${currencySymbol}${newPrice}/${subscription.billingCycle}`;
 
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
@@ -166,8 +172,11 @@ class EmailService {
         overspent: currentSpending > threshold,
       }));
 
+      const userCurrency = user.preferredCurrency || 'USD';
+      const currencySymbol = userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$';
+      
       const subject = currentSpending > threshold
-        ? `Spending Alert: You've exceeded your ${period}ly budget by $${(currentSpending - threshold).toFixed(2)}`
+        ? `Spending Alert: You've exceeded your ${period}ly budget by ${currencySymbol}${(currentSpending - threshold).toFixed(2)}`
         : `Spending Alert: You're at ${Math.round((currentSpending / threshold) * 100)}% of your ${period}ly budget`;
 
       const { data, error } = await resend.emails.send({

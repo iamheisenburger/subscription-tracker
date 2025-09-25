@@ -260,28 +260,7 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                 />
               </div>
 
-              {/* Spending Threshold */}
-              {isPremium && spendingAlerts && (
-                <div className="space-y-2">
-                  <Label htmlFor="spending-threshold" className="font-sans">
-                    Monthly Spending Threshold
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground font-sans">$</span>
-                    <Input
-                      id="spending-threshold"
-                      type="number"
-                      placeholder="500"
-                      value={spendingThreshold}
-                      onChange={(e) => setSpendingThreshold(e.target.value)}
-                      className="w-32 font-sans"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground font-sans">
-                    You&apos;ll be notified if your monthly spending exceeds this amount
-                  </p>
-                </div>
-              )}
+              {/* Spending Threshold moved to Budget page */}
 
               {!isPremium && (
                 <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">

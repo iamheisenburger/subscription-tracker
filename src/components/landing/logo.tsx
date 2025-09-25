@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CreditCard } from "lucide-react";
+import { Wallet as CreditCard } from "lucide-react";
 
 export const Logo = () => {
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,27 +14,47 @@ import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 
+// Helper function to format currency based on user preference
+const formatCurrency = (amount: number, currency: string) => {
+  const symbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'CAD' ? 'C$' : currency === 'AUD' ? 'A$' : '$';
+  return `${symbol}${amount.toFixed(2)}`;
+};
+
 export function EnhancedSpendingSettings() {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const updatePreferences = useMutation(api.notifications.updateNotificationPreferences);
+  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
+  const preferences = useQuery(api.notifications.getNotificationPreferences, user?.id ? { clerkId: user.id } : "skip");
+  const userInfo = useQuery(api.users.getUserByClerkId, user?.id ? { clerkId: user.id } : "skip");
+
+  // Get user's preferred currency and current threshold
+  const userCurrency = userInfo?.preferredCurrency || 'USD';
   const [monthlyThreshold, setMonthlyThreshold] = useState<number>(100);
   const [yearlyThreshold, setYearlyThreshold] = useState<number>(1200);
   const [alertPercentages, setAlertPercentages] = useState<number[]>([80, 100, 120]);
 
-  const updatePreferences = useMutation(api.notifications.updateNotificationPreferences);
-  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
-  const preferences = useQuery(api.notifications.getNotificationPreferences, user?.id ? { clerkId: user.id } : "skip");
-
-  // Calculate current spending
-  const currentSpending = subscriptions?.reduce((total, sub) => {
-    let monthlyCost = sub.cost;
-    if (sub.billingCycle === "yearly") {
-      monthlyCost = sub.cost / 12;
-    } else if (sub.billingCycle === "weekly") {
-      monthlyCost = sub.cost * 4.33;
+  // Sync with preferences when loaded
+  useEffect(() => {
+    if (preferences?.spendingThreshold) {
+      setMonthlyThreshold(preferences.spendingThreshold);
+      setYearlyThreshold(preferences.spendingThreshold * 12);
     }
-    return total + monthlyCost;
-  }, 0) || 0;
+  }, [preferences]);
+
+  // Memoize current spending calculation for performance
+  const currentSpending = useMemo(() => {
+    if (!subscriptions) return 0;
+    return subscriptions.reduce((total, sub) => {
+      let monthlyCost = sub.cost;
+      if (sub.billingCycle === "yearly") {
+        monthlyCost = sub.cost / 12;
+      } else if (sub.billingCycle === "weekly") {
+        monthlyCost = sub.cost * 4.33;
+      }
+      return total + monthlyCost;
+    }, 0);
+  }, [subscriptions]);
 
   const spendingPercentage = monthlyThreshold > 0 ? (currentSpending / monthlyThreshold) * 100 : 0;
   const isOverBudget = currentSpending > monthlyThreshold;
@@ -54,7 +74,7 @@ export function EnhancedSpendingSettings() {
       if (currentSpending > monthlyThreshold) {
         const overage = currentSpending - monthlyThreshold;
         toast.warning(`💰 New budget alert!`, {
-          description: `You're $${overage.toFixed(2)} over your new $${monthlyThreshold} budget`,
+          description: `You're ${formatCurrency(overage, userCurrency)} over your new ${formatCurrency(monthlyThreshold, userCurrency)} budget`,
           duration: 5000
         });
 
@@ -75,7 +95,7 @@ export function EnhancedSpendingSettings() {
       }
 
       toast.success("✅ Spending thresholds updated", {
-        description: `Monthly: $${monthlyThreshold}, Yearly: $${yearlyThreshold}`
+        description: `Monthly: ${formatCurrency(monthlyThreshold, userCurrency)}, Yearly: ${formatCurrency(yearlyThreshold, userCurrency)}`
       });
     } catch (error) {
       toast.error("❌ Failed to update spending thresholds", {
@@ -107,7 +127,7 @@ export function EnhancedSpendingSettings() {
             <h4 className="font-semibold">Current Monthly Spending</h4>
             <div className="text-right">
               <div className="text-2xl font-bold">
-                ${currentSpending.toFixed(2)}
+                {formatCurrency(currentSpending, userCurrency)}
               </div>
               <div className="text-sm text-muted-foreground">
                 {Math.round(spendingPercentage)}% of budget
@@ -123,7 +143,7 @@ export function EnhancedSpendingSettings() {
           {isOverBudget && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
               <p className="text-red-600 font-medium">
-                🚨 Over Budget: ${(currentSpending - monthlyThreshold).toFixed(2)}
+                🚨 Over Budget: {formatCurrency(currentSpending - monthlyThreshold, userCurrency)}
               </p>
               <p className="text-sm text-red-600/80">
                 Consider reviewing your subscriptions or adjusting your budget
@@ -142,7 +162,9 @@ export function EnhancedSpendingSettings() {
             <div>
               <Label htmlFor="monthly-threshold">Monthly Budget</Label>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-muted-foreground">$</span>
+                <span className="text-muted-foreground">
+                  {userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$'}
+                </span>
                 <Input
                   id="monthly-threshold"
                   type="number"
@@ -156,7 +178,9 @@ export function EnhancedSpendingSettings() {
             <div>
               <Label htmlFor="yearly-threshold">Yearly Budget</Label>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-muted-foreground">$</span>
+                <span className="text-muted-foreground">
+                  {userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$'}
+                </span>
                 <Input
                   id="yearly-threshold"
                   type="number"
@@ -166,7 +190,7 @@ export function EnhancedSpendingSettings() {
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                ${(yearlyThreshold / 12).toFixed(2)}/month equivalent
+                {formatCurrency(yearlyThreshold / 12, userCurrency)}/month equivalent
               </p>
             </div>
           </div>

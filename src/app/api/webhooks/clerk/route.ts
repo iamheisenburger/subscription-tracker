@@ -48,11 +48,24 @@ async function handleSubscriptionEvent(
       subscriptionId: subscription.id
     });
 
+    console.log('🔍 DETAILED PLAN CHECK:', {
+      receivedPlanId: planId,
+      expectedPlanId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
+      planIdType: typeof planId,
+      expectedType: typeof process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
+      exactMatch: planId === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
+      environmentVariableSet: !!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID
+    });
+
     // Check if this is our premium plan
     const isPremiumPlan = planId === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID;
     
     if (!isPremiumPlan) {
-      console.log('❌ Not our premium plan, ignoring:', planId);
+      console.log('❌ PLAN ID MISMATCH - Not upgrading user:', {
+        receivedPlanId: planId,
+        expectedPlanId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
+        allSubscriptionData: subscription
+      });
       return;
     }
 
@@ -259,16 +272,24 @@ export async function POST(req: Request) {
       // Handle ALL Clerk Billing subscription events
       case 'subscription.created':
         console.log('🎉 Subscription created:', { type, data });
+        console.log('🔍 DEBUGGING - Environment PREMIUM_PLAN_ID:', process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID);
+        console.log('🔍 DEBUGGING - Event plan_id:', (data as { plan_id?: string })?.plan_id);
+        console.log('🔍 DEBUGGING - Event user_id:', (data as { user_id?: string })?.user_id);
+        console.log('🔍 DEBUGGING - Event status:', (data as { status?: string })?.status);
         await handleSubscriptionEvent(data, 'created');
         break;
 
       case 'subscription.updated':
         console.log('🔄 Subscription updated:', { type, data });
+        console.log('🔍 DEBUGGING - Environment PREMIUM_PLAN_ID:', process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID);
+        console.log('🔍 DEBUGGING - Event plan_id:', (data as { plan_id?: string })?.plan_id);
         await handleSubscriptionEvent(data, 'updated');
         break;
 
       case 'subscription.active':
         console.log('✅ Subscription active:', { type, data });
+        console.log('🔍 DEBUGGING - Environment PREMIUM_PLAN_ID:', process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID);
+        console.log('🔍 DEBUGGING - Event plan_id:', (data as { plan_id?: string })?.plan_id);
         await handleSubscriptionEvent(data, 'active');
         break;
 

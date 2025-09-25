@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { useState } from "react";
 
 export default function MobileDebugPage() {
@@ -178,6 +179,27 @@ export default function MobileDebugPage() {
             </Button>
             
             <Button 
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const response = await fetch('/api/debug/webhook-events');
+                  const result = await response.json();
+                  setApiResult(result);
+                  toast.success("Webhook debug info loaded");
+                } catch (error) {
+                  setApiResult({ error: String(error) });
+                  toast.error("Failed to load webhook debug info");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full bg-orange-600 hover:bg-orange-700"
+            >
+              {loading ? "Loading..." : "🔍 Check Webhook Config"}
+            </Button>
+            
+            <Button 
               onClick={() => window.location.reload()} 
               variant="outline"
               className="w-full"
@@ -260,6 +282,7 @@ export default function MobileDebugPage() {
             <p><strong>🔄 Test Sync:</strong> Runs basic tier detection manually</p>
             <p><strong>📊 Check Clerk Data:</strong> Shows raw data from your Clerk account</p>  
             <p><strong>🔮 Auto-Detect Premium:</strong> Advanced detection that checks Clerk billing system</p>
+            <p><strong>🔍 Check Webhook Config:</strong> Shows webhook setup and environment variables</p>
             <p><strong>🚀 Force Override:</strong> Emergency bypass - sets premium immediately</p>
             
             <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">

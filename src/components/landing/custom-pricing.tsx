@@ -74,6 +74,11 @@ export const CustomPricing = () => {
                 // Better badge styling
                 badge: "bg-primary text-primary-foreground font-sans text-xs font-medium px-2 py-1 rounded-full",
                 
+                // Subtle, accessible toggle contrast (no size changes)
+                switchTrackChecked: "bg-primary",
+                switchTrackUnchecked: "bg-muted border border-border",
+                switchThumb: "bg-background border border-border shadow-sm",
+                
                 // Do NOT override toggle/radio styles → use Clerk defaults
               }
             }}

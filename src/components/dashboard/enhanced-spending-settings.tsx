@@ -25,7 +25,13 @@ export function EnhancedSpendingSettings() {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
   const updatePreferences = useMutation(api.notifications.updateNotificationPreferences);
-  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
+  // USE SAME ANALYTICS BACKEND AS OVERVIEW AND ANALYTICS - SINGLE SOURCE OF TRUTH
+  const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, 
+    user?.id ? {
+      clerkId: user.id,
+      targetCurrency: (typeof window !== 'undefined' ? getPreferredCurrency() : null) || 'USD',
+    } : "skip"
+  );
   const preferences = useQuery(api.notifications.getNotificationPreferences, user?.id ? { clerkId: user.id } : "skip");
   const userInfo = useQuery(api.users.getUserByClerkId, user?.id ? { clerkId: user.id } : "skip");
 
@@ -35,8 +41,8 @@ export function EnhancedSpendingSettings() {
   const [monthlyThreshold, setMonthlyThreshold] = useState<number>(100);
   const [yearlyThreshold, setYearlyThreshold] = useState<number>(1200);
   const [alertPercentages, setAlertPercentages] = useState<number[]>([80, 100, 120]);
-  const [currentSpending, setCurrentSpending] = useState<number>(0);
-  const [conversionLoading, setConversionLoading] = useState(false);
+  // Get current spending from analytics backend
+  const currentSpending = analytics?.monthlyTotal || 0;
 
   // Sync with preferences when loaded
   useEffect(() => {
@@ -46,45 +52,7 @@ export function EnhancedSpendingSettings() {
     }
   }, [preferences]);
 
-  // Calculate current spending with proper currency conversion - SAME AS OVERVIEW CARDS
-  useEffect(() => {
-    if (!subscriptions || !userCurrency) return;
-    
-    const calculateConvertedSpending = async () => {
-      setConversionLoading(true);
-      
-      try {
-        // Use EXACT SAME logic as overview-cards.tsx for consistency
-        const monthlyAmounts = subscriptions.map(sub => {
-          let monthlyAmount = sub.cost;
-          if (sub.billingCycle === "yearly") {
-            monthlyAmount = sub.cost / 12;
-          } else if (sub.billingCycle === "weekly") {
-            monthlyAmount = sub.cost * 4.33; // Average weeks per month
-          }
-
-          return {
-            amount: monthlyAmount,
-            currency: sub.currency || 'USD'
-          };
-        });
-
-        // Use the SAME convertMultipleCurrencies function as overview-cards
-        const { convertMultipleCurrencies } = await import('@/lib/currency');
-        const conversions = await convertMultipleCurrencies(monthlyAmounts, userCurrency);
-        const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
-        
-        setCurrentSpending(Math.round(monthlyTotal * 100) / 100);
-      } catch (error) {
-        console.error("Currency conversion failed:", error);
-        setCurrentSpending(0);
-      } finally {
-        setConversionLoading(false);
-      }
-    };
-
-    calculateConvertedSpending();
-  }, [subscriptions, userCurrency]);
+  // No need for manual calculation - using backend analytics data
 
   const spendingPercentage = monthlyThreshold > 0 ? (currentSpending / monthlyThreshold) * 100 : 0;
   const isOverBudget = currentSpending > monthlyThreshold;
@@ -157,15 +125,15 @@ export function EnhancedSpendingSettings() {
             <h4 className="font-semibold">Current Monthly Spending</h4>
             <div className="text-right">
               <div className="text-2xl font-bold">
-                {conversionLoading ? (
-                  <span className="text-muted-foreground">Converting...</span>
+                {analytics === undefined ? (
+                  <span className="text-muted-foreground">Loading...</span>
                 ) : (
                   formatCurrency(currentSpending, userCurrency)
                 )}
               </div>
               <div className="text-sm text-muted-foreground">
                 {Math.round(spendingPercentage)}% of budget
-                {userCurrency !== 'USD' && !conversionLoading && (
+                {userCurrency !== 'USD' && analytics && (
                   <span className="block text-xs">Converted to {userCurrency}</span>
                 )}
               </div>

@@ -24,48 +24,21 @@ export function OverviewCards({ userId }: OverviewCardsProps) {
 
 function OverviewCardsContent({ userId }: OverviewCardsProps) {
   const stats = useQuery(api.subscriptions.getSubscriptionStats, { clerkId: userId });
-  const [convertedTotals, setConvertedTotals] = useState<{
-    monthlyTotal: number;
-    yearlyTotal: number;
-    currency: string;
-  } | null>(null);
-
-  // INSTANT currency conversion when stats are available
+  
+  // GET PREFERRED CURRENCY
+  const [preferredCurrency, setPreferredCurrency] = useState('USD');
   useEffect(() => {
-    if (!stats?.subscriptionCosts) return;
+    if (typeof window !== 'undefined') {
+      const preferred = getPreferredCurrency();
+      setPreferredCurrency(preferred);
+    }
+  }, []);
 
-    const convertCurrencies = async () => {
-      const preferredCurrency = typeof window !== 'undefined' ? getPreferredCurrency() : 'USD';
-      
-      // Convert all subscription costs to monthly equivalents in preferred currency
-      const monthlyAmounts = stats.subscriptionCosts.map(sub => {
-        let monthlyAmount = sub.amount;
-        if (sub.billingCycle === "yearly") {
-          monthlyAmount = sub.amount / 12;
-        } else if (sub.billingCycle === "weekly") {
-          monthlyAmount = sub.amount * 4.33; // Average weeks per month
-        }
-
-        return {
-          amount: monthlyAmount,
-          currency: sub.currency
-        };
-      });
-
-      // INSTANT conversion with hardcoded rates - NO API CALLS
-      const conversions = await convertMultipleCurrencies(monthlyAmounts, preferredCurrency);
-      const monthlyTotal = conversions.reduce((sum, conv) => sum + conv.convertedAmount, 0);
-      const yearlyTotal = monthlyTotal * 12;
-
-      setConvertedTotals({
-        monthlyTotal: Math.round(monthlyTotal * 100) / 100,
-        yearlyTotal: Math.round(yearlyTotal * 100) / 100,
-        currency: preferredCurrency
-      });
-    };
-
-    convertCurrencies();
-  }, [stats?.subscriptionCosts]);
+  // USE SAME ANALYTICS BACKEND AS ANALYTICS PAGE - SINGLE SOURCE OF TRUTH
+  const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
+    clerkId: userId,
+    targetCurrency: preferredCurrency,
+  });
 
   if (stats === undefined) {
     return (
@@ -89,49 +62,24 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
   const cards = [
     {
       title: "Total Subscriptions",
-      value: stats?.totalSubscriptions || 0,
+      value: analytics?.totalSubscriptions || stats?.totalSubscriptions || 0,
       description: `${stats?.activeSubscriptions || 0} active`,
       icon: Target,
     },
     {
       title: "Monthly Spend",
-      value: convertedTotals
-        ? formatCurrency(convertedTotals.monthlyTotal, convertedTotals.currency)
-        : stats?.subscriptionCosts?.length 
-          ? (() => {
-              const total = stats.subscriptionCosts.reduce((sum, sub) => {
-                let monthly = sub.amount;
-                if (sub.billingCycle === "yearly") monthly = sub.amount / 12;
-                else if (sub.billingCycle === "weekly") monthly = sub.amount * 4.33;
-                return sum + monthly;
-              }, 0);
-              return formatCurrency(total, "USD");
-            })()
-          : formatCurrency(0, (typeof window !== 'undefined' ? getPreferredCurrency() : 'USD')),
-      description: convertedTotals?.currency
-        ? `Current monthly cost (${convertedTotals.currency})`
-        : "Current monthly cost",
+      value: analytics?.monthlyTotal 
+        ? formatCurrency(analytics.monthlyTotal, analytics.currency || preferredCurrency)
+        : formatCurrency(0, preferredCurrency),
+      description: `Current monthly cost (${analytics?.currency || preferredCurrency})`,
       icon: DollarSign,
     },
     {
       title: "Yearly Spend",
-      value: convertedTotals
-        ? formatCurrency(convertedTotals.yearlyTotal, convertedTotals.currency)
-        : stats?.subscriptionCosts?.length
-          ? (() => {
-              const monthlyTotal = stats.subscriptionCosts.reduce((sum, sub) => {
-                let monthly = sub.amount;
-                if (sub.billingCycle === "yearly") monthly = sub.amount / 12;
-                else if (sub.billingCycle === "weekly") monthly = sub.amount * 4.33;
-                return sum + monthly;
-              }, 0);
-              const cur = (typeof window !== 'undefined' ? getPreferredCurrency() : 'USD');
-              return formatCurrency(monthlyTotal * 12, cur);
-            })()
-          : formatCurrency(0, (typeof window !== 'undefined' ? getPreferredCurrency() : 'USD')),
-      description: convertedTotals?.currency
-        ? `Projected annual cost (${convertedTotals.currency})`
-        : "Projected annual cost",
+      value: analytics?.yearlyTotal
+        ? formatCurrency(analytics.yearlyTotal, analytics.currency || preferredCurrency)
+        : formatCurrency(0, preferredCurrency),
+      description: `Projected annual cost (${analytics?.currency || preferredCurrency})`,
       icon: TrendingUp,
     },
     {

@@ -200,6 +200,32 @@ export default function MobileDebugPage() {
             </Button>
             
             <Button 
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const response = await fetch('/api/admin/fix-plan-id', { method: 'POST' });
+                  const result = await response.json();
+                  setSyncResult(result);
+                  if (result.fixed) {
+                    toast.success("🚨 EMERGENCY FIX APPLIED! Refreshing page...");
+                    setTimeout(() => window.location.reload(), 2000);
+                  } else {
+                    toast.info("Fix attempted - check result below");
+                  }
+                } catch (error) {
+                  setSyncResult({ error: String(error) });
+                  toast.error("Emergency fix failed");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              {loading ? "Fixing..." : "🚨 EMERGENCY FIX"}
+            </Button>
+            
+            <Button 
               onClick={() => window.location.reload()} 
               variant="outline"
               className="w-full"
@@ -283,11 +309,13 @@ export default function MobileDebugPage() {
             <p><strong>📊 Check Clerk Data:</strong> Shows raw data from your Clerk account</p>  
             <p><strong>🔮 Auto-Detect Premium:</strong> Advanced detection that checks Clerk billing system</p>
             <p><strong>🔍 Check Webhook Config:</strong> Shows webhook setup and environment variables</p>
+            <p><strong>🚨 EMERGENCY FIX:</strong> Manual fix for wrong Plan ID environment variable</p>
             <p><strong>🚀 Force Override:</strong> Emergency bypass - sets premium immediately</p>
             
-            <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">
-              <p><strong>💡 New Auto-Detection System:</strong></p>
-              <p>The app now automatically detects premium users even when webhooks fail. Try &quot;Auto-Detect Premium&quot; first!</p>
+            <div className="mt-3 p-2 bg-red-50 dark:bg-red-950 rounded text-xs border-red-200 dark:border-red-800">
+              <p><strong>🚨 PLAN ID MISMATCH DETECTED!</strong></p>
+              <p>Your environment variable has wrong Plan ID. Use EMERGENCY FIX button to get immediate access!</p>
+              <p className="mt-1 text-red-700 dark:text-red-400">Then update Vercel environment: NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID = cplan_33D_oku0vc4d1</p>
             </div>
             
             <p className="text-orange-600"><strong>Still broken?</strong> Screenshot this page and report it!</p>

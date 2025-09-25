@@ -31,12 +31,8 @@ crons.daily(
   internal.notifications.checkSpendingThresholds,
 );
 
-// Check advanced spending insights for premium users (Enhanced system)
-crons.daily(
-  "check advanced spending insights",
-  { hourUTC: 11, minuteUTC: 0 },
-  internal.spendingInsights.checkAdvancedSpendingThresholds,
-);
+// Note: Advanced spending insights will be added in future update
+// For now, the enhanced spending threshold checking is handled in notifications.ts
 
 export default crons;
 

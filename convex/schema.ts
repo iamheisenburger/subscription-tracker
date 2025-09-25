@@ -14,13 +14,6 @@ export default defineSchema({
     subscriptionType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     // User preferences
     preferredCurrency: v.optional(v.string()), // User's preferred display currency (USD, EUR, etc.)
-    // Advanced spending preferences (Premium feature)
-    advancedSpendingPrefs: v.optional(v.object({
-      yearlyThreshold: v.optional(v.number()),
-      categoryThresholds: v.optional(v.record(v.string(), v.number())),
-      alertTypes: v.optional(v.array(v.string())),
-      alertPercentages: v.optional(v.array(v.number())),
-    })),
     // Push notification settings
     pushSubscription: v.optional(v.record(v.string(), v.any())), // Web Push subscription object
     pushEnabled: v.optional(v.boolean()), // User's push notification preference

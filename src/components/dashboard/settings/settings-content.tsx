@@ -154,9 +154,15 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">Upgrade, change, or cancel your plan</p>
               </div>
-              <a href="/pricing" className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90">
+              <button 
+                onClick={() => {
+                  // Navigate to the billing tab within settings
+                  window.location.href = '/dashboard/settings?tab=billing';
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-sans hover:bg-primary/90"
+              >
                 Manage Billing
-              </a>
+              </button>
             </div>
           </div>
         </div>

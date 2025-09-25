@@ -14,25 +14,25 @@ export const NavMenu = ({ className, orientation = "horizontal" }: NavMenuProps)
     className
   )}>
     <Link 
-      href="#features" 
+      href="/landing#features" 
       className="text-sm font-medium text-foreground hover:text-primary transition-colors px-2 py-1"
     >
       Features
     </Link>
     <Link 
-      href="#pricing" 
+      href="/landing#pricing" 
       className="text-sm font-medium text-foreground hover:text-primary transition-colors px-2 py-1"
     >
       Pricing
     </Link>
     <Link 
-      href="#faq" 
+      href="/landing#faq" 
       className="text-sm font-medium text-foreground hover:text-primary transition-colors px-2 py-1"
     >
       FAQ
     </Link>
     <Link 
-      href="#testimonials" 
+      href="/landing#testimonials" 
       className="text-sm font-medium text-foreground hover:text-primary transition-colors px-2 py-1"
     >
       Testimonials

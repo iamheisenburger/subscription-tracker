@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Settings, CreditCard, AlertTriangle } from "lucide-react";
 import { AccountSettings } from "./account-settings";
@@ -23,6 +24,15 @@ interface SettingsTabsProps {
 
 export function SettingsTabs({ user, userId }: SettingsTabsProps) {
   const [activeTab, setActiveTab] = useState("account");
+  const searchParams = useSearchParams();
+
+  // Read tab from URL params on mount
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['account', 'preferences', 'billing', 'danger'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const tabs = [
     {

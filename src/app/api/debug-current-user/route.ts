@@ -44,6 +44,12 @@ export async function GET() {
           webhookWillUpdate: tierDetectionResult.confidence !== 'low' ? 'YES' : 'NO - THIS IS THE BUG'
         }
       }
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      // Pretty print the JSON
+      status: 200
     });
 
   } catch (error) {

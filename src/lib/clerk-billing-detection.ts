@@ -26,7 +26,7 @@ export async function detectActiveSubscriptionFromClerk(
     }>;
     emailAddresses?: Array<{ emailAddress?: string }>;
     createdAt?: number;
-  }> }
+  }> } }
 ): Promise<SubscriptionDetectionResult> {
   try {
     const user = await clerkClient.users.getUser(userId);

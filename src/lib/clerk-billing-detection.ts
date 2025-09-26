@@ -1,52 +1,62 @@
 /**
- * Universal Clerk Billing Detection System
- * 
- * Detects active subscriptions for any user by checking multiple Clerk indicators.
- * This works regardless of webhook failures or missing metadata.
+ * Universal Premium Subscription Detection System
+ * Detects active premium subscriptions by directly querying Clerk's billing data
+ * This is the most reliable method for webhook failure recovery
  */
-interface SubscriptionDetectionResult {
+
+import { clerkClient } from '@clerk/nextjs/server';
+
+export interface SubscriptionStatus {
   hasActiveSubscription: boolean;
-  subscriptionType: 'monthly' | 'annual';
-  planId: string | null;
+  subscriptionType: 'monthly' | 'yearly';
+  planId?: string | null;
   reason: string;
   confidence: 'high' | 'medium' | 'low';
-  details: Record<string, unknown>;
+  details?: Record<string, unknown>;
 }
 
+/**
+ * Determines subscription type from metadata
+ */
+function determineSubscriptionType(
+  publicMeta: Record<string, unknown>, 
+  privateMeta: Record<string, unknown>
+): 'monthly' | 'yearly' {
+  const billing = publicMeta.billing || privateMeta.billing || 
+                  publicMeta.subscriptionType || privateMeta.subscriptionType;
+  
+  if (typeof billing === 'string' && billing.toLowerCase().includes('year')) {
+    return 'yearly';
+  }
+  
+  return 'monthly'; // Default to monthly
+}
+
+/**
+ * Universal Premium Subscription Detector
+ * Uses multiple strategies to detect active premium subscriptions
+ */
 export async function detectActiveSubscriptionFromClerk(
   userId: string,
-  clerkClient: { users: { getUser: (id: string) => Promise<{ 
-    id: string; 
-    publicMetadata: Record<string, unknown>; 
-    privateMetadata: Record<string, unknown>;
-    externalAccounts?: Array<{ provider: string }>;
-    organizationMemberships?: Array<{ 
-      organization?: { slug?: string; name?: string }; 
-      role?: string 
-    }>;
-    emailAddresses?: Array<{ emailAddress?: string }>;
-    createdAt?: number;
-  }> } }
-): Promise<SubscriptionDetectionResult> {
+  client: typeof clerkClient
+): Promise<SubscriptionStatus> {
   try {
-    const user = await clerkClient.users.getUser(userId);
+    const user = await client.users.getUser(userId);
+    const publicMeta = user.publicMetadata || {};
+    const privateMeta = user.privateMetadata || {};
 
-    const publicMeta = user.publicMetadata as Record<string, unknown>;
-    const privateMeta = user.privateMetadata as Record<string, unknown>;
-
-    // Evidence 1: Subscription IDs/plan in metadata
-    if (publicMeta.subscription_id || publicMeta.plan_id || privateMeta.subscription_id) {
+    // Strategy 1: Direct tier indicators in metadata (highest confidence)
+    if (publicMeta.tier === 'premium_user' || privateMeta.tier === 'premium_user') {
       return {
         hasActiveSubscription: true,
         subscriptionType: determineSubscriptionType(publicMeta, privateMeta),
         planId: (publicMeta.plan_id || privateMeta.plan_id) as string,
-        reason: 'Found subscription ID in metadata',
+        reason: 'Has tier=premium_user in metadata',
         confidence: 'high',
         details: { publicMeta, privateMeta }
       };
     }
 
-<<<<<<< HEAD
     // Strategy 2: Check external accounts for payment providers
     const paymentProviders = ['stripe', 'paypal', 'square', 'paddle'];
     const hasPaymentAccount = user.externalAccounts?.some((account: { provider: string }) =>
@@ -58,7 +68,6 @@ export async function detectActiveSubscriptionFromClerk(
         paymentProviders.includes(account.provider.toLowerCase())
       );
 
-      // Presence of a payment account is NOT sufficient to assert an active subscription
       return {
         hasActiveSubscription: false,
         subscriptionType: 'monthly',
@@ -66,59 +75,6 @@ export async function detectActiveSubscriptionFromClerk(
         reason: `Payment provider linked (${paymentAccount?.provider}) but no subscription metadata`,
         confidence: 'low',
         details: { paymentAccount }
-      };
-    }
-
-    // Strategy 3: Check for premium organization memberships
-    const userWithOrgs = user as { organizationMemberships?: Array<{ 
-      organization?: { slug?: string; name?: string }; 
-      role?: string 
-    }> };
-    const premiumOrgMembership = userWithOrgs.organizationMemberships?.find(
-      (membership) => 
-        membership.organization?.slug === 'premium' || 
-        membership.organization?.name?.toLowerCase().includes('premium') ||
-        membership.role === 'premium_member'
-    );
-
-    if (premiumOrgMembership) {
-      // Org membership hints intent but is NOT authoritative for billing status
-      return {
-        hasActiveSubscription: false,
-        subscriptionType: 'monthly',
-        planId: null,
-        reason: 'Premium organization membership without billing evidence',
-        confidence: 'low',
-        details: { premiumOrgMembership }
-      };
-    }
-
-    // Strategy 4: Check user creation patterns that suggest premium intent
-    const isVeryRecentUser = user.createdAt && 
-      Date.now() - user.createdAt < (24 * 60 * 60 * 1000); // Within 24 hours
-
-    const email = user.emailAddresses?.[0]?.emailAddress;
-    const hasBusinessEmail = email && (
-      !email.includes('@gmail.') && 
-      !email.includes('@yahoo.') && 
-      !email.includes('@hotmail.') &&
-      !email.includes('@outlook.') &&
-      email.includes('@') &&
-      email.split('@')[1].includes('.')
-    );
-
-    // Recent user with business email might indicate premium signup
-    if (isVeryRecentUser && hasBusinessEmail) {
-      return {
-        hasActiveSubscription: false, // Don't auto-upgrade on this alone
-        subscriptionType: 'monthly',
-        planId: null,
-        reason: 'Recent business user - possible premium signup in progress',
-        confidence: 'low',
-        details: { 
-          email: email.split('@')[1], // Domain only for privacy
-          createdHoursAgo: user.createdAt ? Math.round((Date.now() - user.createdAt) / (60 * 60 * 1000)) : 0
-        }
       };
     }
 
@@ -129,98 +85,63 @@ export async function detectActiveSubscriptionFromClerk(
         hasActiveSubscription: true,
         subscriptionType: determineSubscriptionType(publicMeta, privateMeta),
         planId: configuredPlanId,
-        reason: 'Plan ID matches configured premium plan',
+        reason: `Matches configured premium plan ID: ${configuredPlanId}`,
         confidence: 'high',
-        details: { configuredPlanId, metadata: { publicMeta, privateMeta } }
+        details: { configuredPlanId, publicMeta, privateMeta }
       };
     }
 
-    // Hints (not sufficient): external payment accounts
-    const paymentProviders = ['stripe', 'paypal', 'square', 'paddle'];
-    const hasPaymentAccount = user.externalAccounts?.some(acc => paymentProviders.includes(acc.provider.toLowerCase()));
-    if (hasPaymentAccount) {
-      const paymentAccount = user.externalAccounts?.find(acc => paymentProviders.includes(acc.provider.toLowerCase()));
-      return {
-        hasActiveSubscription: false,
-        subscriptionType: 'monthly',
-        planId: null,
-        reason: `Payment provider linked (${paymentAccount?.provider}) but no subscription metadata`,
-        confidence: 'low',
-        details: { paymentAccount }
-      };
-    }
+    // Strategy 4: Check for any billing-related indicators
+    const billingIndicators = [
+      'subscription_status',
+      'billing_status', 
+      'plan_status',
+      'subscription_id',
+      'customer_id'
+    ];
 
-    // Hints (not sufficient): premium org membership
-    const userWithOrgs = user as { organizationMemberships?: Array<{ organization?: { slug?: string; name?: string }; role?: string }> };
-    const premiumOrgMembership = userWithOrgs.organizationMemberships?.find(m =>
-      m.organization?.slug === 'premium' || m.organization?.name?.toLowerCase().includes('premium') || m.role === 'premium_member'
+    const hasBillingData = billingIndicators.some(key => 
+      publicMeta[key] === 'active' || 
+      privateMeta[key] === 'active' ||
+      publicMeta[key] === 'premium' || 
+      privateMeta[key] === 'premium'
     );
-    if (premiumOrgMembership) {
+
+    if (hasBillingData) {
       return {
-        hasActiveSubscription: false,
-        subscriptionType: 'monthly',
-        planId: null,
-        reason: 'Premium organization membership without billing evidence',
-        confidence: 'low',
-        details: { premiumOrgMembership }
+        hasActiveSubscription: true,
+        subscriptionType: determineSubscriptionType(publicMeta, privateMeta),
+        planId: (publicMeta.plan_id || privateMeta.plan_id) as string,
+        reason: 'Has active billing status indicators',
+        confidence: 'high',
+        details: { billingIndicators: { publicMeta, privateMeta } }
       };
     }
 
-    // Hints (not sufficient): recent user + business domain
-    const isVeryRecentUser = user.createdAt && Date.now() - user.createdAt < (24 * 60 * 60 * 1000);
-    const email = user.emailAddresses?.[0]?.emailAddress;
-    const hasBusinessEmail = email && (
-      !email.includes('@gmail.') && !email.includes('@yahoo.') && !email.includes('@hotmail.') && !email.includes('@outlook.')
-    );
-    if (isVeryRecentUser && hasBusinessEmail) {
-      return {
-        hasActiveSubscription: false,
-        subscriptionType: 'monthly',
-        planId: null,
-        reason: 'Recent business user - possible premium signup in progress',
-        confidence: 'low',
-        details: { email: email.split('@')[1] }
-      };
-    }
-
+    // Default: No premium subscription detected
     return {
       hasActiveSubscription: false,
       subscriptionType: 'monthly',
       planId: null,
       reason: 'No premium subscription indicators found',
       confidence: 'high',
-      details: { checkedStrategies: ['metadata_ids', 'configured_plan_ids', 'payment_accounts', 'premium_org', 'recent_business'] }
+      details: { 
+        publicMeta: Object.keys(publicMeta),
+        privateMeta: Object.keys(privateMeta),
+        externalAccounts: user.externalAccounts?.map(acc => acc.provider) || []
+      }
     };
 
   } catch (error) {
+    console.error('❌ Error detecting subscription from Clerk:', error);
+    
     return {
       hasActiveSubscription: false,
       subscriptionType: 'monthly',
       planId: null,
-      reason: `Detection error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      reason: `Error accessing Clerk data: ${error}`,
       confidence: 'low',
       details: { error: String(error) }
     };
   }
-}
-
-function determineSubscriptionType(
-  publicMeta: Record<string, unknown>,
-  privateMeta: Record<string, unknown>
-): 'monthly' | 'annual' {
-  const sources = [
-    publicMeta.subscriptionType,
-    publicMeta.billing,
-    publicMeta.interval,
-    privateMeta.subscriptionType,
-    privateMeta.billing,
-    privateMeta.interval
-  ];
-
-  for (const source of sources) {
-    if (!source) continue;
-    const normalized = String(source).toLowerCase();
-    if (normalized === 'annual' || normalized === 'year' || normalized === 'yearly') return 'annual';
-  }
-  return 'monthly';
 }

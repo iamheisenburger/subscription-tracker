@@ -113,7 +113,7 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
     };
   }
 
-  // 4. Check External Accounts (low confidence)
+  // 4. Check External Accounts (low/medium confidence)
   const hasStripeAccount = user.externalAccounts?.some(
     account => account.provider === 'stripe'
   );
@@ -122,7 +122,7 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
     return {
       tier: 'premium_user',
       subscriptionType: 'monthly', // Default when unclear
-      confidence: 'medium', // UPGRADED: From 'low' to 'medium' to enable webhook processing
+      confidence: 'medium',
       source: 'clerk_external_accounts',
       debug: {
         ...debug,
@@ -132,26 +132,19 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
   }
 
   // 5. Enhanced Default Tier Logic - SYSTEMIC FIX FOR ALL USERS
-  // Problem: Webhook only processes medium+ confidence, but we default to 'high' confidence free
-  // This causes webhooks to not process updates properly
-  
-  // Check if user might be in premium signup process
   const hasBusinessEmail = user.emailAddresses?.some(emailAddr => {
     const email = (emailAddr as { emailAddress?: string }).emailAddress || '';
     const domain = email.split('@')[1]?.toLowerCase() || '';
     return domain && !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'].includes(domain);
   });
 
-  // Check for recent user creation (might be in premium signup process)
-  const isRecentUser = user.createdAt && (Date.now() - user.createdAt < 24 * 60 * 60 * 1000); // 24 hours
+  const isRecentUser = user.createdAt && (Date.now() - user.createdAt < 24 * 60 * 60 * 1000);
 
-  // CRITICAL FIX: Always use medium+ confidence to ensure webhook processing
-  // This allows webhooks to process tier updates for ALL users
   const confidence: 'high' | 'medium' = hasBusinessEmail || isRecentUser ? 'medium' : 'high';
   
   return {
     tier: 'free_user',
-    confidence, // Always medium or high - ensures webhook processing for all users
+    confidence,
     source: 'enhanced_default_free',
     debug: {
       ...debug,
@@ -197,31 +190,23 @@ export function validateTierDetectionEnvironment(): {
 } {
   const missing: string[] = [];
   const warnings: string[] = [];
+  const isBrowser = typeof window !== 'undefined';
 
-  // Required variables
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    missing.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
-  }
-  if (!process.env.CLERK_SECRET_KEY) {
-    missing.push('CLERK_SECRET_KEY');
-  }
-  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-    missing.push('NEXT_PUBLIC_CONVEX_URL');
-  }
-
-  // Optional but recommended variables
-  if (!process.env.CLERK_WEBHOOK_SECRET) {
-    warnings.push('CLERK_WEBHOOK_SECRET (webhooks may fail)');
-  }
-  if (!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
-    warnings.push('NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID (premium plan detection may fail)');
+  if (isBrowser) {
+    if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) missing.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL) missing.push('NEXT_PUBLIC_CONVEX_URL');
+    if (!process.env.CLERK_WEBHOOK_SECRET) warnings.push('CLERK_WEBHOOK_SECRET (server-only, ok to be missing on client)');
+    if (!process.env.CLERK_SECRET_KEY) warnings.push('CLERK_SECRET_KEY (server-only, ok to be missing on client)');
+    if (!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) warnings.push('NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID (optional; improves premium plan detection)');
+  } else {
+    if (!process.env.CLERK_SECRET_KEY) missing.push('CLERK_SECRET_KEY');
+    if (!process.env.CLERK_WEBHOOK_SECRET) warnings.push('CLERK_WEBHOOK_SECRET (webhooks may fail)');
+    if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) warnings.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (required for client)');
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL) warnings.push('NEXT_PUBLIC_CONVEX_URL (required for client Convex SDK)');
+    if (!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) warnings.push('NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID (optional; improves premium plan detection)');
   }
 
-  return {
-    valid: missing.length === 0,
-    missing,
-    warnings
-  };
+  return { valid: missing.length === 0, missing, warnings };
 }
 
 /**
@@ -248,7 +233,6 @@ export function logTierDetection(
     console.log(`✅ Tier detected (${result.confidence} confidence):`, logData);
   }
 
-  // Debug info in development
   if (process.env.NODE_ENV === 'development' && result.debug) {
     console.log('🔍 Debug info:', result.debug);
   }
@@ -256,7 +240,6 @@ export function logTierDetection(
 
 /**
  * Tier detection for client-side UserResource (simplified version)
- * This version only checks metadata since client-side doesn't have all the server-side data
  */
 export function detectTierFromUserResource(user: UserResource): TierDetectionResult {
   const debug = {
@@ -268,7 +251,6 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
     }))
   };
 
-  // 1. Check Public Metadata (highest confidence for client-side)
   const publicMeta = user.publicMetadata as {
     plan?: string;
     tier?: string;
@@ -293,7 +275,6 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
     };
   }
 
-  // 2. Check Organization Memberships
   const premiumOrgMembership = user.organizationMemberships?.find(
     membership => 
       membership.organization.slug === 'premium' || 
@@ -303,14 +284,13 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
   if (premiumOrgMembership) {
     return {
       tier: 'premium_user',
-      subscriptionType: 'monthly', // Default when unclear
+      subscriptionType: 'monthly',
       confidence: 'medium',
       source: 'client_organization_membership',
       debug
     };
   }
 
-  // 3. Default to free tier
   return {
     tier: 'free_user',
     confidence: 'high',

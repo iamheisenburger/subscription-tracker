@@ -120,7 +120,7 @@ export async function detectActiveSubscriptionFromClerk(
         confidence: 'low',
         details: { 
           email: email.split('@')[1], // Domain only for privacy
-          createdHoursAgo: Math.round((Date.now() - user.createdAt) / (60 * 60 * 1000))
+          createdHoursAgo: user.createdAt ? Math.round((Date.now() - user.createdAt) / (60 * 60 * 1000)) : 0
         }
       };
     }

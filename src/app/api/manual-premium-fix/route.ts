@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
+import { detectActiveSubscriptionFromClerk } from '@/lib/clerk-billing-detection';
 
 /**
- * MANUAL PREMIUM FIX ENDPOINT
+ * UNIVERSAL WEBHOOK FAILURE RECOVERY SYSTEM
  * 
- * For users whose webhooks completely failed and have no metadata.
- * This manually sets them as premium if they should be.
+ * Automatically detects and fixes webhook failures for ANY user.
+ * Checks Clerk billing API to determine actual subscription status.
  */
 export async function POST() {
   try {
@@ -17,29 +18,38 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('🔧 MANUAL PREMIUM FIX for user:', userId.slice(-8));
+    console.log('🔧 WEBHOOK FAILURE RECOVERY for user:', userId.slice(-8));
 
-    // Get current user data
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(userId);
-
-    // For Isabella's specific case - manually upgrade to premium
-    // This is a one-time fix for the webhook failure
-    
     const currentMetadata = clerkUser.publicMetadata as Record<string, unknown>;
+
+    // UNIVERSAL DETECTION: Check if user has active billing subscription
+    const subscriptionStatus = await detectActiveSubscriptionFromClerk(userId, client);
     
-    // Set premium metadata manually
+    if (!subscriptionStatus.hasActiveSubscription) {
+      return NextResponse.json({
+        success: false,
+        message: 'No active premium subscription found',
+        details: subscriptionStatus.reason,
+        recommendation: 'Please purchase a premium subscription first'
+      });
+    }
+
+    // User has active subscription but missing metadata - fix it
+    console.log('✅ Active subscription detected, applying metadata fix');
+
     await client.users.updateUser(userId, {
       publicMetadata: {
         ...currentMetadata,
         tier: 'premium_user',
         plan: 'premium',
-        subscriptionType: 'monthly',
-        billing: 'monthly',
-        plan_id: 'cplan_32xfUNaavPmbOI3V7AtOq7EiPqM',
+        subscriptionType: subscriptionStatus.subscriptionType,
+        billing: subscriptionStatus.subscriptionType,
+        plan_id: subscriptionStatus.planId,
         subscription_status: 'active',
-        manual_fix_applied_at: new Date().toISOString(),
-        manual_fix_reason: 'Webhook failed - user has active premium subscription'
+        webhook_recovery_applied_at: new Date().toISOString(),
+        webhook_recovery_reason: 'Webhook failure detected and fixed automatically'
       }
     });
 
@@ -47,23 +57,23 @@ export async function POST() {
     await fetchMutation(api.users.setTier, {
       clerkId: userId,
       tier: 'premium_user',
-      subscriptionType: 'monthly',
+      subscriptionType: subscriptionStatus.subscriptionType,
     });
 
-    console.log('✅ MANUAL PREMIUM FIX: Successfully upgraded user to premium');
+    console.log('✅ UNIVERSAL WEBHOOK RECOVERY: Successfully fixed user tier');
 
     return NextResponse.json({
       success: true,
-      action: 'manual_premium_fix',
+      action: 'webhook_failure_recovery',
       tier: 'premium_user',
-      subscriptionType: 'monthly',
-      message: 'Successfully fixed premium status! Please refresh your dashboard.',
+      subscriptionType: subscriptionStatus.subscriptionType,
+      planId: subscriptionStatus.planId,
+      message: 'Webhook failure automatically detected and fixed!',
+      details: subscriptionStatus,
       next_steps: [
         'Refresh your dashboard page',
-        'Premium features should now be accessible', 
-        'Analytics tab should appear',
-        'Unlimited subscriptions enabled',
-        'Export features unlocked'
+        'Premium features should now be accessible',
+        'This fix works for all users with similar webhook issues'
       ]
     });
 

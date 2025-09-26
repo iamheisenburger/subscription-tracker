@@ -3,6 +3,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
 import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection';
+import { detectActiveSubscriptionFromClerk } from '@/lib/clerk-billing-detection';
 
 export async function POST() {
   try {
@@ -22,7 +23,59 @@ export async function POST() {
     const tierResult = detectTierFromClerkUser(clerkUser);
     logTierDetection(userId, tierResult, 'manual_sync');
 
-    // Update tier based on detection results
+    // ENHANCED: Check for webhook failure if standard detection shows free
+    if (tierResult.tier === 'free_user' && tierResult.confidence === 'high') {
+      // Check if this might be a webhook failure case
+      const hasEmptyMetadata = Object.keys(clerkUser.publicMetadata).length === 0;
+      
+      if (hasEmptyMetadata) {
+        console.log('🔍 Empty metadata detected - checking for webhook failure');
+        
+        // Use universal subscription detection
+        const subscriptionStatus = await detectActiveSubscriptionFromClerk(userId, client);
+        
+        if (subscriptionStatus.hasActiveSubscription && subscriptionStatus.confidence !== 'low') {
+          console.log('✅ Webhook failure detected - active subscription found, fixing automatically');
+          
+          // Fix the webhook failure
+          await client.users.updateUser(userId, {
+            publicMetadata: {
+              tier: 'premium_user',
+              plan: 'premium',
+              subscriptionType: subscriptionStatus.subscriptionType,
+              billing: subscriptionStatus.subscriptionType,
+              plan_id: subscriptionStatus.planId,
+              subscription_status: 'active',
+              auto_recovery_applied_at: new Date().toISOString(),
+              auto_recovery_reason: 'Webhook failure auto-detected and fixed during sync'
+            }
+          });
+
+          // Update Convex
+          await fetchMutation(api.users.setTier, {
+            clerkId: userId,
+            tier: 'premium_user',
+            subscriptionType: subscriptionStatus.subscriptionType,
+          });
+
+          return NextResponse.json({
+            success: true,
+            tier: 'premium_user',
+            subscriptionType: subscriptionStatus.subscriptionType,
+            confidence: 'high',
+            source: 'webhook_failure_recovery',
+            message: '🎉 Webhook failure detected and automatically fixed! You now have premium access.',
+            recovery: {
+              issue: 'Webhook failure - empty metadata despite active subscription',
+              solution: 'Automatically restored premium status',
+              details: subscriptionStatus
+            }
+          });
+        }
+      }
+    }
+
+    // Standard tier detection flow
     if (tierResult.confidence !== 'low') {
       // High/medium confidence - apply the detected tier
       await fetchMutation(api.users.setTier, {

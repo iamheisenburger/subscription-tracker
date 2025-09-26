@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../convex/_generated/api';
-import { fetchQuery } from 'convex/nextjs';
+import { fetchQuery, fetchMutation } from 'convex/nextjs';
 import { detectTierFromClerkUser } from '@/lib/tier-detection';
 
 /**

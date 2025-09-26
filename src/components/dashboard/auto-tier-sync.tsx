@@ -31,13 +31,11 @@ export function AutoTierSync() {
     // 1. Clerk user is loaded and exists
     // 2. Convex user data is loaded and exists
     // 3. Convex shows free_user (potential sync needed)
-    // 4. User appears to have been created recently (within last hour)
     if (
       isLoaded && 
       user?.id && 
       userData && 
-      userData.tier === "free_user" &&
-      userData.createdAt > Date.now() - (60 * 60 * 1000) // Within last hour
+      userData.tier === "free_user"
     ) {
       syncAttempted.current = true;
 

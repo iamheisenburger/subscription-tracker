@@ -23,8 +23,8 @@ export async function POST() {
     const tierResult = detectTierFromClerkUser(clerkUser);
     logTierDetection(userId, tierResult, 'manual_sync');
 
-    // ENHANCED: Check for webhook failure if standard detection shows free
-    if (tierResult.tier === 'free_user' && tierResult.confidence === 'high') {
+    // ENHANCED: Check for webhook failure only when we have no premium indicators at all
+    if (tierResult.tier === 'free_user') {
       // Check if this might be a webhook failure case
       const hasEmptyMetadata = Object.keys(clerkUser.publicMetadata).length === 0;
       
@@ -34,7 +34,7 @@ export async function POST() {
         // Use universal subscription detection
         const subscriptionStatus = await detectActiveSubscriptionFromClerk(userId, client);
         
-        if (subscriptionStatus.hasActiveSubscription && subscriptionStatus.confidence !== 'low') {
+        if (subscriptionStatus.hasActiveSubscription && subscriptionStatus.confidence === 'high') {
           console.log('✅ Webhook failure detected - active subscription found, fixing automatically');
           
           // Fix the webhook failure
@@ -76,7 +76,7 @@ export async function POST() {
     }
 
     // Standard tier detection flow
-    if (tierResult.confidence !== 'low') {
+    if (tierResult.confidence === 'high') {
       // High/medium confidence - apply the detected tier
       await fetchMutation(api.users.setTier, {
         clerkId: userId,
@@ -95,23 +95,6 @@ export async function POST() {
         message: tierResult.tier === 'premium_user' 
           ? 'Premium subscription detected and activated!'
           : 'Account status verified - you\'re on the free plan'
-      });
-    } else {
-      // Low confidence - ensure user is at least marked correctly as free
-      console.log('ℹ️ Low confidence detection - setting as free_user');
-      
-      await fetchMutation(api.users.setTier, {
-        clerkId: userId,
-        tier: 'free_user',
-        subscriptionType: undefined,
-      });
-
-      return NextResponse.json({ 
-        success: true, 
-        tier: 'free_user',
-        confidence: tierResult.confidence,
-        source: tierResult.source,
-        message: 'No premium subscription detected - confirmed free tier status'
       });
     }
 

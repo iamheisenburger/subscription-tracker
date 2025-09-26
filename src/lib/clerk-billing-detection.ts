@@ -63,12 +63,13 @@ export async function detectActiveSubscriptionFromClerk(
         paymentProviders.includes(account.provider.toLowerCase())
       );
 
+      // Presence of a payment account is NOT sufficient to assert an active subscription
       return {
-        hasActiveSubscription: true,
-        subscriptionType: 'monthly', // Default assumption
+        hasActiveSubscription: false,
+        subscriptionType: 'monthly',
         planId: null,
-        reason: `Connected to payment provider: ${paymentAccount?.provider}`,
-        confidence: 'medium',
+        reason: `Payment provider linked (${paymentAccount?.provider}) but no subscription metadata`,
+        confidence: 'low',
         details: { paymentAccount }
       };
     }
@@ -86,12 +87,13 @@ export async function detectActiveSubscriptionFromClerk(
     );
 
     if (premiumOrgMembership) {
+      // Org membership hints intent but is NOT authoritative for billing status
       return {
-        hasActiveSubscription: true,
+        hasActiveSubscription: false,
         subscriptionType: 'monthly',
         planId: null,
-        reason: 'Member of premium organization',
-        confidence: 'medium',
+        reason: 'Premium organization membership without billing evidence',
+        confidence: 'low',
         details: { premiumOrgMembership }
       };
     }

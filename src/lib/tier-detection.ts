@@ -198,23 +198,47 @@ export function validateTierDetectionEnvironment(): {
   const missing: string[] = [];
   const warnings: string[] = [];
 
-  // Required variables
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    missing.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
-  }
-  if (!process.env.CLERK_SECRET_KEY) {
-    missing.push('CLERK_SECRET_KEY');
-  }
-  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-    missing.push('NEXT_PUBLIC_CONVEX_URL');
-  }
+  // Detect runtime (browser vs server)
+  const isBrowser = typeof window !== 'undefined';
 
-  // Optional but recommended variables
-  if (!process.env.CLERK_WEBHOOK_SECRET) {
-    warnings.push('CLERK_WEBHOOK_SECRET (webhooks may fail)');
-  }
-  if (!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
-    warnings.push('NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID (premium plan detection may fail)');
+  // Client-side requirements: only public env vars should be enforced
+  if (isBrowser) {
+    if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+      missing.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
+    }
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+      missing.push('NEXT_PUBLIC_CONVEX_URL');
+    }
+
+    // Server-only secrets are not available in the browser; treat as warnings if absent
+    if (!process.env.CLERK_WEBHOOK_SECRET) {
+      warnings.push('CLERK_WEBHOOK_SECRET (server-only, ok to be missing on client)');
+    }
+    if (!process.env.CLERK_SECRET_KEY) {
+      warnings.push('CLERK_SECRET_KEY (server-only, ok to be missing on client)');
+    }
+    if (!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
+      warnings.push('NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID (optional; improves premium plan detection)');
+    }
+  } else {
+    // Server-side requirements
+    if (!process.env.CLERK_SECRET_KEY) {
+      missing.push('CLERK_SECRET_KEY');
+    }
+    // Webhook secret is recommended but not strictly required for non-webhook paths
+    if (!process.env.CLERK_WEBHOOK_SECRET) {
+      warnings.push('CLERK_WEBHOOK_SECRET (webhooks may fail)');
+    }
+    // Public vars may not be present in some server contexts; warn if absent
+    if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+      warnings.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (required for client)');
+    }
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+      warnings.push('NEXT_PUBLIC_CONVEX_URL (required for client Convex SDK)');
+    }
+    if (!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
+      warnings.push('NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID (optional; improves premium plan detection)');
+    }
   }
 
   return {

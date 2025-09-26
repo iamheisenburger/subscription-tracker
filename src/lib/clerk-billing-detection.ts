@@ -20,7 +20,7 @@ interface SubscriptionDetectionResult {
  */
 export async function detectActiveSubscriptionFromClerk(
   userId: string,
-  clerkClient: { users: { getUser: (id: string) => Promise<any> } }
+  clerkClient: { users: { getUser: (id: string) => Promise<Record<string, unknown>> } }
 ): Promise<SubscriptionDetectionResult> {
   try {
     const user = await clerkClient.users.getUser(userId);

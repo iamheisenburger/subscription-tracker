@@ -70,9 +70,9 @@ export default function ProductionDebugPage() {
       <div style={{ backgroundColor: '#2d3436', padding: '15px', border: '1px solid #74b9ff' }}>
         <h2 style={{ color: '#74b9ff' }}>✅ CRITICAL TESTS</h2>
         <ol style={{ fontSize: '14px' }}>
-          <li><strong>Key Type:</strong> Should be "PRODUCTION" ✅</li>
-          <li><strong>Domain:</strong> Should be "usesubwise.app" ✅</li>
-          <li><strong>NOT Vercel URL:</strong> Should NOT contain "vercel.app" ⚠️</li>
+          <li><strong>Key Type:</strong> Should be &quot;PRODUCTION&quot; ✅</li>
+          <li><strong>Domain:</strong> Should be &quot;usesubwise.app&quot; ✅</li>
+          <li><strong>NOT Vercel URL:</strong> Should NOT contain &quot;vercel.app&quot; ⚠️</li>
           <li><strong>Clerk Working:</strong> Test sign-in button below ⬇️</li>
         </ol>
         

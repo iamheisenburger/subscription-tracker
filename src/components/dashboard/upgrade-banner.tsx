@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Crown, BarChart3, Download, Bell, FolderKanban, Shield } from "lucide-react";
 import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { TierSyncButton } from "./tier-sync-button";
+import { TierSyncEnhancement } from "./tier-sync-enhancement";
 
 export function UpgradeBanner() {
   const { isLoading, isMonthlyPremium, isAnnualPremium } = useUserTier();
@@ -83,7 +83,7 @@ export function UpgradeBanner() {
               <p className="text-xs text-muted-foreground font-sans mb-2 text-center sm:text-right">
                 Already upgraded? 
               </p>
-              <TierSyncButton variant="ghost" size="sm" className="text-xs w-full sm:w-auto" />
+              <TierSyncEnhancement variant="ghost" size="sm" className="text-xs w-full sm:w-auto" />
             </div>
           </div>
         </div>

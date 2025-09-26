@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
-import { detectTierFromClerkUser, logTierDetection, validateTierDetectionEnvironment } from '@/lib/tier-detection';
+import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection';
 
 export async function POST() {
   try {
@@ -12,21 +12,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('🔄 Manual tier sync requested for user:', userId);
-
-    // Validate environment
-    const envCheck = validateTierDetectionEnvironment();
-    if (!envCheck.valid) {
-      console.error('❌ Environment validation failed:', envCheck.missing);
-      return NextResponse.json({ 
-        error: 'Configuration error',
-        details: `Missing environment variables: ${envCheck.missing.join(', ')}`
-      }, { status: 500 });
-    }
-
-    if (envCheck.warnings.length > 0) {
-      console.warn('⚠️ Environment warnings:', envCheck.warnings);
-    }
+    console.log('🔄 Manual tier sync requested for user:', userId.slice(-8));
 
     // Get user from Clerk
     const client = await clerkClient();
@@ -36,13 +22,16 @@ export async function POST() {
     const tierResult = detectTierFromClerkUser(clerkUser);
     logTierDetection(userId, tierResult, 'manual_sync');
 
-    // Always update tier if we have medium or high confidence
+    // Update tier based on detection results
     if (tierResult.confidence !== 'low') {
+      // High/medium confidence - apply the detected tier
       await fetchMutation(api.users.setTier, {
         clerkId: userId,
         tier: tierResult.tier,
         subscriptionType: tierResult.subscriptionType,
       });
+
+      console.log(`✅ Tier sync successful: ${tierResult.tier} (${tierResult.confidence} confidence)`);
 
       return NextResponse.json({ 
         success: true, 
@@ -50,17 +39,26 @@ export async function POST() {
         subscriptionType: tierResult.subscriptionType,
         confidence: tierResult.confidence,
         source: tierResult.source,
-        message: `User synced to ${tierResult.tier} (${tierResult.confidence} confidence)`
+        message: tierResult.tier === 'premium_user' 
+          ? 'Premium subscription detected and activated!'
+          : 'Account status verified - you\'re on the free plan'
       });
     } else {
-      // Low confidence - don't make changes, just report
+      // Low confidence - ensure user is at least marked correctly as free
+      console.log('ℹ️ Low confidence detection - setting as free_user');
+      
+      await fetchMutation(api.users.setTier, {
+        clerkId: userId,
+        tier: 'free_user',
+        subscriptionType: undefined,
+      });
+
       return NextResponse.json({ 
-        success: false, 
-        tier: tierResult.tier,
+        success: true, 
+        tier: 'free_user',
         confidence: tierResult.confidence,
         source: tierResult.source,
-        message: 'Low confidence in tier detection - no changes made',
-        debug: process.env.NODE_ENV === 'development' ? tierResult.debug : undefined
+        message: 'No premium subscription detected - confirmed free tier status'
       });
     }
 

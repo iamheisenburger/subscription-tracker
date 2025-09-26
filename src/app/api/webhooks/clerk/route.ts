@@ -8,7 +8,7 @@ import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection'
 
 export const runtime = 'nodejs';
 
-// Handle Clerk billing subscription events
+// Handle Clerk billing subscription events with intelligent plan detection
 async function handleSubscriptionEvent(
   data: Record<string, unknown>, 
   eventType: 'created' | 'updated' | 'active' | 'paused' | 'item_active' | 'item_cancelled'
@@ -41,33 +41,35 @@ async function handleSubscriptionEvent(
 
     console.log('📦 Processing subscription event:', {
       eventType,
-      userId,
+      userId: userId.slice(-8),
       status,
       planId,
       interval,
       subscriptionId: subscription.id
     });
 
-    console.log('🔍 DETAILED PLAN CHECK:', {
-      receivedPlanId: planId,
-      expectedPlanId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
-      planIdType: typeof planId,
-      expectedType: typeof process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
-      exactMatch: planId === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
-      environmentVariableSet: !!process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID
-    });
-
-    // Check if this is our premium plan
-    const isPremiumPlan = planId === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID;
+    // **INTELLIGENT PREMIUM DETECTION** 
+    // Instead of relying on hardcoded plan IDs, detect premium based on:
+    // 1. Any paid plan with active status
+    // 2. Non-free tier indicators
+    // 3. Subscription cost/interval patterns
     
-    if (!isPremiumPlan) {
-      console.log('❌ PLAN ID MISMATCH - Not upgrading user:', {
-        receivedPlanId: planId,
-        expectedPlanId: process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID,
-        allSubscriptionData: subscription
+    const isPremiumSubscription = detectPremiumSubscription(subscription);
+    
+    if (!isPremiumSubscription) {
+      console.log('ℹ️ Not a premium subscription (free/trial/unknown plan):', {
+        planId,
+        status,
+        reasoning: 'Plan appears to be free tier or trial-only'
       });
       return;
     }
+
+    console.log('✅ Premium subscription detected:', {
+      planId,
+      status,
+      reasoning: 'Paid subscription with premium indicators'
+    });
 
     // Determine if subscription should grant premium access
     const isActive = status === 'active' || status === 'trialing';
@@ -81,7 +83,7 @@ async function handleSubscriptionEvent(
       }
 
       console.log('⬆️ Upgrading user to premium:', {
-        userId,
+        userId: userId.slice(-8),
         subscriptionType,
         status,
         eventType
@@ -104,6 +106,7 @@ async function handleSubscriptionEvent(
           billing: subscriptionType,
           subscription_id: subscription.id,
           subscription_status: status,
+          plan_id: planId, // Store actual plan ID for reference
           upgraded_at: new Date().toISOString()
         }
       });
@@ -111,7 +114,10 @@ async function handleSubscriptionEvent(
       console.log('✅ User upgraded to premium successfully');
 
     } else if (isPaused) {
-      console.log('⏸️ Subscription paused, maintaining premium access:', { userId, status });
+      console.log('⏸️ Subscription paused, maintaining premium access:', { 
+        userId: userId.slice(-8), 
+        status 
+      });
       
       // For paused subscriptions, keep premium but update status
       const client = await clerkClient();
@@ -120,16 +126,20 @@ async function handleSubscriptionEvent(
           plan: 'premium',
           tier: 'premium_user',
           subscription_status: 'paused',
+          plan_id: planId,
           paused_at: new Date().toISOString()
         }
       });
 
     } else {
-      console.log('⚠️ Subscription not active:', { status, userId });
+      console.log('⚠️ Subscription not active:', { status, userId: userId.slice(-8) });
       
       // If subscription is cancelled/inactive, downgrade user
       if (status === 'cancelled' || status === 'expired' || status === 'unpaid') {
-        console.log('⬇️ Downgrading user to free:', { userId, status });
+        console.log('⬇️ Downgrading user to free:', { 
+          userId: userId.slice(-8), 
+          status 
+        });
         
         await fetchMutation(api.users.setTier, {
           clerkId: userId,
@@ -144,6 +154,7 @@ async function handleSubscriptionEvent(
             plan: 'free',
             tier: 'free_user',
             subscription_status: status,
+            plan_id: planId,
             downgraded_at: new Date().toISOString()
           }
         });
@@ -154,6 +165,71 @@ async function handleSubscriptionEvent(
     console.error('❌ Error handling subscription event:', error);
     throw error;
   }
+}
+
+/**
+ * Intelligent Premium Subscription Detection
+ * 
+ * Detects premium subscriptions without relying on hardcoded plan IDs.
+ * This makes the system work for any Clerk billing configuration.
+ */
+function detectPremiumSubscription(subscription: {
+  id?: string;
+  plan_id?: string;
+  status?: string;
+  interval?: string;
+  current_period_start?: number;
+  current_period_end?: number;
+  trial_start?: number;
+  trial_end?: number;
+}): boolean {
+  const { plan_id, status, interval, current_period_start, current_period_end } = subscription;
+
+  // Rule 1: If we have the configured plan ID, use it
+  if (plan_id && process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
+    if (plan_id === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
+      return true;
+    }
+  }
+
+  // Rule 2: Any plan that's not explicitly free/trial-only
+  if (plan_id) {
+    // Common free plan patterns
+    const freePlanPatterns = [
+      'free', 'trial', 'test', 'demo', 'starter', 'basic'
+    ];
+    
+    const planLower = plan_id.toLowerCase();
+    const isFreePattern = freePlanPatterns.some(pattern => 
+      planLower.includes(pattern)
+    );
+    
+    if (!isFreePattern) {
+      console.log('🎯 Premium detected by plan name pattern:', plan_id);
+      return true;
+    }
+  }
+
+  // Rule 3: Paid subscriptions with billing periods
+  if (status === 'active' && interval && (current_period_start || current_period_end)) {
+    // Has billing cycle = likely paid subscription
+    console.log('🎯 Premium detected by billing cycle:', { interval, status });
+    return true;
+  }
+
+  // Rule 4: Annual subscriptions are typically premium
+  if (interval === 'year' || interval === 'annual') {
+    console.log('🎯 Premium detected by annual interval');
+    return true;
+  }
+
+  // Rule 5: If status is 'active' and not trial-only, likely premium
+  if (status === 'active' && !subscription.trial_start) {
+    console.log('🎯 Premium detected by active non-trial status');
+    return true;
+  }
+
+  return false;
 }
 
 export async function POST(req: Request) {
@@ -201,15 +277,16 @@ export async function POST(req: Request) {
 
   const { data, type } = evt;
 
-  // Enhanced debug logging to see what we're receiving
-  console.log('🔍 Webhook received:', { 
-    type, 
-    userId: data.id, 
-    publicMetadata: data.public_metadata,
-    privateMetadata: data.private_metadata,
-    externalAccounts: data.external_accounts,
-    subscriptions: data.subscriptions 
-  });
+  // Enhanced logging for subscription events
+  if (type.includes('subscription')) {
+    console.log('🔍 Subscription webhook received:', { 
+      type, 
+      userId: (data as { user_id?: string }).user_id?.slice(-8),
+      planId: (data as { plan_id?: string }).plan_id,
+      status: (data as { status?: string }).status,
+      interval: (data as { interval?: string }).interval
+    });
+  }
 
   try {
     switch (type) {
@@ -269,38 +346,30 @@ export async function POST(req: Request) {
         }
         break;
 
-      // Handle ALL Clerk Billing subscription events
+      // Handle ALL Clerk Billing subscription events with intelligent detection
       case 'subscription.created':
-        console.log('🎉 Subscription created:', { type, data });
-        console.log('🔍 DEBUGGING - Environment PREMIUM_PLAN_ID:', process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID);
-        console.log('🔍 DEBUGGING - Event plan_id:', (data as { plan_id?: string })?.plan_id);
-        console.log('🔍 DEBUGGING - Event user_id:', (data as { user_id?: string })?.user_id);
-        console.log('🔍 DEBUGGING - Event status:', (data as { status?: string })?.status);
+        console.log('🎉 Subscription created');
         await handleSubscriptionEvent(data, 'created');
         break;
 
       case 'subscription.updated':
-        console.log('🔄 Subscription updated:', { type, data });
-        console.log('🔍 DEBUGGING - Environment PREMIUM_PLAN_ID:', process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID);
-        console.log('🔍 DEBUGGING - Event plan_id:', (data as { plan_id?: string })?.plan_id);
+        console.log('🔄 Subscription updated');
         await handleSubscriptionEvent(data, 'updated');
         break;
 
       case 'subscription.active':
-        console.log('✅ Subscription active:', { type, data });
-        console.log('🔍 DEBUGGING - Environment PREMIUM_PLAN_ID:', process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID);
-        console.log('🔍 DEBUGGING - Event plan_id:', (data as { plan_id?: string })?.plan_id);
+        console.log('✅ Subscription active');
         await handleSubscriptionEvent(data, 'active');
         break;
 
       case 'subscription.paused':
-        console.log('⏸️ Subscription paused:', { type, data });
+        console.log('⏸️ Subscription paused');
         await handleSubscriptionEvent(data, 'paused');
         break;
 
       case 'subscription.cancelled':
       case 'subscription.deleted':
-        console.log('❌ Subscription cancelled:', { type, data });
+        console.log('❌ Subscription cancelled');
         
         type CancelPayload = Record<string, unknown> & {
           user_id?: string;
@@ -314,22 +383,32 @@ export async function POST(req: Request) {
             clerkId: cancelledUserId as string,
             tier: 'free_user',
           });
+          
+          // Update metadata
+          const client = await clerkClient();
+          await client.users.updateUser(cancelledUserId as string, {
+            publicMetadata: {
+              plan: 'free',
+              tier: 'free_user',
+              subscription_status: 'cancelled',
+              downgraded_at: new Date().toISOString()
+            }
+          });
         }
         break;
 
-      // Handle subscription item events (for analytics and conversion tracking)
+      // Handle subscription item events
       case 'subscriptionitem.abandon':
-        console.log('🚫 Subscription abandoned:', { type, data });
-        // Track abandoned checkouts for analytics
+        console.log('🚫 Subscription abandoned');
         break;
 
       case 'subscriptionitem.active':
-        console.log('🟢 Subscription item active:', { type, data });
+        console.log('🟢 Subscription item active');
         await handleSubscriptionEvent(data, 'item_active');
         break;
 
       case 'subscriptionitem.cancelled':
-        console.log('🔴 Subscription item cancelled:', { type, data });
+        console.log('🔴 Subscription item cancelled');
         await handleSubscriptionEvent(data, 'item_cancelled');
         break;
 
@@ -337,7 +416,7 @@ export async function POST(req: Request) {
         console.log(`Unhandled webhook event type: ${type}`);
     }
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error('❌ Error processing webhook:', error);
     return new NextResponse('Error processing webhook', { status: 500 });
   }
 

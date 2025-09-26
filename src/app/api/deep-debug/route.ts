@@ -91,21 +91,11 @@ export async function GET() {
       analysisReasons.push('❌ NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID environment variable not set');
     }
 
-    // Try to get user's subscription from Clerk billing directly
-    let clerkSubscriptionCheck = null;
-    try {
-      // This might fail depending on Clerk plan, but let's try
-      const subscriptions = await client.users.getUserSubscriptions?.(userId) || [];
-      clerkSubscriptionCheck = {
-        subscriptions: subscriptions,
-        hasAnySubscriptions: subscriptions.length > 0
-      };
-    } catch (error) {
-      clerkSubscriptionCheck = {
-        error: `Cannot access subscription data: ${String(error)}`,
-        note: 'This might be normal depending on your Clerk plan'
-      };
-    }
+    // Note: Clerk doesn't expose direct subscription API access
+    const clerkSubscriptionCheck = {
+      note: 'Clerk does not expose getUserSubscriptions API - subscription data must come from webhooks or metadata',
+      alternativeCheck: 'We rely on publicMetadata, externalAccounts, or organization memberships'
+    };
 
     const debugData = {
       timestamp: new Date().toISOString(),

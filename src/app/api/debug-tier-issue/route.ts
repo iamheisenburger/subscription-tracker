@@ -45,7 +45,7 @@ export async function GET() {
       planId: (clerkUser.publicMetadata as Record<string, unknown>)?.plan_id,
       
       // What SHOULD make them premium
-      shouldBePremiumReasons: []
+      shouldBePremiumReasons: [] as string[]
     };
     
     // Analyze why they should be premium
@@ -105,8 +105,8 @@ export async function GET() {
       
       // What's the problem?
       problemAnalysis: {
-        issues: [],
-        recommendations: []
+        issues: [] as string[],
+        recommendations: [] as string[]
       }
     };
 

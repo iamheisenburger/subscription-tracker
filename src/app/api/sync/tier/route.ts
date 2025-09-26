@@ -8,36 +8,35 @@ import { detectActiveSubscriptionFromClerk } from '@/lib/clerk-billing-detection
 export async function POST() {
   try {
     const { userId } = await auth();
-    
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     console.log('🔄 Manual tier sync requested for user:', userId.slice(-8));
 
-    // Get user from Clerk
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(userId);
-    
-    // Use centralized tier detection
+
     const tierResult = detectTierFromClerkUser(clerkUser);
     logTierDetection(userId, tierResult, 'manual_sync');
 
+<<<<<<< HEAD
     // ENHANCED: Check for webhook failure only when we have no premium indicators at all
     if (tierResult.tier === 'free_user') {
       // Check if this might be a webhook failure case
+=======
+    if (tierResult.tier === 'free_user') {
+>>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
       const hasEmptyMetadata = Object.keys(clerkUser.publicMetadata).length === 0;
-      
       if (hasEmptyMetadata) {
         console.log('🔍 Empty metadata detected - checking for webhook failure');
-        
-        // Use universal subscription detection
         const subscriptionStatus = await detectActiveSubscriptionFromClerk(userId, client);
+<<<<<<< HEAD
         
+=======
+>>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
         if (subscriptionStatus.hasActiveSubscription && subscriptionStatus.confidence === 'high') {
           console.log('✅ Webhook failure detected - active subscription found, fixing automatically');
-          
-          // Fix the webhook failure
           await client.users.updateUser(userId, {
             publicMetadata: {
               tier: 'premium_user',
@@ -50,14 +49,11 @@ export async function POST() {
               auto_recovery_reason: 'Webhook failure auto-detected and fixed during sync'
             }
           });
-
-          // Update Convex
           await fetchMutation(api.users.setTier, {
             clerkId: userId,
             tier: 'premium_user',
             subscriptionType: subscriptionStatus.subscriptionType,
           });
-
           return NextResponse.json({
             success: true,
             tier: 'premium_user',
@@ -75,17 +71,19 @@ export async function POST() {
       }
     }
 
+<<<<<<< HEAD
     // Standard tier detection flow
     if (tierResult.confidence === 'high') {
       // High/medium confidence - apply the detected tier
+=======
+    if (tierResult.confidence === 'high') {
+>>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
       await fetchMutation(api.users.setTier, {
         clerkId: userId,
         tier: tierResult.tier,
         subscriptionType: tierResult.subscriptionType,
       });
-
       console.log(`✅ Tier sync successful: ${tierResult.tier} (${tierResult.confidence} confidence)`);
-
       return NextResponse.json({ 
         success: true, 
         tier: tierResult.tier,
@@ -107,28 +105,20 @@ export async function POST() {
   }
 }
 
-// Also allow GET for debugging
 export async function GET() {
   try {
     const { userId } = await auth();
-    
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(userId);
-    
     return NextResponse.json({
       userId: clerkUser.id,
       publicMetadata: clerkUser.publicMetadata,
       privateMetadata: clerkUser.privateMetadata,
-      externalAccounts: clerkUser.externalAccounts?.map(acc => ({
-        provider: acc.provider,
-        id: acc.id,
-      })),
+      externalAccounts: clerkUser.externalAccounts?.map(acc => ({ provider: acc.provider, id: acc.id })),
     });
-
   } catch (error) {
     console.error('❌ Error getting user data:', error);
     return NextResponse.json({ 

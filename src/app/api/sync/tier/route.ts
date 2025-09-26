@@ -20,21 +20,11 @@ export async function POST() {
     const tierResult = detectTierFromClerkUser(clerkUser);
     logTierDetection(userId, tierResult, 'manual_sync');
 
-<<<<<<< HEAD
-    // ENHANCED: Check for webhook failure only when we have no premium indicators at all
     if (tierResult.tier === 'free_user') {
-      // Check if this might be a webhook failure case
-=======
-    if (tierResult.tier === 'free_user') {
->>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
       const hasEmptyMetadata = Object.keys(clerkUser.publicMetadata).length === 0;
       if (hasEmptyMetadata) {
         console.log('🔍 Empty metadata detected - checking for webhook failure');
         const subscriptionStatus = await detectActiveSubscriptionFromClerk(userId, client);
-<<<<<<< HEAD
-        
-=======
->>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
         if (subscriptionStatus.hasActiveSubscription && subscriptionStatus.confidence === 'high') {
           console.log('✅ Webhook failure detected - active subscription found, fixing automatically');
           await client.users.updateUser(userId, {
@@ -71,13 +61,7 @@ export async function POST() {
       }
     }
 
-<<<<<<< HEAD
-    // Standard tier detection flow
     if (tierResult.confidence === 'high') {
-      // High/medium confidence - apply the detected tier
-=======
-    if (tierResult.confidence === 'high') {
->>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
       await fetchMutation(api.users.setTier, {
         clerkId: userId,
         tier: tierResult.tier,

@@ -43,12 +43,12 @@ export async function detectActiveSubscriptionFromClerk(
 
     // Strategy 2: Check external accounts for payment providers
     const paymentProviders = ['stripe', 'paypal', 'square', 'paddle'];
-    const hasPaymentAccount = user.externalAccounts?.some((account: any) =>
+    const hasPaymentAccount = user.externalAccounts?.some((account: { provider: string }) =>
       paymentProviders.includes(account.provider.toLowerCase())
     );
 
     if (hasPaymentAccount) {
-      const paymentAccount = user.externalAccounts?.find((account: any) =>
+      const paymentAccount = user.externalAccounts?.find((account: { provider: string }) =>
         paymentProviders.includes(account.provider.toLowerCase())
       );
 
@@ -63,9 +63,12 @@ export async function detectActiveSubscriptionFromClerk(
     }
 
     // Strategy 3: Check for premium organization memberships
-    const userWithOrgs = user as any;
+    const userWithOrgs = user as { organizationMemberships?: Array<{ 
+      organization?: { slug?: string; name?: string }; 
+      role?: string 
+    }> };
     const premiumOrgMembership = userWithOrgs.organizationMemberships?.find(
-      (membership: any) => 
+      (membership) => 
         membership.organization?.slug === 'premium' || 
         membership.organization?.name?.toLowerCase().includes('premium') ||
         membership.role === 'premium_member'

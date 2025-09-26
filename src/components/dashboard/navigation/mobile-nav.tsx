@@ -46,11 +46,11 @@ export function MobileNav() {
         })}
         
         {/* FAB Add Button */}
-        <div className="flex-1 flex justify-center">
+        <div className="flex-1 flex justify-center relative">
           <AddSubscriptionDialog>
             <Button
               size="sm"
-              className="h-12 w-12 rounded-full shadow-lg"
+              className="h-12 w-12 rounded-full shadow-lg relative z-[60]"
               aria-label="Add Subscription"
             >
               <Plus className="h-5 w-5" />

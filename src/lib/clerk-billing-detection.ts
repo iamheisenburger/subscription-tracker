@@ -122,10 +122,7 @@ export async function detectActiveSubscriptionFromClerk(
       };
     }
 
-    // Strategy 5: For specific known premium plan IDs in environment
-=======
-    // Evidence 2: Configured premium plan ID matches
->>>>>>> e12e6a98aff9b46bb84a8dfa445b59b7605db9f6
+    // Strategy 3: For specific known premium plan IDs in environment
     const configuredPlanId = process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID;
     if (configuredPlanId && (publicMeta.plan_id === configuredPlanId || privateMeta.plan_id === configuredPlanId)) {
       return {

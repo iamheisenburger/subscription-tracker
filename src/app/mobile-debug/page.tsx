@@ -1,3 +1,7 @@
+/**
+ * MOBILE-FRIENDLY TIER DETECTION DEBUG PAGE
+ */
+
 "use client";
 
 import { useUser } from "@clerk/nextjs";
@@ -10,9 +14,9 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 export default function MobileDebugPage() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const userData = useQuery(
-    api.users.getUserByClerkId, 
+    api.users.getUserByClerkId,
     user?.id ? { clerkId: user.id } : "skip"
   );
   const [syncResult, setSyncResult] = useState<Record<string, unknown> | null>(null);
@@ -22,319 +26,199 @@ export default function MobileDebugPage() {
   const testSync = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/sync/tier', { method: 'POST' });
-      const result = await response.json();
-      setSyncResult(result);
-    } catch (error) {
-      setSyncResult({ error: String(error) });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkApi = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/sync/tier', { method: 'GET' });
-      const result = await response.json();
-      setApiResult(result);
-    } catch (error) {
-      setApiResult({ error: String(error) });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const forceUpgrade = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/set-subscription-type', {
+      const response = await fetch('/api/sync/tier', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionType: 'annual' })
+        headers: { 'Content-Type': 'application/json' }
       });
       const result = await response.json();
-      if (result.success) {
-        window.location.reload();
-      } else {
-        setSyncResult({ error: 'Force upgrade failed' });
+      setSyncResult(result);
+      toast.success("Sync test completed");
+      // Refresh page after 2 seconds if upgraded
+      if (result.upgraded) {
+        setTimeout(() => window.location.reload(), 2000);
       }
     } catch (error) {
       setSyncResult({ error: String(error) });
+      toast.error("Sync test failed");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">Please sign in first</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const checkClerkData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/debug/env-check');
+      const result = await response.json();
+      setApiResult(result);
+      toast.success("Environment check completed");
+    } catch (error) {
+      setApiResult({ error: String(error) });
+      toast.error("Environment check failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const autoDetectPremium = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auto-detect-premium', { method: 'POST' });
+      const result = await response.json();
+      if (result.upgraded) {
+        setSyncResult({ ...result, message: '🎉 AUTOMATIC PREMIUM DETECTION SUCCESSFUL!' });
+        toast.success("Premium tier detected and upgraded!");
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setSyncResult({ ...result, message: 'No premium status detected automatically' });
+        toast.info("No premium subscription found");
+      }
+    } catch (error) {
+      setSyncResult({ error: String(error) });
+      toast.error("Auto-detect failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const emergencyFix = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/fix-plan-id', { method: 'POST' });
+      const result = await response.json();
+      setSyncResult(result);
+      if (result.fixed) {
+        toast.success("Emergency fix applied!");
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        toast.error("Emergency fix failed");
+      }
+    } catch (error) {
+      setSyncResult({ error: String(error) });
+      toast.error("Emergency fix failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isLoaded) return <div className="p-4 text-center">Loading user data...</div>;
+  if (!user) return <div className="p-4 text-center">Please sign in to debug.</div>;
+
+  const tierColor = userData?.tier === 'premium_user' ? 'text-green-600' : 'text-red-600';
+  const tierBadge = userData?.tier === 'premium_user' ?
+    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">PREMIUM</Badge> :
+    <Badge variant="secondary">FREE</Badge>;
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-md mx-auto space-y-4">
-        
-        {/* Current Status */}
+    <div className="p-4 space-y-4 max-w-md mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">🔍 Mobile Tier Debug</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Current Tier:</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-bold ${tierColor}`}>
+                {userData?.tier || 'loading...'}
+              </span>
+              {tierBadge}
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Subscription Limit:</span>
+            <span className="text-sm">{userData?.subscriptionLimit || 'N/A'}</span>
+          </div>
+
+          <div className="text-xs text-gray-500 space-y-1">
+            <div>User ID: {user.id.slice(-8)}</div>
+            <div>Email: {user.emailAddresses[0]?.emailAddress}</div>
+            <div>Environment: Development</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">🧪 Test Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            onClick={testSync}
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            {loading ? "Testing..." : "🔄 Test Sync"}
+          </Button>
+
+          <Button
+            onClick={autoDetectPremium}
+            disabled={loading}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            {loading ? "Detecting..." : "🔮 Auto-Detect Premium"}
+          </Button>
+
+          <Button
+            onClick={checkClerkData}
+            disabled={loading}
+            className="w-full bg-yellow-600 hover:bg-yellow-700"
+          >
+            {loading ? "Checking..." : "🔍 Check Environment"}
+          </Button>
+
+          <Button
+            onClick={emergencyFix}
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700"
+          >
+            {loading ? "Fixing..." : "🚨 Emergency Fix"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {user?.publicMetadata && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">🔧 Mobile Debug Panel</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-center">
-              <Badge 
-                className={userData?.tier === 'premium_user' ? 
-                  "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-              >
-                {userData?.tier === 'premium_user' ? 'PREMIUM DETECTED' : 'FREE DETECTED'}
-              </Badge>
-            </div>
-            
-            <div className="text-sm space-y-2">
-              <div><strong>User ID:</strong> {user.id.slice(-8)}...</div>
-              <div><strong>Email:</strong> {user.emailAddresses[0]?.emailAddress}</div>
-              <div><strong>Convex Tier:</strong> {userData?.tier || 'Not Found'}</div>
-              <div><strong>Subscription Type:</strong> {userData?.subscriptionType || 'Not Set'}</div>
-              <div><strong>Limit:</strong> {userData?.subscriptionLimit === -1 ? '∞ (Unlimited)' : userData?.subscriptionLimit || 'Not Set'}</div>
-              <div><strong>Created:</strong> {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'}</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Status */}
-        <Card className={userData?.tier === 'premium_user' ? 'border-green-500' : 'border-red-500'}>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl mb-2">
-              {userData?.tier === 'premium_user' ? '✅' : '❌'}
-            </div>
-            <div className="font-semibold">
-              {userData?.tier === 'premium_user' ? 
-                'PREMIUM STATUS ACTIVE' : 
-                'NOT DETECTED AS PREMIUM'
-              }
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>🚀 Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              onClick={testSync} 
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              {loading ? "Working..." : "🔄 Test Sync"}
-            </Button>
-            
-            <Button 
-              onClick={checkApi} 
-              disabled={loading}
-              variant="outline"
-              className="w-full"
-            >
-              📊 Check Clerk Data
-            </Button>
-            
-            <Button 
-              onClick={forceUpgrade} 
-              disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              🚀 Force Premium Override
-            </Button>
-            
-            <Button 
-              onClick={async () => {
-                setLoading(true);
-                try {
-                  const response = await fetch('/api/auto-detect-premium', { method: 'POST' });
-                  const result = await response.json();
-                  if (result.upgraded) {
-                    setSyncResult({ ...result, message: '🎉 AUTOMATIC PREMIUM DETECTION SUCCESSFUL!' });
-                    setTimeout(() => window.location.reload(), 2000);
-                  } else {
-                    setSyncResult({ ...result, message: 'No premium status detected automatically' });
-                  }
-                } catch (error) {
-                  setSyncResult({ error: String(error) });
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              {loading ? "Detecting..." : "🔮 Auto-Detect Premium"}
-            </Button>
-            
-            <Button 
-              onClick={async () => {
-                setLoading(true);
-                try {
-                  const response = await fetch('/api/debug/webhook-events');
-                  const result = await response.json();
-                  setApiResult(result);
-                  toast.success("Webhook debug info loaded");
-                } catch (error) {
-                  setApiResult({ error: String(error) });
-                  toast.error("Failed to load webhook debug info");
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700"
-            >
-              {loading ? "Loading..." : "🔍 Check Webhook Config"}
-            </Button>
-            
-            <Button 
-              onClick={async () => {
-                setLoading(true);
-                try {
-                  const response = await fetch('/api/admin/fix-plan-id', { method: 'POST' });
-                  const result = await response.json();
-                  setSyncResult(result);
-                  if (result.fixed) {
-                    toast.success("🚨 EMERGENCY FIX APPLIED! Refreshing page...");
-                    setTimeout(() => window.location.reload(), 2000);
-                  } else {
-                    toast.info("Fix attempted - check result below");
-                  }
-                } catch (error) {
-                  setSyncResult({ error: String(error) });
-                  toast.error("Emergency fix failed");
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
-            >
-              {loading ? "Fixing..." : "🚨 EMERGENCY FIX"}
-            </Button>
-            
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline"
-              className="w-full"
-            >
-              🔄 Refresh Page
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Clerk Metadata */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📋 Your Clerk Account Data</CardTitle>
+            <CardTitle className="text-sm">📋 Clerk Metadata</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xs">
-              <div className="mb-2"><strong>Public Metadata:</strong></div>
-              <pre className="bg-muted p-2 rounded overflow-auto whitespace-pre-wrap">
-                {JSON.stringify(user.publicMetadata, null, 2) || '{}'}
-              </pre>
-            </div>
-            
-            {user.organizationMemberships && user.organizationMemberships.length > 0 && (
-              <div className="mt-3 text-xs">
-                <div className="mb-2"><strong>Organizations:</strong></div>
-                <pre className="bg-muted p-2 rounded overflow-auto whitespace-pre-wrap">
-                  {JSON.stringify(user.organizationMemberships.map(m => ({
-                    org: m.organization.name,
-                    slug: m.organization.slug,
-                    role: m.role
-                  })), null, 2)}
-                </pre>
-              </div>
-            )}
+            <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
+              {JSON.stringify(user.publicMetadata, null, 2)}
+            </pre>
           </CardContent>
         </Card>
+      )}
 
-        {/* Sync Result */}
-        {syncResult && (
-          <Card className="border-blue-500">
-            <CardHeader>
-              <CardTitle>🔄 Sync Test Result</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs bg-muted p-2 rounded overflow-auto whitespace-pre-wrap">
-                {JSON.stringify(syncResult, null, 2)}
-              </pre>
-              
-              {syncResult && (
-                <div className="mt-2 text-center">
-                  <Badge className="bg-green-100 text-green-800">
-                    SYNC COMPLETED
-                  </Badge>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* API Result */}
-        {apiResult && (
-          <Card className="border-green-500">
-            <CardHeader>
-              <CardTitle>📊 Raw Clerk API Data</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs bg-muted p-2 rounded overflow-auto whitespace-pre-wrap">
-                {JSON.stringify(apiResult, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Instructions */}
-        <Card className="border-orange-500">
-          <CardHeader>
-            <CardTitle>📱 What This Shows</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-2">
-            <p><strong>🔄 Test Sync:</strong> Runs basic tier detection manually</p>
-            <p><strong>📊 Check Clerk Data:</strong> Shows raw data from your Clerk account</p>  
-            <p><strong>🔮 Auto-Detect Premium:</strong> Advanced detection that checks Clerk billing system</p>
-            <p><strong>🔍 Check Webhook Config:</strong> Shows webhook setup and environment variables</p>
-            <p><strong>🚨 EMERGENCY FIX:</strong> Manual fix for wrong Plan ID environment variable</p>
-            <p><strong>🚀 Force Override:</strong> Emergency bypass - sets premium immediately</p>
-            
-            <div className="mt-3 p-2 bg-red-50 dark:bg-red-950 rounded text-xs border-red-200 dark:border-red-800">
-              <p><strong>🚨 PLAN ID MISMATCH DETECTED!</strong></p>
-              <p>Your environment variable has wrong Plan ID. Use EMERGENCY FIX button to get immediate access!</p>
-              <p className="mt-1 text-red-700 dark:text-red-400">Then update Vercel environment: NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID = cplan_33D_oku0vc4d1</p>
-            </div>
-            
-            <p className="text-orange-600"><strong>Still broken?</strong> Screenshot this page and report it!</p>
-          </CardContent>
-        </Card>
-
-        {/* Back Button */}
+      {syncResult && (
         <Card>
-          <CardContent className="p-4 text-center">
-            <Button 
-              onClick={() => window.location.href = '/dashboard'}
-              variant="outline" 
-              className="w-full"
-            >
-              ← Back to Dashboard
-            </Button>
+          <CardHeader>
+            <CardTitle className="text-sm">📊 Last Test Result</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
+              {JSON.stringify(syncResult, null, 2)}
+            </pre>
           </CardContent>
         </Card>
+      )}
 
+      {apiResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">🔧 Environment Info</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
+              {JSON.stringify(apiResult, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="text-xs text-center text-gray-500 mt-6">
+        🧹 This is a debug page - delete after testing
       </div>
     </div>
   );

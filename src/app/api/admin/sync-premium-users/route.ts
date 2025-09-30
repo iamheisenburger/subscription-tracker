@@ -74,11 +74,9 @@ export async function POST(req: Request) {
         console.log(`✅ Synced user ${userId.slice(-8)} to premium`);
 
       } catch (error) {
-        results.failed.push({ 
-          userId, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        });
-        console.error(`❌ Failed to sync user ${userId.slice(-8)}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        results.failed.push({ userId, error: errorMessage });
+        console.error(`❌ Failed to sync user ${userId.slice(-8)}:`, errorMessage);
       }
     }
 

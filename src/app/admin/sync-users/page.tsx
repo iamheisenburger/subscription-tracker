@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ interface ClerkUser {
   first_name: string | null;
   last_name: string | null;
   email_addresses: Array<{ email_address: string }>;
-  public_metadata: Record<string, any>;
+  public_metadata: Record<string, unknown>;
 }
 
 export default function AdminSyncPage() {
@@ -20,7 +20,7 @@ export default function AdminSyncPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [premiumUsers, setPremiumUsers] = useState<ClerkUser[]>([]);
-  const [syncResults, setSyncResults] = useState<any>(null);
+  const [syncResults, setSyncResults] = useState<{ success: string[]; failed: Array<{ userId: string; error: string }>; total: number } | null>(null);
 
   const authorize = () => {
     // Simple client-side check (real auth happens server-side)
@@ -49,7 +49,7 @@ export default function AdminSyncPage() {
       } else {
         toast.error(data.error || "Failed to fetch users");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch premium users");
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ export default function AdminSyncPage() {
       } else {
         toast.error(data.error || "Sync failed");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to sync users");
     } finally {
       setLoading(false);

@@ -168,11 +168,10 @@ async function handleSubscriptionEvent(
 }
 
 /**
- * Intelligent Premium Subscription Detection
- * 
- * Detects premium subscriptions without relying on hardcoded plan IDs.
- * This makes the system work for any Clerk billing configuration.
+ * Legacy detection function - kept for reference
+ * Now using simple plan key matching instead
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 function detectPremiumSubscription(subscription: {
   id?: string;
   plan_id?: string;

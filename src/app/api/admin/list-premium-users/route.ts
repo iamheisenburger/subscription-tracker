@@ -21,16 +21,9 @@ export async function POST(req: Request) {
     // Get all users
     const allUsers = await client.users.getUserList({ limit: 500 });
     
-    // Filter for users who have subscriptions in Clerk
-    // Since we can't query subscriptions directly, we check for users
-    // who should be premium based on your Clerk dashboard
-    const premiumUsers = allUsers.data.filter(user => {
-      const metadata = user.publicMetadata as any;
-      // Include users who:
-      // 1. Have no metadata (likely webhook failed)
-      // 2. Or have tier but it's free (to allow re-syncing)
-      return true; // Return all for manual review
-    });
+    // Return all users for manual review
+    // Admin can decide which ones to sync
+    const premiumUsers = allUsers.data;
 
     // Map to simpler format
     const userList = premiumUsers.map(user => ({

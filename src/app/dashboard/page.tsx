@@ -34,11 +34,7 @@ export default async function DashboardPage() {
         <OverviewActions />
       </div>
 
-      {/* Auto Tier Sync - Silent reconciliation */}
-      <AutoTierSync />
-      
-      {/* Tier Sync Alert for Users with Issues */}
-      <TierSyncAlert />
+      {/* Auto Tier Sync removed - doesn't work without proper Clerk metadata */}
 
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />

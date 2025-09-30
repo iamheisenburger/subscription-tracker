@@ -41,15 +41,25 @@ export async function POST(req: Request) {
 
     for (const userId of userIds) {
       try {
-        // Update Clerk metadata
+        // Update Clerk metadata with proper structure
         await client.users.updateUser(userId, {
           publicMetadata: {
             tier: 'premium_user',
-            plan: 'premium',
+            plan: 'premium_user', // Match Clerk plan key
             subscriptionType: subscriptionType,
             billing: subscriptionType,
             manually_synced_at: new Date().toISOString(),
-            sync_reason: 'Admin bulk sync - webhook recovery'
+            sync_reason: 'Admin bulk sync - webhook recovery',
+            // Add all premium features
+            features: {
+              unlimited_subscriptions: true,
+              smart_alerts: true,
+              custom_categories: true,
+              advanced_notifications: true,
+              spending_trends: true,
+              export_csv_pdf: true,
+              priority_support: true
+            }
           }
         });
 

@@ -48,27 +48,28 @@ async function handleSubscriptionEvent(
       subscriptionId: subscription.id
     });
 
-    // **INTELLIGENT PREMIUM DETECTION** 
-    // Instead of relying on hardcoded plan IDs, detect premium based on:
-    // 1. Any paid plan with active status
-    // 2. Non-free tier indicators
-    // 3. Subscription cost/interval patterns
+    // **DIRECT PLAN KEY MATCHING**
+    // Check if the plan key matches "premium_user" from your Clerk dashboard
+    const knownPremiumKeys = ['premium_user', 'premium'];
+    const isPremiumPlan = planId && knownPremiumKeys.includes(planId);
     
-    const isPremiumSubscription = detectPremiumSubscription(subscription);
-    
-    if (!isPremiumSubscription) {
-      console.log('ℹ️ Not a premium subscription (free/trial/unknown plan):', {
+    if (!isPremiumPlan) {
+      console.log('ℹ️ Plan key does not match premium:', {
         planId,
-        status,
-        reasoning: 'Plan appears to be free tier or trial-only'
+        expectedKeys: knownPremiumKeys,
+        reasoning: 'Not a recognized premium plan key'
       });
-      return;
+      // Still process it as premium if active (failsafe)
+      if (status !== 'active' && status !== 'trialing') {
+        return;
+      }
     }
 
     console.log('✅ Premium subscription detected:', {
       planId,
       status,
-      reasoning: 'Paid subscription with premium indicators'
+      matchedKey: isPremiumPlan,
+      reasoning: isPremiumPlan ? 'Matched premium plan key' : 'Active subscription fallback'
     });
 
     // Determine if subscription should grant premium access
@@ -96,18 +97,28 @@ async function handleSubscriptionEvent(
         subscriptionType: subscriptionType,
       });
 
-      // Update user metadata in Clerk for consistency
+      // Update user metadata in Clerk with proper structure
       const client = await clerkClient();
       await client.users.updateUser(userId, {
         publicMetadata: {
-          plan: 'premium',
+          plan: 'premium_user', // Match your Clerk plan key
           tier: 'premium_user',
           subscriptionType,
           billing: subscriptionType,
           subscription_id: subscription.id,
           subscription_status: status,
-          plan_id: planId, // Store actual plan ID for reference
-          upgraded_at: new Date().toISOString()
+          plan_id: planId,
+          upgraded_at: new Date().toISOString(),
+          // Add feature flags matching your Clerk dashboard structure
+          features: {
+            unlimited_subscriptions: true,
+            smart_alerts: true,
+            custom_categories: true,
+            advanced_notifications: true,
+            spending_trends: true,
+            export_csv_pdf: true,
+            priority_support: true
+          }
         }
       });
 

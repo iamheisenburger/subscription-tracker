@@ -4,9 +4,9 @@ import { Webhook } from 'svix';
 import { clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
-import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection';
 
 export const runtime = 'nodejs';
+export const maxDuration = 30; // Increase timeout to 30 seconds
 
 // Handle Clerk billing subscription events with intelligent plan detection
 async function handleSubscriptionEvent(
@@ -48,29 +48,18 @@ async function handleSubscriptionEvent(
       subscriptionId: subscription.id
     });
 
-    // **DIRECT PLAN KEY MATCHING**
-    // Check if the plan key matches "premium_user" from your Clerk dashboard
-    const knownPremiumKeys = ['premium_user', 'premium'];
-    const isPremiumPlan = planId && knownPremiumKeys.includes(planId);
+    // **SIMPLE PLAN MATCHING**
+    // Your Clerk plan key from dashboard: cplan_32x_tQq7E1PqM
+    const yourPremiumPlanId = 'cplan_32x_tQq7E1PqM';
+    const knownPremiumKeys = ['premium_user', 'premium', yourPremiumPlanId];
+    const isPremiumPlan = planId && knownPremiumKeys.some(key => planId.includes(key));
     
-    if (!isPremiumPlan) {
-      console.log('ℹ️ Plan key does not match premium:', {
-        planId,
-        expectedKeys: knownPremiumKeys,
-        reasoning: 'Not a recognized premium plan key'
-      });
-      // Still process it as premium if active (failsafe)
-      if (status !== 'active' && status !== 'trialing') {
-        return;
-      }
+    if (!isPremiumPlan && status !== 'active') {
+      console.log('ℹ️ Skipping - not premium or not active');
+      return;
     }
 
-    console.log('✅ Premium subscription detected:', {
-      planId,
-      status,
-      matchedKey: isPremiumPlan,
-      reasoning: isPremiumPlan ? 'Matched premium plan key' : 'Active subscription fallback'
-    });
+    console.log('✅ Processing premium subscription:', { planId, status });
 
     // Determine if subscription should grant premium access
     const isActive = status === 'active' || status === 'trialing';
@@ -309,25 +298,8 @@ export async function POST(req: Request) {
         break;
 
       case 'user.updated':
-        // Use centralized tier detection for user.updated events
-        const clerkClient_updated = await clerkClient();
-        const updatedUser = await clerkClient_updated.users.getUser(data.id as string);
-        
-        const tierResult = detectTierFromClerkUser(updatedUser);
-        logTierDetection(data.id as string, tierResult, 'clerk_webhook_user_updated');
-        
-        // Update tier if we have medium or high confidence
-        if (tierResult.confidence !== 'low') {
-          await fetchMutation(api.users.setTier, {
-            clerkId: data.id as string,
-            tier: tierResult.tier,
-            subscriptionType: tierResult.subscriptionType,
-          });
-          
-          console.log(`✅ Webhook: Updated user to ${tierResult.tier} (${tierResult.confidence} confidence)`);
-        } else {
-          console.log(`ℹ️ Webhook: Low confidence tier detection, no update made`);
-        }
+        // Skip complex tier detection - metadata will be set by subscription events
+        console.log(`ℹ️ User updated: ${(data.id as string).slice(-8)}`);
         break;
 
       case 'organizationMembership.created':

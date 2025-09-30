@@ -17,25 +17,37 @@ async function handleSubscriptionEvent(
     // Clerk billing subscription event structure
     const subscription = data as {
       id?: string;
-      user_id?: string;
       status?: string;
       plan_id?: string;
       interval?: string;
-      current_period_start?: number;
-      current_period_end?: number;
-      trial_start?: number;
-      trial_end?: number;
+      payer?: {
+        user_id?: string;
+        email?: string;
+        first_name?: string;
+        last_name?: string;
+      };
+      items?: Array<{
+        plan_id?: string;
+        interval?: string;
+        status?: string;
+        plan?: {
+          slug?: string;
+        };
+      }>;
       created_at?: number;
       updated_at?: number;
     };
 
-    const userId = subscription.user_id;
+    // Extract user_id from payer object
+    const userId = subscription.payer?.user_id;
+    
+    // Extract plan info from either top-level (subscriptionItem events) or items array (subscription events)
+    const planId = subscription.plan_id || subscription.items?.find(item => item.status === 'active' || item.status === 'trialing')?.plan_id;
+    const interval = subscription.interval || subscription.items?.find(item => item.status === 'active' || item.status === 'trialing')?.interval;
     const status = subscription.status;
-    const planId = subscription.plan_id;
-    const interval = subscription.interval;
 
     if (!userId) {
-      console.log('❌ No user_id in subscription event');
+      console.log('❌ No user_id in subscription event (no payer.user_id)');
       return;
     }
 
@@ -383,6 +395,11 @@ export async function POST(req: Request) {
         break;
 
       // Handle subscription item events
+      case 'subscriptionitem.created':
+        console.log('✨ Subscription item created - upgrading user');
+        await handleSubscriptionEvent(data, 'created');
+        break;
+
       case 'subscriptionitem.abandon':
         console.log('🚫 Subscription abandoned');
         break;
@@ -392,9 +409,32 @@ export async function POST(req: Request) {
         await handleSubscriptionEvent(data, 'item_active');
         break;
 
+      case 'subscriptionitem.canceled':
       case 'subscriptionitem.cancelled':
-        console.log('🔴 Subscription item cancelled');
-        await handleSubscriptionEvent(data, 'item_cancelled');
+        console.log('🔴 Subscription item cancelled - downgrading user');
+        
+        const cancelPayload = data as {
+          payer?: { user_id?: string };
+        };
+        const cancelUserId = cancelPayload.payer?.user_id;
+        
+        if (cancelUserId) {
+          await fetchMutation(api.users.setTier, {
+            clerkId: cancelUserId,
+            tier: 'free_user',
+          });
+          
+          const client = await clerkClient();
+          await client.users.updateUser(cancelUserId, {
+            publicMetadata: {
+              plan: 'free',
+              tier: 'free_user',
+              subscription_status: 'cancelled',
+              downgraded_at: new Date().toISOString()
+            }
+          });
+          console.log(`✅ User ${cancelUserId.slice(-8)} downgraded to free`);
+        }
         break;
 
       default:

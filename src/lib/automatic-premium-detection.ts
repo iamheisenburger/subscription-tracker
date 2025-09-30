@@ -8,6 +8,7 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { fetchMutation } from 'convex/nextjs';
 import { api } from '../../convex/_generated/api';
+import { detectActiveSubscriptionFromClerk } from './clerk-billing-detection';
 
 interface PremiumDetectionResult {
   isPremium: boolean;
@@ -43,6 +44,34 @@ export async function detectPremiumFromClerkBilling(
         source: 'existing_metadata',
         subscriptionType: publicMeta.subscriptionType as 'monthly' | 'annual' || 'monthly'
       };
+    }
+
+    // Strategy 1.5: **CRITICAL FIX** - Use comprehensive Clerk billing detection
+    // This catches users who paid but webhooks failed to update metadata
+    try {
+      const subscriptionStatus = await detectActiveSubscriptionFromClerk(userId, client);
+      
+      if (subscriptionStatus.hasActiveSubscription && subscriptionStatus.confidence !== 'low') {
+        console.log('🎉 WEBHOOK FAILURE AUTO-DETECTED!', {
+          userId: userId.slice(-8),
+          reason: subscriptionStatus.reason,
+          confidence: subscriptionStatus.confidence
+        });
+        
+        return {
+          isPremium: true,
+          confidence: subscriptionStatus.confidence,
+          source: 'clerk_billing_detection_auto_recovery',
+          subscriptionType: subscriptionStatus.subscriptionType,
+          details: {
+            ...subscriptionStatus.details,
+            webhookFailureDetected: true,
+            autoRecoveryApplied: true
+          }
+        };
+      }
+    } catch (billingCheckError) {
+      console.log('⚠️ Billing detection check failed:', billingCheckError);
     }
 
     // Strategy 2: Check for recent user creation and other indicators
@@ -170,8 +199,9 @@ export async function autoUpgradeIfPremium(userId: string): Promise<boolean> {
       source: detection.source
     });
 
-    // Only auto-upgrade on high confidence detection
-    if (detection.isPremium && detection.confidence === 'high') {
+    // Auto-upgrade on high or medium confidence detection
+    // Medium is acceptable because billing detection is reliable
+    if (detection.isPremium && (detection.confidence === 'high' || detection.confidence === 'medium')) {
       // Update Convex database
       await fetchMutation(api.users.setTier, {
         clerkId: userId,

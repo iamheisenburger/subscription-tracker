@@ -38,7 +38,7 @@ function determineSubscriptionType(
  */
 export async function detectActiveSubscriptionFromClerk(
   userId: string,
-  client: typeof clerkClient
+  client: Awaited<ReturnType<typeof clerkClient>>
 ): Promise<SubscriptionStatus> {
   try {
     const user = await client.users.getUser(userId);

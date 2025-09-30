@@ -285,6 +285,9 @@ export async function POST(req: Request) {
       status: (data as { status?: string }).status,
       interval: (data as { interval?: string }).interval
     });
+    
+    // **EXTREME DEBUG: Log FULL payload**
+    console.log('🚨 FULL WEBHOOK PAYLOAD:', JSON.stringify(data, null, 2));
   }
 
   try {

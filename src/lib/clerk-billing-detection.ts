@@ -8,7 +8,7 @@ import { clerkClient } from '@clerk/nextjs/server';
 
 export interface SubscriptionStatus {
   hasActiveSubscription: boolean;
-  subscriptionType: 'monthly' | 'yearly';
+  subscriptionType: 'monthly' | 'annual';
   planId?: string | null;
   reason: string;
   confidence: 'high' | 'medium' | 'low';
@@ -21,12 +21,12 @@ export interface SubscriptionStatus {
 function determineSubscriptionType(
   publicMeta: Record<string, unknown>, 
   privateMeta: Record<string, unknown>
-): 'monthly' | 'yearly' {
+): 'monthly' | 'annual' {
   const billing = publicMeta.billing || privateMeta.billing || 
                   publicMeta.subscriptionType || privateMeta.subscriptionType;
   
-  if (typeof billing === 'string' && billing.toLowerCase().includes('year')) {
-    return 'yearly';
+  if (typeof billing === 'string' && (billing.toLowerCase().includes('year') || billing.toLowerCase().includes('annual'))) {
+    return 'annual';
   }
   
   return 'monthly'; // Default to monthly

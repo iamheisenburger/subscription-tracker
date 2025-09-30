@@ -61,13 +61,14 @@ async function handleSubscriptionEvent(
     });
 
     // **SIMPLE PLAN MATCHING**
-    // Your Clerk plan key from dashboard: cplan_32x_tQq7E1PqM
-    const yourPremiumPlanId = 'cplan_32x_tQq7E1PqM';
+    // Your Clerk plan key from dashboard: cplan_32xfUNaavPmbOI3V7AtOq7EiPqM
+    const yourPremiumPlanId = 'cplan_32xfUNaavPmbOI3V7AtOq7EiPqM';
     const knownPremiumKeys = ['premium_user', 'premium', yourPremiumPlanId];
     const isPremiumPlan = planId && knownPremiumKeys.some(key => planId.includes(key));
     
-    if (!isPremiumPlan && status !== 'active') {
-      console.log('ℹ️ Skipping - not premium or not active');
+    // CRITICAL: Only process premium plans, skip free plans
+    if (!isPremiumPlan) {
+      console.log(`ℹ️ Skipping non-premium plan: ${planId} (free_user plan)`);
       return;
     }
 

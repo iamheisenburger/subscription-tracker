@@ -85,11 +85,11 @@ export async function POST(req: Request) {
       results
     });
 
-  } catch (error) {
-    console.error('❌ Admin sync error:', error);
+  } catch (err) {
+    console.error('❌ Admin sync error:', err);
     return NextResponse.json({ 
       error: 'Sync failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: err instanceof Error ? err.message : 'Unknown error'
     }, { status: 500 });
   }
 }

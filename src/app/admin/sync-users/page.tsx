@@ -280,7 +280,7 @@ export default function AdminSyncPage() {
         <h3 className="font-semibold mb-2">How This Works:</h3>
         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
           <li>Fetches all users with active Clerk subscriptions</li>
-          <li>Updates their publicMetadata with tier: "premium_user"</li>
+          <li>Updates their publicMetadata with tier: &quot;premium_user&quot;</li>
           <li>Updates Convex database to match</li>
           <li>Users see premium features on next login</li>
         </ol>

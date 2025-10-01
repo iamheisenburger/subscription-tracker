@@ -27,7 +27,7 @@ export function DashboardHeader() {
 
           {/* User Menu */}
           <UserButton 
-            afterSignOutUrl="/sign-in"
+            afterSignOutUrl="/"
             appearance={{
               elements: {
                 avatarBox: "w-8 h-8"

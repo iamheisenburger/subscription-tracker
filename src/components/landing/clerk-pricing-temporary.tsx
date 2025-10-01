@@ -32,7 +32,6 @@ export function ClerkPricingTemporary() {
 
         {/* Clerk's PricingTable - Styled to match our theme */}
         <PricingTable
-          afterSubscriptionUrl="/dashboard?upgraded=true"
           appearance={{
             elements: {
               // Card styling

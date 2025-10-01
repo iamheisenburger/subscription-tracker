@@ -152,14 +152,14 @@ export const createSubscription = mutation({
       throw new Error("User not found");
     }
 
-        // Check subscription limits for free tier
+        // Check subscription limits for free tier - CHECK TOTAL (active + paused)
         if (user.tier === "free_user") {
-          const currentSubs = await ctx.db
+          const allUserSubs = await ctx.db
             .query("subscriptions")
-            .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
             .collect();
 
-          if (currentSubs.length >= 3) {
+          if (allUserSubs.length >= 3) {
             throw new Error("Free plan allows maximum 3 subscriptions. Upgrade to Premium for unlimited subscriptions.");
           }
         }

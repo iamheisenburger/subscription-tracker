@@ -45,7 +45,7 @@ export function MobileAnnualCTA() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Link href="/pricing">
+              <Link href="/dashboard/upgrade">
                 <Button size="sm" className="h-8 text-xs font-sans">
                   Switch
                 </Button>

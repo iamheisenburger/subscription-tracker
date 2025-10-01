@@ -85,7 +85,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                   <p className="text-sm text-muted-foreground font-sans mb-4">
                     Perfect for trying out premium features
                   </p>
-                  <Link href="/pricing">
+                  <Link href="/dashboard/upgrade">
                     <Button variant="outline" className="w-full font-sans">
                       Choose Monthly
                     </Button>
@@ -110,7 +110,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                   <p className="text-sm text-muted-foreground font-sans mb-4">
                     Best value with 2 months free
                   </p>
-                  <Link href="/pricing">
+                  <Link href="/dashboard/upgrade">
                     <Button className="w-full font-sans">
                       Choose Annual
                     </Button>

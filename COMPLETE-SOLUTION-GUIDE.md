@@ -281,3 +281,4 @@ User → Public Metadata → Should see:
 ---
 
 **The system is now production-ready. Webhooks will work for most users, and you have a simple admin tool to fix the rest.**
+

@@ -5,8 +5,84 @@ import { PricingTable } from "@clerk/nextjs";
 export const CustomPricing = () => {
   return (
     <>
-      {/* Mobile Checkout CSS Fixes */}
+      {/* Mobile Checkout CSS Fixes + Enhanced Toggle Visibility */}
       <style jsx global>{`
+        /* CRITICAL: Enhanced Toggle/Switch Visibility for Monthly/Annual Billing */
+        .cl-internal-1vgucwi,
+        .cl-toggleGroup,
+        .cl-switchGroup,
+        [role="radiogroup"],
+        [data-clerk-toggle],
+        [data-clerk-switch] {
+          background: hsl(var(--muted)) !important;
+          border: 2px solid hsl(var(--border)) !important;
+          border-radius: 9999px !important;
+          padding: 4px !important;
+          display: inline-flex !important;
+          gap: 4px !important;
+          min-height: 48px !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* Enhanced toggle buttons */
+        .cl-internal-1vgucwi button,
+        .cl-toggleGroup button,
+        .cl-switchGroup button,
+        [role="radiogroup"] button,
+        [role="radio"] {
+          font-size: 15px !important;
+          font-weight: 600 !important;
+          padding: 10px 24px !important;
+          border-radius: 9999px !important;
+          transition: all 0.2s ease !important;
+          border: 2px solid transparent !important;
+          min-height: 40px !important;
+          font-family: var(--font-sans) !important;
+        }
+        
+        /* Unselected state - highly visible */
+        .cl-internal-1vgucwi button:not([data-state="checked"]),
+        .cl-toggleGroup button:not([aria-checked="true"]),
+        .cl-switchGroup button:not([aria-checked="true"]),
+        [role="radio"]:not([aria-checked="true"]) {
+          background: transparent !important;
+          color: hsl(var(--muted-foreground)) !important;
+          opacity: 0.7 !important;
+        }
+        
+        /* Selected/Active state - maximum visibility */
+        .cl-internal-1vgucwi button[data-state="checked"],
+        .cl-internal-1vgucwi button[aria-checked="true"],
+        .cl-toggleGroup button[aria-checked="true"],
+        .cl-switchGroup button[aria-checked="true"],
+        [role="radio"][aria-checked="true"],
+        [role="radio"][data-state="checked"] {
+          background: hsl(var(--primary)) !important;
+          color: hsl(var(--primary-foreground)) !important;
+          border-color: hsl(var(--primary)) !important;
+          opacity: 1 !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+          font-weight: 700 !important;
+        }
+        
+        /* Hover states for better interactivity */
+        .cl-internal-1vgucwi button:hover,
+        .cl-toggleGroup button:hover,
+        .cl-switchGroup button:hover,
+        [role="radio"]:hover {
+          opacity: 1 !important;
+          transform: scale(1.02) !important;
+        }
+        
+        /* Ensure toggle container is visible */
+        .cl-internal-b8oy6s,
+        .cl-pricingTableToggle {
+          margin: 20px auto !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
+        }
+        
         /* Mobile checkout modal fixes */
         @media (max-width: 768px) {
           .cl-modal {
@@ -63,6 +139,22 @@ export const CustomPricing = () => {
             font-size: 14px !important;
             margin-bottom: 4px !important;
           }
+          
+          /* Mobile toggle sizing */
+          .cl-internal-1vgucwi,
+          .cl-toggleGroup,
+          [role="radiogroup"] {
+            width: 100% !important;
+            max-width: 320px !important;
+          }
+          
+          .cl-internal-1vgucwi button,
+          .cl-toggleGroup button,
+          [role="radio"] {
+            flex: 1 !important;
+            font-size: 14px !important;
+            padding: 12px 16px !important;
+          }
         }
       `}</style>
       
@@ -70,7 +162,7 @@ export const CustomPricing = () => {
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
-            Start free, upgrade when ready
+            Start Free, Upgrade When Ready
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
             No hidden fees, no long-term contracts. Try Premium free for 7 days, then decide. 
@@ -202,10 +294,6 @@ export const CustomPricing = () => {
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>
             <span className="font-sans">7-day free trial</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-green-600">✓</span>
-            <span className="font-sans">No credit card required for free</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>

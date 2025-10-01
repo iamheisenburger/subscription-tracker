@@ -53,7 +53,7 @@ export const Features = () => {
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
-            Built for the global subscription economy
+            Built For The Global Subscription Economy
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
             From Netflix to Notion, track every recurring payment with precision. 

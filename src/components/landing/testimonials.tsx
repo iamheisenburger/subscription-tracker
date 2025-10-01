@@ -53,7 +53,7 @@ export const Testimonials = () => {
       <div className="max-w-screen-xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
-            Loved by thousands of users
+            Loved By Thousands Of Users
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
             See what our users are saying about SubWise and how it&apos;s helping them 

@@ -10,17 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { 
   Mail, 
-  MessageCircle, 
   Clock, 
   Crown, 
-  CheckCircle, 
-  Send,
-  Sparkles,
-  Shield,
-  Zap
+  Send
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,63 +38,37 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      // Simulate form submission - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success("Message sent successfully!", {
-        description: "We'll get back to you within 24 hours."
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        category: "",
-        planType: "",
-        message: "",
-      });
-    } catch (error) {
+      if (response.ok) {
+        toast.success("Message sent successfully!", {
+          description: "We'll get back to you within 24 hours."
+        });
+
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          category: "",
+          planType: "",
+          message: "",
+        });
+      } else {
+        throw new Error("Failed to send message");
+      }
+    } catch {
       toast.error("Failed to send message", {
-        description: "Please try again or email us directly."
+        description: "Please try again or email us directly at usesubwiseapp@gmail.com"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const supportTiers = [
-    {
-      type: "free",
-      title: "Free Plan Support",
-      icon: MessageCircle,
-      responseTime: "Within 48 hours",
-      description: "Email support for basic questions and technical issues",
-      features: [
-        "Email support during business hours",
-        "General troubleshooting assistance",
-        "Account and billing questions",
-        "Basic feature guidance"
-      ],
-      badgeColor: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-    },
-    {
-      type: "premium",
-      title: "Premium Plan Support",
-      icon: Crown,
-      responseTime: "Within 12 hours",
-      description: "Priority support with faster response times and advanced assistance",
-      features: [
-        "Priority email support 7 days a week",
-        "Advanced feature troubleshooting",
-        "Data export and integration help",
-        "Custom configuration assistance",
-        "Beta feature access support"
-      ],
-      badgeColor: "bg-primary text-primary-foreground",
-      premium: true
-    }
-  ];
 
   return (
     <>
@@ -110,66 +78,40 @@ export default function ContactPage() {
           {/* Header Section */}
           <div className="text-center mb-12">
             <h1 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans mb-4">
-              Get in Touch
+              Get In Touch
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-              Need help with SubWise? We&apos;re here to support you whether you&apos;re on our Free or Premium plan.
+              Need help with SubWise? We&apos;re here to support you.
             </p>
-          </div>
-
-          {/* Support Tiers */}
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {supportTiers.map((tier) => (
-              <Card key={tier.type} className={`relative ${tier.premium ? 'border-primary shadow-lg' : ''}`}>
-                {tier.premium && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Premium Support
-                    </Badge>
-                  </div>
-                )}
-                
-                <CardHeader className="text-center pb-6">
-                  <div className="mb-4 h-12 w-12 mx-auto flex items-center justify-center bg-primary/10 rounded-full">
-                    <tier.icon className={`h-6 w-6 ${tier.premium ? 'text-primary' : 'text-muted-foreground'}`} />
-                  </div>
-                  <CardTitle className="text-xl font-sans">{tier.title}</CardTitle>
-                  <CardDescription className="text-sm font-sans">{tier.description}</CardDescription>
-                  
-                  <div className="mt-4 flex items-center justify-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{tier.responseTime}</span>
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  <ul className="space-y-3">
-                    {tier.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">
+                  <strong>Free Plan:</strong> Response within 48 hours
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Crown className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">
+                  <strong className="text-primary">Premium:</strong> Priority response within 12 hours
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Contact Form */}
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2 font-sans">
-                <Mail className="h-5 w-5" />
-                Send us a Message
+          <Card className="max-w-3xl mx-auto shadow-lg">
+            <CardHeader className="text-center border-b pb-6">
+              <CardTitle className="flex items-center justify-center gap-2 font-sans text-2xl">
+                <Mail className="h-6 w-6 text-primary" />
+                Send Us A Message
               </CardTitle>
-              <CardDescription className="font-sans">
+              <CardDescription className="font-sans text-base mt-2">
                 Fill out the form below and we&apos;ll get back to you based on your plan&apos;s support level.
               </CardDescription>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="pt-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Name and Email Row */}
                 <div className="grid md:grid-cols-2 gap-4">
@@ -261,7 +203,7 @@ export default function ContactPage() {
                 {/* Submit Button */}
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full mt-2" 
                   size="lg"
                   disabled={isSubmitting}
                 >
@@ -281,50 +223,27 @@ export default function ContactPage() {
             </CardContent>
           </Card>
 
-          {/* Additional Contact Information */}
-          <div className="mt-12 grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="text-center">
-              <CardContent className="pt-6">
-                <div className="mb-4 h-12 w-12 mx-auto flex items-center justify-center bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                  <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h3 className="font-semibold mb-2 font-sans">Email Support</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Direct email for all inquiries
-                </p>
-                <p className="text-sm font-mono">usesubwiseapp@gmail.com</p>
-              </CardContent>
-            </Card>
+          {/* Direct Contact Information */}
+          <div className="mt-16 text-center max-w-2xl mx-auto">
+            <h3 className="text-xl font-semibold mb-4 font-sans">Prefer Email?</h3>
+            <p className="text-muted-foreground mb-4">
+              You can reach us directly at:
+            </p>
+            <a 
+              href="mailto:usesubwiseapp@gmail.com"
+              className="inline-flex items-center gap-2 text-lg font-mono text-primary hover:underline"
+            >
+              <Mail className="h-5 w-5" />
+              usesubwiseapp@gmail.com
+            </a>
+          </div>
 
-            <Card className="text-center">
-              <CardContent className="pt-6">
-                <div className="mb-4 h-12 w-12 mx-auto flex items-center justify-center bg-green-100 dark:bg-green-900/20 rounded-full">
-                  <Shield className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-                <h3 className="font-semibold mb-2 font-sans">Privacy Inquiries</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Data protection and privacy
-                </p>
-                <p className="text-sm font-mono">usesubwiseapp@gmail.com</p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center">
-              <CardContent className="pt-6">
-                <div className="mb-4 h-12 w-12 mx-auto flex items-center justify-center bg-purple-100 dark:bg-purple-900/20 rounded-full">
-                  <Zap className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <h3 className="font-semibold mb-2 font-sans">Feature Requests</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Ideas and suggestions
-                </p>
-                <p className="text-sm font-mono">usesubwiseapp@gmail.com</p>
-              </CardContent>
-            </Card>
+          {/* Removed the 3 card panels section */}
+          <div className="hidden md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           </div>
 
           {/* FAQ Section */}
-          <div className="mt-16 text-center">
+          <div className="mt-20 text-center">
             <h2 className="text-2xl font-bold mb-4 font-sans">Frequently Asked Questions</h2>
             <p className="text-muted-foreground mb-8 font-sans">
               Check out our most common questions before reaching out

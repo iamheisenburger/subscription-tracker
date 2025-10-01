@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight as ArrowUpRight, Play as CirclePlay, CreditCard, TrendingUp, Bell } from "lucide-react";
+import { ArrowRight as ArrowUpRight, CreditCard, TrendingUp, Bell } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -13,8 +13,8 @@ export const Hero = () => {
             🚀 Save money, stay organized
           </Badge>
           <h1 className="mt-6 max-w-[20ch] mx-auto text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-bold !leading-[1.2] tracking-tight font-sans">
-            Stop overpaying for{" "}
-            <span className="text-primary">subscriptions</span> you forgot about
+            Stop Overpaying For{" "}
+            <span className="text-primary">Subscriptions</span> You Forgot About
           </h1>
           <p className="mt-6 max-w-[60ch] mx-auto xs:text-lg text-muted-foreground font-sans">
             SubWise tracks your recurring payments, sends intelligent alerts, and helps you save money with real-time spending analytics across 5 global currencies.
@@ -46,22 +46,10 @@ export const Hero = () => {
                        Start Free Trial <ArrowUpRight className="!h-5 !w-5" />
                      </Button>
                    </Link>
-            
-            <Link href="#demo">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto rounded-full text-base shadow-none"
-              >
-                <CirclePlay className="!h-5 !w-5" /> Watch Demo
-              </Button>
-            </Link>
           </div>
           
           <div className="mt-6 text-sm text-muted-foreground font-sans">
             <span>✅ Free 7-day trial</span>
-            <span className="mx-2">•</span>
-            <span>✅ No credit card required</span>
             <span className="mx-2">•</span>
             <span>✅ Cancel anytime</span>
           </div>
@@ -79,7 +67,7 @@ export const Hero = () => {
                 <div className="w-3 h-3 bg-yellow-500 rounded-full" />
                 <div className="w-3 h-3 bg-green-500 rounded-full" />
                 <div className="flex-1 bg-background rounded px-3 py-1 text-xs text-muted-foreground">
-                  subtracker.app/dashboard
+                  usesubwise.app/dashboard
                 </div>
               </div>
               <div className="space-y-3">

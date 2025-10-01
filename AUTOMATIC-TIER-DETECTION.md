@@ -388,3 +388,4 @@ async function autoUpgradeIfPremium(userId: string) {
 **Impact**: 💯 Eliminates ALL tier detection issues
 
 Your paying customers will ALWAYS have premium access, automatically, without any action on their part.
+

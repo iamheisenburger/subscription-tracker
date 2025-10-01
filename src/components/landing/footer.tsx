@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Twitter, Twitch, Youtube } from "lucide-react";
 import { Logo } from "./logo";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const footerLinks = [
   { name: "Features", href: "/landing#features" },
@@ -14,6 +18,43 @@ const footerLinks = [
 ];
 
 export const Footer = () => {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        toast.success("Successfully subscribed!", {
+          description: "You'll receive SubWise updates and insights.",
+        });
+        setEmail("");
+      } else {
+        throw new Error("Subscription failed");
+      }
+    } catch {
+      toast.error("Failed to subscribe", {
+        description: "Please try again or email us directly.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <footer className="w-full border-t bg-background">
       <div className="max-w-screen-xl mx-auto px-6 py-12">
@@ -37,14 +78,20 @@ export const Footer = () => {
             <p className="text-sm text-muted-foreground mt-1 mb-4">
               New features, tips, and subscription management insights
             </p>
-            <div className="mt-4 flex flex-col sm:flex-row items-center gap-2 max-w-md">
+            <form onSubmit={handleSubscribe} className="mt-4 flex flex-col sm:flex-row items-center gap-2 max-w-md">
               <Input
                 type="email"
                 placeholder="Enter your email"
                 className="flex-1"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
+                required
               />
-              <Button className="w-full sm:w-auto">Subscribe</Button>
-            </div>
+              <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+                {isSubmitting ? "Subscribing..." : "Subscribe"}
+              </Button>
+            </form>
             <p className="text-xs text-muted-foreground mt-2">
               No spam, unsubscribe anytime. We respect your privacy.
             </p>

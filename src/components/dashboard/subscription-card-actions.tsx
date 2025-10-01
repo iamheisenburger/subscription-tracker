@@ -37,6 +37,8 @@ export function SubscriptionCardActions({
 }: SubscriptionCardActionsProps) {
   const { user } = useUser();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  const [optimisticActive, setOptimisticActive] = useState<boolean | null>(null);
   
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
   const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
@@ -58,20 +60,33 @@ export function SubscriptionCardActions({
   };
 
   const handleTogglePause = async () => {
-    if (!user?.id) return;
+    if (!user?.id || isToggling) return;
+    
+    const newStatus = !subscription.isActive;
+    
+    // OPTIMISTIC UPDATE: Change UI immediately
+    setOptimisticActive(newStatus);
+    setIsToggling(true);
 
     try {
       await toggleStatus({
         clerkId: user.id,
         subscriptionId: subscription._id as Id<"subscriptions">,
-        isActive: !subscription.isActive,
+        isActive: newStatus,
       });
       toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
     } catch (error) {
       console.error("Error toggling subscription:", error);
+      // ROLLBACK on error
+      setOptimisticActive(subscription.isActive);
       toast.error("Failed to update subscription status.");
+    } finally {
+      setIsToggling(false);
+      setTimeout(() => setOptimisticActive(null), 100);
     }
   };
+  
+  const displayActive = optimisticActive !== null ? optimisticActive : subscription.isActive;
 
   return (
     <>
@@ -96,8 +111,8 @@ export function SubscriptionCardActions({
               Edit Subscription
             </DropdownMenuItem>
           </EditSubscriptionDialog>
-          <DropdownMenuItem onClick={handleTogglePause} className="font-sans">
-            {subscription.isActive ? (
+          <DropdownMenuItem onClick={handleTogglePause} className="font-sans" disabled={isToggling}>
+            {displayActive ? (
               <>
                 <Pause className="mr-2 h-4 w-4" />
                 Pause Subscription

@@ -56,6 +56,8 @@ export function SubscriptionCard({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  // Optimistic UI state
+  const [optimisticActive, setOptimisticActive] = useState<boolean | null>(null);
   
   // Mutations
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
@@ -80,22 +82,35 @@ export function SubscriptionCard({
   };
 
   const handleTogglePause = async () => {
-    if (!user?.id) return;
+    if (!user?.id || isToggling) return;
+    
+    const newStatus = !subscription.isActive;
+    
+    // OPTIMISTIC UPDATE: Change UI immediately
+    setOptimisticActive(newStatus);
     setIsToggling(true);
+    
     try {
       await toggleStatus({
         clerkId: user.id,
         subscriptionId: subscription._id as Id<"subscriptions">,
-        isActive: !subscription.isActive,
+        isActive: newStatus,
       });
       toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
     } catch (error) {
       console.error("Error toggling subscription:", error);
+      // ROLLBACK on error
+      setOptimisticActive(subscription.isActive);
       toast.error("Failed to update subscription status.");
     } finally {
       setIsToggling(false);
+      // Clear optimistic state after mutation completes
+      setTimeout(() => setOptimisticActive(null), 100);
     }
   };
+  
+  // Use optimistic state if available, otherwise use real state
+  const displayActive = optimisticActive !== null ? optimisticActive : subscription.isActive;
 
   // Format cost with user's preferred currency
   const formattedCost = formatCurrency(subscription.cost, subscription.currency);
@@ -126,10 +141,10 @@ export function SubscriptionCard({
               {formattedCost}
             </div>
             <Badge 
-              variant={subscription.isActive ? "default" : "secondary"} 
+              variant={displayActive ? "default" : "secondary"} 
               className="font-sans"
             >
-              {subscription.isActive ? "Active" : "Inactive"}
+              {displayActive ? "Active" : "Inactive"}
             </Badge>
           </div>
 
@@ -157,7 +172,7 @@ export function SubscriptionCard({
                   onSelect={handleTogglePause}
                   disabled={isToggling}
                 >
-                  {subscription.isActive ? (
+                  {displayActive ? (
                     <>
                       <Pause className="mr-2 h-4 w-4" />
                       Pause
@@ -195,8 +210,8 @@ export function SubscriptionCard({
                 onClick={handleTogglePause}
                 disabled={isToggling}
               >
-                {subscription.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                <span className="sr-only">{subscription.isActive ? "Pause" : "Resume"}</span>
+                {displayActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                <span className="sr-only">{displayActive ? "Pause" : "Resume"}</span>
               </Button>
               <Button 
                 variant="ghost" 

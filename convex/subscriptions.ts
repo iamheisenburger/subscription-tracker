@@ -294,6 +294,19 @@ export const updateSubscription = mutation({
       updatedAt: Date.now(),
     };
 
+    // CRITICAL FIX: Check free tier limit when unpausing (reactivating) a subscription
+    if (user.tier === "free_user" && args.isActive === true && subscription.isActive === false) {
+      // User is trying to unpause/reactivate - check current active count
+      const currentActiveSubs = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
+        .collect();
+
+      if (currentActiveSubs.length >= 3) {
+        throw new Error("Free plan allows maximum 3 active subscriptions. Upgrade to Premium for unlimited subscriptions.");
+      }
+    }
+
     // Check for price changes before updating
     const oldCost = subscription.cost;
     const newCost = args.cost;

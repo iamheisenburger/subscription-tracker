@@ -56,6 +56,43 @@ export const Hero = () => {
         </div>
       </div>
       
+      {/* Real App Features - Truthful Benefits */}
+      <div className="mt-20 max-w-5xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-col items-center text-center p-6 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <TrendingUp className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-sm font-sans mb-2">Real-Time Analytics</h3>
+            <p className="text-xs text-muted-foreground font-sans">Track monthly and yearly spending across all your subscriptions</p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <CreditCard className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-sm font-sans mb-2">Multi-Currency Support</h3>
+            <p className="text-xs text-muted-foreground font-sans">Track in USD, EUR, GBP, CAD, AUD with live exchange rates</p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <Bell className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-sm font-sans mb-2">Smart Reminders</h3>
+            <p className="text-xs text-muted-foreground font-sans">Never miss a renewal with intelligent notification alerts</p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <CreditCard className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-sm font-sans mb-2">Subscription Dashboard</h3>
+            <p className="text-xs text-muted-foreground font-sans">Clean overview of all active subscriptions and upcoming bills</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };

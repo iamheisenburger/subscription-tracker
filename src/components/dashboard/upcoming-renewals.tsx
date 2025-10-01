@@ -38,11 +38,11 @@ export function UpcomingRenewals({ userId }: UpcomingRenewalsProps) {
     );
   }
 
-  // Filter and sort upcoming renewals (next 30 days)
+  // Filter and sort upcoming renewals (next 30 days) - ONLY ACTIVE subscriptions
   const upcoming = subscriptions
     .filter(sub => {
       const daysUntil = Math.ceil((sub.nextBillingDate - Date.now()) / (1000 * 60 * 60 * 24));
-      return daysUntil >= 0 && daysUntil <= 30;
+      return sub.isActive && daysUntil >= 0 && daysUntil <= 30;
     })
     .sort((a, b) => a.nextBillingDate - b.nextBillingDate)
     .slice(0, 5);

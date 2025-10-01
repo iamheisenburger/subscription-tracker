@@ -85,7 +85,7 @@ export function BudgetPremiumGate({ children }: BudgetPremiumGateProps) {
               Upgrade to Premium to access powerful budget tracking, smart alerts, and detailed spending insights.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/pricing">
+              <Link href="/dashboard/upgrade">
                 <Button className="w-full sm:w-auto font-sans">
                   <Crown className="mr-2 h-4 w-4" />
                   Start 7-Day Free Trial

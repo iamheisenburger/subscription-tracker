@@ -71,7 +71,7 @@ export function UpgradeBanner() {
             <div className="text-sm text-muted-foreground font-sans">
               or $7.50/mo annually
             </div>
-            <Link href="/pricing">
+            <Link href="/dashboard/upgrade">
               <Button className="mt-3 w-full sm:w-auto font-sans">
                 Start 7-Day Free Trial
               </Button>

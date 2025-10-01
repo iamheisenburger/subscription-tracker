@@ -189,7 +189,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
               </div>
             ) : (
               <div className="w-full px-4 py-3 border border-dashed rounded-md text-sm text-muted-foreground font-sans">
-                Export is a Premium feature. <a href="/pricing" className="text-primary underline">Upgrade to enable</a>.
+                Export is a Premium feature. <a href="/dashboard/upgrade" className="text-primary underline">Upgrade to enable</a>.
               </div>
             )}
             <button className="w-full px-4 py-2 border border-destructive text-destructive rounded-md text-sm font-sans hover:bg-destructive/10">

@@ -90,7 +90,7 @@ export function DashboardSidebar() {
                 <p className="text-xs text-muted-foreground font-sans mb-3">
                   Switch to annual and save 2 months ($18/year)
                 </p>
-                <Link href="/pricing">
+                <Link href="/dashboard/upgrade">
                   <Button size="sm" className="w-full font-sans">
                     Switch to Annual
                   </Button>
@@ -108,7 +108,7 @@ export function DashboardSidebar() {
                   <p className="text-xs text-muted-foreground font-sans mb-3">
                     Unlimited subscriptions & advanced analytics
                   </p>
-                  <Link href="/pricing">
+                  <Link href="/dashboard/upgrade">
                     <Button size="sm" className="w-full font-sans">
                       Start Free Trial
                     </Button>

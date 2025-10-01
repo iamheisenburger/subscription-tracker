@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, TrendingUp, AlertTriangle } from "lucide-react";
+import { Crown, TrendingUp, BarChart3, PieChart } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,11 +13,11 @@ export function AnalyticsPremiumFallback() {
           <Crown className="w-8 h-8 text-primary" />
         </div>
         <CardTitle className="text-2xl font-bold font-sans flex items-center justify-center gap-2">
-          <TrendingUp className="w-6 h-6 text-primary" />
-          Budget Management
+          <BarChart3 className="w-6 h-6 text-primary" />
+          Advanced Analytics
         </CardTitle>
         <CardDescription className="text-lg font-sans">
-          Take control of your subscription spending with advanced budget insights
+          Get detailed insights into your subscription spending patterns
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -26,21 +26,21 @@ export function AnalyticsPremiumFallback() {
             <TrendingUp className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold font-sans text-foreground mb-1">
-                Smart Budget Thresholds
+                Spending Trends
               </h3>
               <p className="text-sm text-muted-foreground font-sans">
-                Set monthly and yearly spending limits with intelligent alerts
+                Track monthly and yearly spending patterns with interactive charts
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-4 bg-card/50 rounded-lg border border-border/50">
-            <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <PieChart className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold font-sans text-foreground mb-1">
-                Spending Alerts
+                Category Breakdown
               </h3>
               <p className="text-sm text-muted-foreground font-sans">
-                Get notified when you&apos;re approaching or exceeding your budget
+                Visualize spending by category and identify cost-saving opportunities
               </p>
             </div>
           </div>
@@ -48,13 +48,13 @@ export function AnalyticsPremiumFallback() {
 
         <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
           <h4 className="font-semibold font-sans text-foreground mb-2">
-            Unlock Advanced Budget Management
+            Unlock Advanced Analytics
           </h4>
           <p className="text-sm text-muted-foreground font-sans mb-4">
-            Upgrade to Premium to access powerful budget tracking, smart alerts, and detailed spending insights.
+            Upgrade to Premium to access detailed spending trends, interactive charts, and powerful insights.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/pricing">
+            <Link href="/dashboard/upgrade">
               <Button className="w-full sm:w-auto font-sans">
                 <Crown className="mr-2 h-4 w-4" />
                 Start 7-Day Free Trial

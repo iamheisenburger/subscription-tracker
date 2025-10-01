@@ -66,7 +66,7 @@ export function FreeTierLimitModal({
           </div>
 
           <div className="flex flex-col gap-2 pt-4">
-            <Link href="/pricing" className="w-full">
+            <Link href="/dashboard/upgrade" className="w-full">
               <Button className="w-full font-sans">
                 <Crown className="mr-2 h-4 w-4" />
                 Start 7-Day Free Trial

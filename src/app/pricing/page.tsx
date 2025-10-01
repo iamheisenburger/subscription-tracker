@@ -1,4 +1,6 @@
-import { CustomPricingV2 } from '@/components/landing/custom-pricing-v2'
+// TEMPORARY: Using Clerk's PricingTable for development testing
+// PRODUCTION: Will revert to CustomPricingV2 when ready
+import { ClerkPricingTemporary } from '@/components/landing/clerk-pricing-temporary'
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
 
@@ -7,7 +9,7 @@ export default function PricingPage() {
     <>
       <Navbar />
       <div className="pt-16 xs:pt-20 sm:pt-24">
-        <CustomPricingV2 />
+        <ClerkPricingTemporary />
       </div>
       <Footer />
     </>

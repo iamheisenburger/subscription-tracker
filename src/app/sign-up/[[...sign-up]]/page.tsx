@@ -8,7 +8,9 @@ export default function Page() {
           path="/sign-up"
           routing="path"
           signInUrl="/sign-in"
+          forceRedirectUrl="/dashboard"
           fallbackRedirectUrl="/dashboard"
+          afterSignUpUrl="/dashboard"
           appearance={{
             variables: {
               colorPrimary: "hsl(var(--primary))",

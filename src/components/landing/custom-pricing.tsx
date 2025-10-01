@@ -5,82 +5,108 @@ import { PricingTable } from "@clerk/nextjs";
 export const CustomPricing = () => {
   return (
     <>
-      {/* Mobile Checkout CSS Fixes + Enhanced Toggle Visibility */}
+      {/* ULTRA-AGGRESSIVE Toggle Visibility + Mobile Optimizations */}
       <style jsx global>{`
-        /* CRITICAL: Enhanced Toggle/Switch Visibility for Monthly/Annual Billing */
+        /* MAXIMUM VISIBILITY: Toggle/Switch for Monthly/Annual Billing */
         .cl-internal-1vgucwi,
         .cl-toggleGroup,
         .cl-switchGroup,
+        .cl-billingCycleToggle,
         [role="radiogroup"],
         [data-clerk-toggle],
-        [data-clerk-switch] {
+        [data-clerk-switch],
+        [class*="toggle"],
+        [class*="switch"],
+        [class*="radio"] {
           background: hsl(var(--muted)) !important;
-          border: 2px solid hsl(var(--border)) !important;
+          border: 3px solid hsl(var(--border)) !important;
           border-radius: 9999px !important;
-          padding: 4px !important;
+          padding: 6px !important;
           display: inline-flex !important;
-          gap: 4px !important;
-          min-height: 48px !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+          gap: 6px !important;
+          min-height: 52px !important;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+          transition: all 0.3s ease !important;
         }
         
-        /* Enhanced toggle buttons */
+        /* Toggle buttons with maximum contrast */
         .cl-internal-1vgucwi button,
         .cl-toggleGroup button,
         .cl-switchGroup button,
+        .cl-billingCycleToggle button,
         [role="radiogroup"] button,
-        [role="radio"] {
-          font-size: 15px !important;
-          font-weight: 600 !important;
-          padding: 10px 24px !important;
+        [role="radio"],
+        [class*="toggle"] button,
+        [class*="switch"] button {
+          font-size: 16px !important;
+          font-weight: 700 !important;
+          padding: 12px 28px !important;
           border-radius: 9999px !important;
-          transition: all 0.2s ease !important;
-          border: 2px solid transparent !important;
-          min-height: 40px !important;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          border: 3px solid transparent !important;
+          min-height: 44px !important;
           font-family: var(--font-sans) !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.5px !important;
         }
         
-        /* Unselected state - highly visible */
-        .cl-internal-1vgucwi button:not([data-state="checked"]),
+        /* UNSELECTED state - Maximum visibility */
+        .cl-internal-1vgucwi button:not([data-state="checked"]):not([aria-checked="true"]),
         .cl-toggleGroup button:not([aria-checked="true"]),
         .cl-switchGroup button:not([aria-checked="true"]),
-        [role="radio"]:not([aria-checked="true"]) {
-          background: transparent !important;
+        .cl-billingCycleToggle button:not([aria-checked="true"]),
+        [role="radio"]:not([aria-checked="true"]),
+        [class*="toggle"] button:not([data-state="checked"]),
+        [class*="switch"] button:not([data-state="checked"]) {
+          background: hsl(var(--background)) !important;
           color: hsl(var(--muted-foreground)) !important;
-          opacity: 0.7 !important;
+          opacity: 0.8 !important;
+          border-color: transparent !important;
         }
         
-        /* Selected/Active state - maximum visibility */
+        /* SELECTED/ACTIVE state - Maximum prominence */
         .cl-internal-1vgucwi button[data-state="checked"],
         .cl-internal-1vgucwi button[aria-checked="true"],
         .cl-toggleGroup button[aria-checked="true"],
         .cl-switchGroup button[aria-checked="true"],
+        .cl-billingCycleToggle button[aria-checked="true"],
         [role="radio"][aria-checked="true"],
-        [role="radio"][data-state="checked"] {
-          background: hsl(var(--primary)) !important;
+        [role="radio"][data-state="checked"],
+        [class*="toggle"] button[data-state="checked"],
+        [class*="switch"] button[data-state="checked"],
+        button[data-selected="true"] {
+          background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%) !important;
           color: hsl(var(--primary-foreground)) !important;
           border-color: hsl(var(--primary)) !important;
           opacity: 1 !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-          font-weight: 700 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+          font-weight: 800 !important;
+          transform: scale(1.05) !important;
         }
         
-        /* Hover states for better interactivity */
+        /* Hover states for ALL buttons */
         .cl-internal-1vgucwi button:hover,
         .cl-toggleGroup button:hover,
         .cl-switchGroup button:hover,
-        [role="radio"]:hover {
+        .cl-billingCycleToggle button:hover,
+        [role="radio"]:hover,
+        [class*="toggle"] button:hover,
+        [class*="switch"] button:hover {
           opacity: 1 !important;
-          transform: scale(1.02) !important;
+          transform: scale(1.03) translateY(-1px) !important;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
         }
         
-        /* Ensure toggle container is visible */
+        /* Ensure container visibility */
         .cl-internal-b8oy6s,
-        .cl-pricingTableToggle {
-          margin: 20px auto !important;
+        .cl-pricingTableToggle,
+        [class*="billingCycle"],
+        [class*="pricingToggle"] {
+          margin: 24px auto !important;
           display: flex !important;
           justify-content: center !important;
           align-items: center !important;
+          min-height: 60px !important;
         }
         
         /* Mobile checkout modal fixes */
@@ -143,17 +169,21 @@ export const CustomPricing = () => {
           /* Mobile toggle sizing */
           .cl-internal-1vgucwi,
           .cl-toggleGroup,
+          .cl-billingCycleToggle,
           [role="radiogroup"] {
             width: 100% !important;
-            max-width: 320px !important;
+            max-width: 340px !important;
+            min-height: 56px !important;
           }
           
           .cl-internal-1vgucwi button,
           .cl-toggleGroup button,
+          .cl-billingCycleToggle button,
           [role="radio"] {
             flex: 1 !important;
-            font-size: 14px !important;
-            padding: 12px 16px !important;
+            font-size: 15px !important;
+            padding: 14px 20px !important;
+            min-height: 48px !important;
           }
         }
       `}</style>

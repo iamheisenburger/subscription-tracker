@@ -17,7 +17,7 @@ export default async function BudgetPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight font-sans">
-            💰 Budget Management
+            Budget Management
           </h1>
           <p className="text-muted-foreground font-sans">
             Monitor and control your subscription spending with smart insights

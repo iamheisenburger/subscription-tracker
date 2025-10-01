@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { TierSyncButton } from "./tier-sync-button";
 
 interface BudgetPremiumGateProps {
   children: React.ReactNode;
@@ -98,20 +97,10 @@ export function BudgetPremiumGate({ children }: BudgetPremiumGateProps) {
                 </Button>
               </Link>
             </div>
-            
-            {/* Sync Button for Users Who Already Upgraded */}
-            <div className="mt-4 pt-4 border-t border-border/50">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground font-sans mb-3">
-                  Already upgraded but still seeing this? Your subscription status might need syncing.
-                </p>
-                <TierSyncButton variant="ghost" className="text-xs" />
-              </div>
-            </div>
           </div>
 
           <div className="text-center text-xs text-muted-foreground font-sans">
-            <p>✅ 7-day free trial • ✅ No credit card required • ✅ Cancel anytime</p>
+            <p>✅ 7-day free trial • ✅ Cancel anytime</p>
           </div>
         </CardContent>
       </Card>

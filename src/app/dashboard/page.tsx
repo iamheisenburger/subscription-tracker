@@ -6,7 +6,6 @@ import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
 import { RenewalConfirmationSystem } from "@/components/dashboard/renewal-confirmation-system";
 import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
-import { TierSyncAlert } from "@/components/dashboard/tier-sync-enhancement";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
@@ -36,18 +35,15 @@ export default async function DashboardPage() {
 
       {/* Auto Tier Sync - Silent reconciliation */}
       <AutoTierSync />
-      
-      {/* Tier Sync Alert for Users with Issues */}
-      <TierSyncAlert />
 
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />
 
-      {/* Savings Celebration */}
-      <SavingsCelebration />
-
       {/* Upgrade Banner */}
       <UpgradeBanner />
+
+      {/* Savings Celebration */}
+      <SavingsCelebration />
 
       {/* Stats Overview */}
       <OverviewCards userId={userId} />

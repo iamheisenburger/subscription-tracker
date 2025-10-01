@@ -1,11 +1,10 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { EnhancedSpendingSettings } from "@/components/dashboard/enhanced-spending-settings";
 import { BudgetPremiumGate } from "@/components/dashboard/budget-premium-gate";
 
 export default async function BudgetPage() {
   const { userId } = await auth();
-  const user = await currentUser();
 
   if (!userId) {
     redirect("/sign-in");

@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { convertCurrency, getPreferredCurrency } from "@/lib/currency";
+import { getPreferredCurrency } from "@/lib/currency";
 
 // Helper function to format currency based on user preference
 const formatCurrency = (amount: number, currency: string) => {
@@ -40,7 +39,6 @@ export function EnhancedSpendingSettings() {
   const userCurrency = (typeof window !== 'undefined' ? getPreferredCurrency() : null) || userInfo?.preferredCurrency || 'USD';
   const [monthlyThreshold, setMonthlyThreshold] = useState<number>(0);
   const [yearlyThreshold, setYearlyThreshold] = useState<number>(0);
-  const [alertPercentages, setAlertPercentages] = useState<number[]>([80, 100, 120]);
   // Get current spending from analytics backend
   const currentSpending = analytics?.monthlyTotal || 0;
 
@@ -225,7 +223,7 @@ export function EnhancedSpendingSettings() {
             </div>
             <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
               <p className="text-xs text-muted-foreground">
-                <strong>Automatic alerts:</strong> You'll receive email notifications when your spending reaches 80%, 100%, and 120% of your budget threshold.
+                <strong>Automatic alerts:</strong> You&apos;ll receive email notifications when your spending reaches 80%, 100%, and 120% of your budget threshold.
               </p>
             </div>
           </div>

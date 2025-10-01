@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, TrendingUp, DollarSign, AlertTriangle } from "lucide-react";
+import { Crown, TrendingUp, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

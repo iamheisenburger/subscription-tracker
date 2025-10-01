@@ -99,13 +99,19 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
       toast.success("Subscription added successfully!");
       form.reset();
       setOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating subscription:", error);
       
-      // Check if it's a free tier limit error
-      if (error instanceof Error && error.message.includes("Free plan allows maximum 3 subscriptions")) {
+      // Check if it's a free tier limit error - check multiple ways
+      const errorMessage = error?.message || error?.toString() || String(error);
+      const isLimitError = errorMessage.includes("Free plan") || 
+                          errorMessage.includes("maximum 3") || 
+                          errorMessage.includes("Upgrade to Premium") ||
+                          (!isPremium && subscriptionLimit === 3);
+      
+      if (isLimitError) {
         setOpen(false);
-        setLimitModalOpen(true);
+        setTimeout(() => setLimitModalOpen(true), 100);
       } else {
         toast.error("Failed to add subscription. Please try again.");
       }

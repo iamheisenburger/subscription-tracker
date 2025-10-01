@@ -40,7 +40,7 @@ export function AnalyticsPremiumFallback() {
                 Spending Alerts
               </h3>
               <p className="text-sm text-muted-foreground font-sans">
-                Get notified when you're approaching or exceeding your budget
+                Get notified when you&apos;re approaching or exceeding your budget
               </p>
             </div>
           </div>

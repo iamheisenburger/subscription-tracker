@@ -48,9 +48,9 @@ export const CustomPricingV2 = () => {
   };
 
   return (
-    <div id="pricing" className="w-full py-12 xs:py-20 px-6">
+    <div id="pricing" className="w-full py-12 xs:py-16 px-6">
       <div className="max-w-screen-xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight font-sans">
             Start Free, Upgrade When Ready
           </h2>
@@ -60,16 +60,16 @@ export const CustomPricingV2 = () => {
           </p>
         </div>
 
-        {/* CUSTOM TOGGLE - Full Control */}
-        <div className="flex justify-center mb-12">
-          <div className="inline-flex items-center bg-muted p-2 rounded-full border-2 border-border shadow-lg">
+        {/* CUSTOM TOGGLE - Properly Sized */}
+        <div className="flex justify-center mb-10">
+          <div className="inline-flex items-center bg-muted p-1.5 rounded-full border border-border/50">
             <button
               onClick={() => setBillingCycle('monthly')}
               className={`
-                px-8 py-3 rounded-full font-sans font-bold text-base uppercase tracking-wide transition-all duration-300
+                px-6 py-2.5 rounded-full font-sans font-semibold text-sm transition-all duration-200
                 ${billingCycle === 'monthly' 
-                  ? 'bg-primary text-primary-foreground shadow-md scale-105' 
-                  : 'bg-transparent text-muted-foreground hover:text-foreground hover:scale-102'
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
                 }
               `}
             >
@@ -78,16 +78,16 @@ export const CustomPricingV2 = () => {
             <button
               onClick={() => setBillingCycle('annual')}
               className={`
-                px-8 py-3 rounded-full font-sans font-bold text-base uppercase tracking-wide transition-all duration-300 relative
+                px-6 py-2.5 rounded-full font-sans font-semibold text-sm transition-all duration-200 relative
                 ${billingCycle === 'annual' 
-                  ? 'bg-primary text-primary-foreground shadow-md scale-105' 
-                  : 'bg-transparent text-muted-foreground hover:text-foreground hover:scale-102'
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
                 }
               `}
             >
               Annual
               {billingCycle === 'annual' && (
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                <span className="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                   SAVE 17%
                 </span>
               )}
@@ -95,31 +95,31 @@ export const CustomPricingV2 = () => {
           </div>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        {/* Pricing Cards - Properly Sized */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* Free Plan */}
-          <Card className="border-2 border-border relative">
-            <CardHeader className="text-center pb-8">
-              <CardTitle className="text-2xl font-bold font-sans">{freePlan.name}</CardTitle>
-              <CardDescription className="mt-2 font-sans text-base">
+          <Card className="border border-border relative">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-xl font-bold font-sans">{freePlan.name}</CardTitle>
+              <CardDescription className="mt-2 font-sans text-sm">
                 {freePlan.description}
               </CardDescription>
-              <div className="mt-6">
-                <span className="text-5xl font-bold font-sans">{freePlan.price}</span>
-                <p className="text-sm text-muted-foreground mt-2 font-sans">{freePlan.period}</p>
+              <div className="mt-4">
+                <span className="text-4xl font-bold font-sans">{freePlan.price}</span>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{freePlan.period}</p>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
+            <CardContent className="space-y-3">
+              <ul className="space-y-2">
                 {freePlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <li key={feature} className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <span className="text-sm font-sans">{feature}</span>
                   </li>
                 ))}
               </ul>
-              <Link href={freePlan.ctaLink} className="block w-full mt-8">
-                <Button variant="outline" size="lg" className="w-full font-sans font-semibold">
+              <Link href={freePlan.ctaLink} className="block w-full mt-6">
+                <Button variant="outline" className="w-full font-sans">
                   {freePlan.cta}
                 </Button>
               </Link>
@@ -127,43 +127,43 @@ export const CustomPricingV2 = () => {
           </Card>
 
           {/* Premium Plan */}
-          <Card className="border-2 border-primary relative shadow-xl">
+          <Card className="border-2 border-primary relative shadow-md">
             {premiumPlan.badge && (
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-bold font-sans shadow-lg">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold font-sans shadow-md">
                   ✨ {premiumPlan.badge}
                 </span>
               </div>
             )}
-            <CardHeader className="text-center pb-8 pt-8">
-              <CardTitle className="text-2xl font-bold font-sans">{premiumPlan.name}</CardTitle>
-              <CardDescription className="mt-2 font-sans text-base">
+            <CardHeader className="text-center pb-6 pt-6">
+              <CardTitle className="text-xl font-bold font-sans">{premiumPlan.name}</CardTitle>
+              <CardDescription className="mt-2 font-sans text-sm">
                 {premiumPlan.description}
               </CardDescription>
-              <div className="mt-6">
-                <div className="flex items-baseline justify-center gap-2">
+              <div className="mt-4">
+                <div className="flex items-baseline justify-center gap-1.5">
                   {premiumPlan.originalPrice && (
-                    <span className="text-2xl text-muted-foreground line-through font-sans">
+                    <span className="text-xl text-muted-foreground line-through font-sans">
                       {premiumPlan.originalPrice}
                     </span>
                   )}
-                  <span className="text-5xl font-bold font-sans">{premiumPlan.price}</span>
-                  <span className="text-xl text-muted-foreground font-sans">{premiumPlan.period}</span>
+                  <span className="text-4xl font-bold font-sans">{premiumPlan.price}</span>
+                  <span className="text-base text-muted-foreground font-sans">{premiumPlan.period}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2 font-sans">{premiumPlan.annualNote}</p>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{premiumPlan.annualNote}</p>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
+            <CardContent className="space-y-3">
+              <ul className="space-y-2">
                 {premiumPlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm font-sans font-medium">{feature}</span>
+                  <li key={feature} className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm font-sans">{feature}</span>
                   </li>
                 ))}
               </ul>
-              <Link href={premiumPlan.ctaLink} className="block w-full mt-8">
-                <Button size="lg" className="w-full font-sans font-semibold text-base">
+              <Link href={premiumPlan.ctaLink} className="block w-full mt-6">
+                <Button className="w-full font-sans">
                   {premiumPlan.cta}
                 </Button>
               </Link>
@@ -172,7 +172,7 @@ export const CustomPricingV2 = () => {
         </div>
 
         {/* Trust indicators */}
-        <div className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-6 text-sm text-muted-foreground">
+        <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span className="text-green-600">✓</span>
             <span className="font-sans">7-day free trial</span>

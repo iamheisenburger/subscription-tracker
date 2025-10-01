@@ -1,9 +1,30 @@
+"use client"
+
 import { SignUp } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const plan = searchParams.get('plan'); // 'premium' or null (free)
+  const billing = searchParams.get('billing'); // 'monthly' or 'annual'
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md px-4">
+        {plan && (
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
+            <p className="text-sm font-medium font-sans">
+              {plan === 'premium' ? (
+                <>
+                  Starting your <strong>7-day Premium free trial</strong>
+                  {billing === 'annual' && <span className="ml-2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">SAVE 17%</span>}
+                </>
+              ) : (
+                'Signing up for the Free plan'
+              )}
+            </p>
+          </div>
+        )}
         <SignUp 
           path="/sign-up"
           routing="path"
@@ -11,6 +32,10 @@ export default function Page() {
           forceRedirectUrl="/dashboard"
           fallbackRedirectUrl="/dashboard"
           afterSignUpUrl="/dashboard"
+          unsafeMetadata={{
+            plan: plan || 'free',
+            billing: billing || 'monthly'
+          }}
           appearance={{
             variables: {
               colorPrimary: "hsl(var(--primary))",

@@ -1,11 +1,27 @@
-"use client"
-
-import { PricingTable } from '@clerk/nextjs'
+import { CustomPricingV2 } from '@/components/landing/custom-pricing-v2'
+import { Navbar } from '@/components/landing/navbar'
+import { Footer } from '@/components/landing/footer'
 
 export default function PricingPage() {
   return (
     <>
-      {/* Enhanced Toggle Visibility + Mobile Optimizations */}
+      <Navbar />
+      <div className="pt-16 xs:pt-20 sm:pt-24">
+        <CustomPricingV2 />
+      </div>
+      <Footer />
+    </>
+  )
+}
+
+/* OLD CLERK VERSION WITH TOGGLE ISSUES - KEPT FOR REFERENCE
+"use client"
+
+import { PricingTable } from '@clerk/nextjs'
+
+export default function PricingPageClerk() {
+  return (
+    <>
       <style jsx global>{`
         /* ULTRA-AGGRESSIVE: Toggle/Switch Maximum Visibility Enhancement */
         .cl-internal-1vgucwi,

@@ -72,7 +72,7 @@ function CheckoutContent() {
                   fontFamily: "var(--font-sans)",
                 }
               }
-            }
+            }}
           >
             <Button className="w-full font-sans" size="lg">
               Start 7-day Free Trial

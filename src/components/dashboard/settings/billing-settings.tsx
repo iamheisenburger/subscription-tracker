@@ -59,7 +59,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
           </div>
           <div className="text-right">
             <p className="font-semibold font-sans">
-              {isPremium ? "$9.00/month" : "Free"}
+              {isPremium ? "$5.00/month" : "Free"}
             </p>
             {isPremium && (
               <p className="text-sm text-muted-foreground font-sans">

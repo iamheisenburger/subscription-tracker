@@ -30,40 +30,52 @@ export function ClerkPricingTemporary() {
           </p>
         </div>
 
-        {/* Clerk's PricingTable - Styled to match our theme */}
+        {/* Clerk's PricingTable - Enhanced styling for better visibility */}
         <PricingTable
           appearance={{
             elements: {
-              // Card styling
-              card: "border-2 hover:shadow-lg transition-shadow",
-              cardPrimaryPlan: "border-primary shadow-md",
+              // Card styling with better contrast
+              card: "!bg-card !border-2 !border-border hover:shadow-lg transition-shadow",
+              cardPrimaryPlan: "!border-primary shadow-md",
               
-              // Typography
-              cardTitle: "text-xl font-bold font-sans",
-              cardDescription: "text-sm font-sans text-muted-foreground",
-              cardPrice: "text-4xl font-bold font-sans",
-              cardPriceText: "text-muted-foreground font-sans",
+              // Typography with explicit colors for light mode
+              cardTitle: "!text-xl font-bold font-sans !text-foreground",
+              cardDescription: "!text-sm font-sans !text-muted-foreground",
+              cardPrice: "!text-4xl font-bold font-sans !text-foreground",
+              cardPriceText: "!text-base !text-muted-foreground font-sans",
               
-              // Buttons
-              cardButton: "w-full font-sans rounded-md",
-              cardPrimaryButton: "bg-primary text-primary-foreground hover:bg-primary/90",
+              // Buttons with high contrast
+              cardButton: "!w-full font-sans !rounded-md !min-h-[44px] !text-base !font-semibold",
+              cardPrimaryButton: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !shadow-sm",
+              cardSecondaryButton: "!bg-muted !text-foreground hover:!bg-muted/80 !border-2 !border-border",
               
-              // Features list
-              cardFeatureList: "space-y-2",
-              cardFeature: "text-sm font-sans",
+              // Features list with better readability
+              cardFeatureList: "space-y-2 !mt-4",
+              cardFeature: "!text-sm font-sans !text-foreground !flex !items-center !gap-2",
+              cardFeatureIcon: "!text-primary",
               
-              // Toggle
-              planToggle: "bg-muted p-1.5 rounded-full border border-border/50",
-              planToggleButton: "px-6 py-2.5 rounded-full font-sans font-semibold text-sm",
-              planToggleButtonActive: "bg-primary text-primary-foreground shadow-sm",
-              planToggleButtonInactive: "bg-transparent text-muted-foreground hover:text-foreground",
+              // Toggle with high visibility
+              planToggle: "!bg-muted !p-1.5 !rounded-full !border-2 !border-border",
+              planToggleButton: "!px-6 !py-2.5 !rounded-full font-sans font-semibold !text-sm !min-h-[40px]",
+              planToggleButtonActive: "!bg-primary !text-primary-foreground !shadow-sm !font-bold",
+              planToggleButtonInactive: "!bg-transparent !text-muted-foreground hover:!text-foreground",
+              
+              // Container and layout
+              root: "!w-full",
+              planGrid: "!gap-6",
             },
             variables: {
               colorPrimary: "hsl(var(--primary))",
               colorBackground: "hsl(var(--background))",
               colorText: "hsl(var(--foreground))",
               colorTextSecondary: "hsl(var(--muted-foreground))",
+              colorInputBackground: "hsl(var(--input))",
+              colorInputText: "hsl(var(--foreground))",
+              colorDanger: "hsl(var(--destructive))",
+              colorSuccess: "hsl(var(--primary))",
+              colorNeutral: "hsl(var(--muted))",
               borderRadius: "0.5rem",
+              fontFamily: "var(--font-sans)",
             }
           }}
         />

@@ -1,8 +1,21 @@
 import { UserProfile } from '@clerk/nextjs'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const UserProfilePage = () => (
   <div className="min-h-screen bg-background py-12">
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Back to Dashboard Button */}
+      <div className="mb-6">
+        <Link href="/dashboard">
+          <Button variant="ghost" className="font-sans">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
+      
       <UserProfile 
         appearance={{
           variables: {

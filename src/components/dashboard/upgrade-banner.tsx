@@ -66,10 +66,10 @@ export function UpgradeBanner() {
           </div>
           <div className="text-center sm:text-right">
             <div className="text-2xl font-bold text-foreground font-sans">
-              $9<span className="text-sm font-normal">/mo</span>
+              $5<span className="text-sm font-normal">/mo</span>
             </div>
             <div className="text-sm text-muted-foreground font-sans">
-              or $7.50/mo annually
+              or $3.50/mo annually
             </div>
             <Link href="/dashboard/upgrade">
               <Button className="mt-3 w-full sm:w-auto font-sans">

@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { UserSync } from "@/components/user-sync";
+import { TestModeBanner } from "@/components/test-mode-banner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -46,6 +47,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ConvexClientProvider>
+              <TestModeBanner />
               <UserSync />
               {children}
               <Toaster />

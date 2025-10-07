@@ -288,7 +288,7 @@ export default function TermsOfServicePage() {
                 <p className="text-sm"><strong>Email:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Support:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Address:</strong> SubWise Legal Team</p>
-                <p className="text-sm">123 Legal Street, Terms City, TC 12345</p>
+                <p className="text-sm">Kerpener Straße 6, 50170 Kerpen, Germany</p>
               </div>
             </section>
 

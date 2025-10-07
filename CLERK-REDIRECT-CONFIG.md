@@ -233,3 +233,5 @@ When switching to production:
 - ✅ PricingTable component integrated
 - ✅ Webhook ready for tier upgrades
 
+
+

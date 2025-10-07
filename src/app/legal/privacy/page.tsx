@@ -218,7 +218,7 @@ export default function PrivacyPolicyPage() {
                 <p className="text-sm"><strong>Email:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Support:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Address:</strong> SubWise Privacy Team</p>
-                <p className="text-sm">123 Privacy Street, Data City, DC 12345</p>
+                <p className="text-sm">Kerpener Straße 6, 50170 Kerpen, Germany</p>
               </div>
               <p className="text-muted-foreground leading-relaxed mt-4 text-sm">
                 For data protection inquiries specifically, please include "Privacy Request" in your email subject line to ensure prompt handling.

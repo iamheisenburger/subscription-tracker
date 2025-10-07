@@ -204,3 +204,5 @@ export const Pricing = () => {
 5. When ready for production, I'll convert your custom pricing to production version
 6. Switch mode and launch 🚀
 
+
+

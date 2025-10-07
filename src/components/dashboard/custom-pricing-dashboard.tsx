@@ -169,26 +169,8 @@ export const CustomPricingDashboard = () => {
                   checkoutProps={{
                     appearance: {
                       elements: {
-                        // Only override submit button
-                        formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-md",
-                      },
-                      variables: {
-                        // Base colors for the entire checkout drawer
-                        colorPrimary: "hsl(var(--primary))",
-                        colorBackground: "hsl(var(--background))",
-                        colorDanger: "#ef4444",
-                        colorSuccess: "#22c55e",
-                        colorWarning: "#f59e0b",
-                        colorNeutral: "#64748b",
-                        // Text colors
-                        colorText: "hsl(var(--foreground))",
-                        colorTextOnPrimaryBackground: "hsl(var(--primary-foreground))",
-                        colorTextSecondary: "hsl(var(--muted-foreground))",
-                        // Input colors
-                        colorInputBackground: "hsl(var(--background))",
-                        colorInputText: "hsl(var(--foreground))",
-                        // Font
-                        fontFamily: "var(--font-sans)",
+                        // ONLY override the submit button color - everything else stays Clerk default
+                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
                       }
                     }
                   }}

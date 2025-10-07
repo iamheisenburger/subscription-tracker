@@ -61,8 +61,8 @@ async function handleSubscriptionEvent(
     });
 
     // **SIMPLE PLAN MATCHING**
-    // Your Clerk PRODUCTION plan ID from dashboard: cplan_33D_okuOvc4d1
-    const yourPremiumPlanId = 'cplan_33D_okuOvc4d1';
+    // Your Clerk PRODUCTION plan ID from dashboard: cplan_33DAB0ChNOO9L2vRGzokuOvc4dl
+    const yourPremiumPlanId = 'cplan_33DAB0ChNOO9L2vRGzokuOvc4dl';
     const knownPremiumKeys = ['premium_user', 'premium', yourPremiumPlanId];
     const isPremiumPlan = planId && knownPremiumKeys.some(key => planId.includes(key));
     

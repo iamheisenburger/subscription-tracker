@@ -192,12 +192,12 @@ export function SettingsContent({ user }: SettingsContentProps) {
                 Export is a Premium feature. <a href="/dashboard/upgrade" className="text-primary underline">Upgrade to enable</a>.
               </div>
             )}
-            <a 
+            <Link 
               href="/user-profile/security" 
               className="block w-full px-4 py-2 border border-destructive text-destructive rounded-md text-sm font-sans hover:bg-destructive/10 text-center"
             >
               Delete Account
-            </a>
+            </Link>
           </div>
         </div>
       </div>

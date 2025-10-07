@@ -169,18 +169,18 @@ export const CustomPricingDashboard = () => {
                   checkoutProps={{
                     appearance: {
                       elements: {
-                        // Submit button - match theme
-                        formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-semibold",
+                        // Submit button - match theme with !important
+                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
                         
-                        // Form inputs - better visibility
-                        formFieldInput: "bg-background border-2 border-border text-foreground",
-                        formFieldLabel: "text-foreground font-semibold",
+                        // Form inputs - better visibility with !important
+                        formFieldInput: "!bg-background !border-2 !border-border !text-foreground !font-medium",
+                        formFieldLabel: "!text-foreground !font-semibold",
                         
-                        // Country select - better visibility
-                        selectButton: "bg-background border-2 border-border text-foreground",
+                        // Country select - better visibility with !important
+                        selectButton: "!bg-background !border-2 !border-border !text-foreground !font-medium",
                         
-                        // Text visibility
-                        text: "text-foreground",
+                        // All text elements
+                        text: "!text-foreground",
                       },
                       variables: {
                         colorPrimary: "hsl(var(--primary))",

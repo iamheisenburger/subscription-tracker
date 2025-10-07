@@ -169,20 +169,49 @@ export const CustomPricingDashboard = () => {
                   checkoutProps={{
                     appearance: {
                       elements: {
-                        // Make submit button highly visible
-                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !min-h-[48px] !text-base !font-semibold !shadow-md !rounded-md !mt-4",
-                        rootBox: "!bg-background",
-                        card: "!bg-card !border-border",
-                        headerTitle: "!text-foreground font-sans",
-                        headerSubtitle: "!text-muted-foreground font-sans",
-                        formFieldLabel: "!text-foreground font-sans",
-                        formFieldInput: "!bg-input !border-border !text-foreground",
+                        // Container and positioning
+                        rootBox: "!bg-background !z-[9999]",
+                        modalContent: "!max-w-[95vw] sm:!max-w-[480px] !mx-auto !my-4 sm:!my-8",
+                        modalCloseButton: "!text-foreground hover:!bg-muted !top-4 !right-4 !z-[10000]",
+                        
+                        // Card styling
+                        card: "!bg-card !border-2 !border-border !shadow-xl !rounded-lg",
+                        
+                        // Header with high contrast
+                        headerTitle: "!text-foreground !font-bold !text-xl font-sans",
+                        headerSubtitle: "!text-foreground !font-medium !text-base font-sans",
+                        
+                        // All text elements with high contrast
+                        text: "!text-foreground font-sans",
+                        
+                        // Form labels - very visible
+                        formFieldLabel: "!text-foreground !font-semibold !text-sm font-sans !mb-2",
+                        
+                        // Form inputs - high contrast
+                        formFieldInput: "!bg-background !border-2 !border-border !text-foreground !font-medium !text-base !min-h-[44px] !px-4",
+                        
+                        // Pricing text - bold and visible
+                        priceText: "!text-foreground !font-bold !text-2xl font-sans",
+                        
+                        // Submit button - highly visible
+                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !min-h-[52px] !text-base !font-bold !shadow-lg !rounded-lg !mt-6 !w-full",
+                        
+                        // Dropdown/select styling
+                        selectButton: "!bg-background !border-2 !border-border !text-foreground !min-h-[44px]",
+                        
+                        // Footer text
+                        footerText: "!text-foreground font-sans !text-sm",
                       },
                       variables: {
                         colorPrimary: "hsl(var(--primary))",
                         colorBackground: "hsl(var(--background))",
                         colorText: "hsl(var(--foreground))",
+                        colorTextSecondary: "hsl(var(--foreground))",
+                        colorInputBackground: "hsl(var(--background))",
+                        colorInputText: "hsl(var(--foreground))",
                         fontFamily: "var(--font-sans)",
+                        fontSize: "16px",
+                        borderRadius: "0.5rem",
                       }
                     }
                   }}

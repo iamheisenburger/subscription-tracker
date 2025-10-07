@@ -5,9 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import Link from "next/link";
+import { useUser, SignedIn, SignedOut } from "@clerk/nextjs";
+import { CheckoutButton } from "@clerk/nextjs/experimental";
 
 export const CustomPricingV2 = () => {
+  const { isSignedIn } = useUser();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  
+  // Your Clerk Premium Plan ID
+  const PREMIUM_PLAN_ID = "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
   
   const freePlan = {
     name: "Free",
@@ -161,11 +167,32 @@ export const CustomPricingV2 = () => {
                   </li>
                 ))}
               </ul>
-              <Link href={premiumPlan.ctaLink} className="block w-full mt-6">
-                <Button className="w-full font-sans">
-                  {premiumPlan.cta}
-                </Button>
-              </Link>
+              
+              {/* Conditional CTA based on sign-in status */}
+              {/* For signed-in users: Use CheckoutButton to open checkout drawer */}
+              <SignedIn>
+                <CheckoutButton
+                  planId={PREMIUM_PLAN_ID}
+                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
+                  onSubscriptionComplete={() => {
+                    console.log('Subscription completed!');
+                  }}
+                  newSubscriptionRedirectUrl="/dashboard"
+                >
+                  <Button className="w-full font-sans mt-6">
+                    {premiumPlan.cta}
+                  </Button>
+                </CheckoutButton>
+              </SignedIn>
+              
+              {/* For non-signed-in users: Link to sign-up, then Clerk handles checkout */}
+              <SignedOut>
+                <Link href={premiumPlan.ctaLink} className="block w-full mt-6">
+                  <Button className="w-full font-sans">
+                    {premiumPlan.cta}
+                  </Button>
+                </Link>
+              </SignedOut>
             </CardContent>
           </Card>
         </div>

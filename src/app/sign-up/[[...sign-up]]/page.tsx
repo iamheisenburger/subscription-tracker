@@ -29,9 +29,9 @@ export default function Page() {
           path="/sign-up"
           routing="path"
           signInUrl="/sign-in"
-          // Remove forceRedirectUrl to let Clerk handle billing flow
-          // Only fallback to dashboard if not in a billing flow
-          fallbackRedirectUrl="/dashboard"
+          // Redirect based on plan: premium → checkout, free → dashboard
+          forceRedirectUrl={plan === 'premium' ? `/checkout?billing=${billing}` : '/dashboard'}
+          fallbackRedirectUrl={plan === 'premium' ? `/checkout?billing=${billing}` : '/dashboard'}
           unsafeMetadata={{
             plan: plan || 'free',
             billing: billing || 'monthly'

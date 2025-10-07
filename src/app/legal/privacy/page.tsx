@@ -217,6 +217,7 @@ export default function PrivacyPolicyPage() {
               <div className="mt-4 p-4 border rounded-lg bg-muted/10">
                 <p className="text-sm"><strong>Email:</strong> usesubwiseapp@gmail.com</p>
                 <p className="text-sm"><strong>Support:</strong> usesubwiseapp@gmail.com</p>
+                <p className="text-sm"><strong>Phone:</strong> +49 1520 9530880</p>
                 <p className="text-sm"><strong>Address:</strong> SubWise Privacy Team</p>
                 <p className="text-sm">Kerpener Straße 6, 50170 Kerpen, Germany</p>
               </div>

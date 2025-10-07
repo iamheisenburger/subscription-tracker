@@ -9,7 +9,6 @@ import { useUser, SignedIn, SignedOut } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
 
 export const CustomPricingV2 = () => {
-  const { isSignedIn } = useUser();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   
   // Your Clerk Premium Plan ID

@@ -1,16 +1,15 @@
 "use client"
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
 import { Button } from "@/components/ui/button";
 
 /**
- * Checkout Page - Automatically opens Clerk's checkout drawer
- * Redirected here after sign-up with premium plan
+ * Checkout Content Component - Uses useSearchParams
  */
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isLoaded, user } = useUser();
@@ -87,6 +86,23 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Checkout Page - Wrapped in Suspense for useSearchParams
+ */
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground font-sans">Loading checkout...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
 

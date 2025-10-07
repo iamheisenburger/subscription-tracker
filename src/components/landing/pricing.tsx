@@ -1,12 +1,8 @@
-// TEMPORARY: Using Clerk's PricingTable for development testing
-// PRODUCTION: Uncomment CustomPricingV2Production when ready
-import { ClerkPricingTemporary } from "./clerk-pricing-temporary";
-// import { CustomPricingV2 } from "./custom-pricing-v2"; // Will use in production
+// SWITCHED BACK TO CUSTOM PRICING - Works with Clerk billing in production!
+// The custom UI redirects to Clerk's sign-up/checkout flow
+import { CustomPricingV2 } from "./custom-pricing-v2";
 
 export const Pricing = () => {
-  // For development testing with Clerk's payment gateway
-  return <ClerkPricingTemporary />;
-  
-  // For production with Stripe (switch when ready)
-  // return <CustomPricingV2 />;
+  // Custom pricing table with Clerk integration
+  return <CustomPricingV2 />;
 };

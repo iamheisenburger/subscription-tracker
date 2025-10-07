@@ -28,10 +28,10 @@ export const CustomPricingV2 = () => {
   const premiumPlan = {
     name: "Premium",
     description: "Unlock the full power of subscription tracking. Get unlimited subscriptions, advanced analytics, smart alerts, export capabilities, custom categories, and priority support with a 7-day free trial.",
-    price: billingCycle === 'monthly' ? "$9.00" : "$7.50",
+    price: billingCycle === 'monthly' ? "$5.00" : "$3.50",
     period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$9.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($90.00/year)" : "Billed monthly",
+    originalPrice: billingCycle === 'annual' ? "$5.00" : null,
+    annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
     features: [
       "Unlimited Subscriptions",
       "Smart Alerts",
@@ -39,8 +39,7 @@ export const CustomPricingV2 = () => {
       "Advanced Notifications",
       "Spending Trends",
       "Export CSV PDF",
-      "Priority Support",
-      "Max Subscriptions 3"
+      "Priority Support"
     ],
     cta: "Start 7-day free trial",
     ctaLink: `/sign-up?plan=premium&billing=${billingCycle}`,

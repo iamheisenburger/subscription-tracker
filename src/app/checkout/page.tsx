@@ -56,6 +56,26 @@ function CheckoutContent() {
               router.push('/dashboard');
             }}
             newSubscriptionRedirectUrl="/dashboard"
+            checkoutProps={{
+              appearance: {
+                elements: {
+                  // Make submit button highly visible
+                  formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !min-h-[48px] !text-base !font-semibold !shadow-md !rounded-md !mt-4",
+                  rootBox: "!bg-background",
+                  card: "!bg-card !border-border",
+                  headerTitle: "!text-foreground font-sans",
+                  headerSubtitle: "!text-muted-foreground font-sans",
+                  formFieldLabel: "!text-foreground font-sans",
+                  formFieldInput: "!bg-input !border-border !text-foreground",
+                },
+                variables: {
+                  colorPrimary: "hsl(var(--primary))",
+                  colorBackground: "hsl(var(--background))",
+                  colorText: "hsl(var(--foreground))",
+                  fontFamily: "var(--font-sans)",
+                }
+              }
+            }}
           >
             <Button className="w-full font-sans" size="lg">
               Start 7-day Free Trial

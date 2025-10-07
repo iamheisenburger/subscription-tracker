@@ -147,7 +147,7 @@ async function addSubWiseSubscription(
   }
 
   const now = Date.now();
-  const cost = subscriptionType === "annual" ? 90.00 : 9.00; // $90/year ($7.50/month) or $9/month
+  const cost = subscriptionType === "annual" ? 42.00 : 5.00; // $42/year ($3.50/month) or $5/month
   const billingCycle = subscriptionType === "annual" ? "yearly" : "monthly";
   
   // Calculate next billing date (30 days or 365 days from now)
@@ -312,7 +312,7 @@ export const addMissingSubWiseSubscription = mutation({
     return { 
       message: `Added SubWise ${subscriptionType} subscription`, 
       subscriptionId,
-      cost: subscriptionType === "annual" ? 90.00 : 9.00
+      cost: subscriptionType === "annual" ? 42.00 : 5.00
     };
   },
 });

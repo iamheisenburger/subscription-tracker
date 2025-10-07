@@ -4,19 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { SignedIn } from "@clerk/nextjs";
+import { CheckoutButton } from "@clerk/nextjs/experimental";
 
 /**
  * Custom Pricing Table for Dashboard Upgrade Page
- * User is already signed in, so we redirect to Clerk's checkout flow
+ * Uses Clerk's CheckoutButton to open checkout drawer directly
  */
 export const CustomPricingDashboard = () => {
-  const { user, isLoaded } = useUser();
-  const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Your Clerk Premium Plan ID from production
+  const PREMIUM_PLAN_ID = "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
   
   const freePlan = {
     name: "Free",
@@ -54,29 +53,6 @@ export const CustomPricingDashboard = () => {
     badge: "7-day free trial"
   };
 
-  const handleUpgrade = async () => {
-    if (!isLoaded || !user) {
-      toast.error("Please sign in to upgrade");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Redirect to Clerk's sign-up with plan metadata
-      // Clerk will handle the checkout flow automatically
-      const params = new URLSearchParams({
-        plan: 'premium',
-        billing: billingCycle
-      });
-      
-      router.push(`/sign-up?${params.toString()}`);
-    } catch (error) {
-      console.error("Error initiating upgrade:", error);
-      toast.error("Failed to start upgrade. Please try again.");
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div id="pricing" className="w-full">
@@ -181,13 +157,21 @@ export const CustomPricingDashboard = () => {
                   </li>
                 ))}
               </ul>
-              <Button 
-                className="w-full font-sans mt-6"
-                onClick={handleUpgrade}
-                disabled={isLoading}
-              >
-                {isLoading ? "Loading..." : premiumPlan.cta}
-              </Button>
+              {/* Clerk CheckoutButton - Opens checkout drawer */}
+              <SignedIn>
+                <CheckoutButton
+                  planId={PREMIUM_PLAN_ID}
+                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
+                  onSubscriptionComplete={() => {
+                    console.log('Subscription completed!');
+                  }}
+                  newSubscriptionRedirectUrl="/dashboard"
+                >
+                  <Button className="w-full font-sans mt-6">
+                    {premiumPlan.cta}
+                  </Button>
+                </CheckoutButton>
+              </SignedIn>
             </CardContent>
           </Card>
         </div>

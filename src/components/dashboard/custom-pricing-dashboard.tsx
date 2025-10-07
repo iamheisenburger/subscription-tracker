@@ -163,7 +163,9 @@ export const CustomPricingDashboard = () => {
                   planId={PREMIUM_PLAN_ID}
                   planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
                   onSubscriptionComplete={() => {
-                    console.log('Subscription completed!');
+                    console.log('Subscription completed! Redirecting to dashboard...');
+                    // Force redirect to dashboard
+                    window.location.href = '/dashboard';
                   }}
                   newSubscriptionRedirectUrl="/dashboard"
                   checkoutProps={{

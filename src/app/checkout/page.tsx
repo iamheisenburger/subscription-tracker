@@ -53,7 +53,8 @@ function CheckoutContent() {
             planPeriod={billing === 'monthly' ? 'month' : 'annual'}
             onSubscriptionComplete={() => {
               console.log('Subscription completed! Redirecting to dashboard...');
-              router.push('/dashboard');
+              // Force redirect to dashboard
+              window.location.href = '/dashboard';
             }}
             newSubscriptionRedirectUrl="/dashboard"
             checkoutProps={{

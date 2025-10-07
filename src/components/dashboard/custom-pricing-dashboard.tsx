@@ -169,18 +169,11 @@ export const CustomPricingDashboard = () => {
                   checkoutProps={{
                     appearance: {
                       elements: {
-                        // Submit button - match theme with !important
+                        // Submit button - match theme (keep this, it's working!)
                         formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
                         
-                        // Form inputs - better visibility with !important
-                        formFieldInput: "!bg-background !border-2 !border-border !text-foreground !font-medium",
+                        // Labels only
                         formFieldLabel: "!text-foreground !font-semibold",
-                        
-                        // Country select - better visibility with !important
-                        selectButton: "!bg-background !border-2 !border-border !text-foreground !font-medium",
-                        
-                        // All text elements
-                        text: "!text-foreground",
                       },
                       variables: {
                         colorPrimary: "hsl(var(--primary))",

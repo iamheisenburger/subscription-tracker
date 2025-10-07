@@ -179,6 +179,20 @@ export const CustomPricingV2 = () => {
                   newSubscriptionRedirectUrl="/dashboard"
                   checkoutProps={{
                     appearance: {
+                      elements: {
+                        // Submit button - match theme
+                        formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 font-semibold",
+                        
+                        // Form inputs - better visibility
+                        formFieldInput: "bg-background border-2 border-border text-foreground",
+                        formFieldLabel: "text-foreground font-semibold",
+                        
+                        // Country select - better visibility
+                        selectButton: "bg-background border-2 border-border text-foreground",
+                        
+                        // Text visibility
+                        text: "text-foreground",
+                      },
                       variables: {
                         colorPrimary: "hsl(var(--primary))",
                         colorBackground: "hsl(var(--background))",

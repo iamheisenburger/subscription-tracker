@@ -89,12 +89,16 @@ export default function PrivacyPolicyPage() {
                 We may share your information with trusted third-party service providers who assist us in:
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2 mt-3">
+                <li><strong>Payment Processing:</strong> Stripe and Clerk (secure payment processing and subscription management)</li>
                 <li><strong>Authentication:</strong> Clerk (user authentication and management)</li>
                 <li><strong>Database:</strong> Convex (data storage and processing)</li>
                 <li><strong>Email Services:</strong> Resend (notification delivery)</li>
                 <li><strong>Analytics:</strong> Service providers for usage analytics and performance monitoring</li>
                 <li><strong>Hosting:</strong> Vercel (application hosting and deployment)</li>
               </ul>
+              <p className="text-muted-foreground leading-relaxed mt-3">
+                <strong>Important:</strong> We do not store your full credit card information. Payment data is handled directly by Stripe in compliance with PCI-DSS standards.
+              </p>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.2 Legal Requirements</h3>
               <p className="text-muted-foreground leading-relaxed">

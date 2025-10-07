@@ -79,16 +79,17 @@ export default function TermsOfServicePage() {
                 Premium subscriptions are billed in advance on a monthly or annual basis:
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2 mt-3">
-                <li><strong>Monthly:</strong> $9.00 per month</li>
-                <li><strong>Annual:</strong> $90.00 per year ($7.50/month equivalent)</li>
+                <li><strong>Monthly:</strong> $5.00 per month</li>
+                <li><strong>Annual:</strong> $42.00 per year ($3.50/month equivalent)</li>
                 <li><strong>Free Trial:</strong> 7-day trial period for new Premium subscribers</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.3 Billing and Payments</h3>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                <li>All fees are exclusive of applicable taxes unless otherwise stated</li>
+                <li>All fees are exclusive of applicable taxes (e.g., VAT) unless otherwise stated</li>
                 <li>You authorize us to charge your payment method for all fees owed</li>
-                <li>Payments are processed through secure third-party payment processors</li>
+                <li>Payments are processed securely through <strong>Stripe</strong> and <strong>Clerk</strong></li>
+                <li>We do not store your full credit card information on our servers</li>
                 <li>Failed payments may result in service suspension or termination</li>
                 <li>You are responsible for providing current and valid payment information</li>
               </ul>
@@ -103,6 +104,14 @@ export default function TermsOfServicePage() {
                 <li>No partial refunds are provided for unused portions of subscription periods</li>
                 <li>Refunds may be provided at our sole discretion for exceptional circumstances</li>
               </ul>
+
+              <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.5 Right of Withdrawal (EU Customers)</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                If you are a consumer based in the European Union, you have the right to withdraw from your purchase within 14 days without giving any reason (Widerrufsrecht). However, by using the Service during the free trial period, you expressly request that we begin performance immediately, and you acknowledge that you will lose your right of withdrawal once the trial period ends and your subscription begins.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mt-3">
+                To exercise your right of withdrawal, you must inform us of your decision by contacting us using the details in Section 16 before the 14-day period expires.
+              </p>
             </section>
 
             <section className="mb-8">
@@ -255,7 +264,7 @@ export default function TermsOfServicePage() {
               
               <h3 className="text-xl font-semibold mb-3 font-sans">14.1 Governing Law</h3>
               <p className="text-muted-foreground leading-relaxed">
-                These Terms shall be interpreted and governed by the laws of the jurisdiction in which SubWise operates, without regard to conflict of law provisions.
+                These Terms shall be interpreted and governed by the laws of the Federal Republic of Germany, without regard to conflict of law provisions. For consumer contracts with EU residents, mandatory consumer protection laws of your country of residence may also apply.
               </p>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">14.2 Dispute Resolution</h3>

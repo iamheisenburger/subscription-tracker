@@ -358,21 +358,21 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ s
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="p-4 bg-background rounded-lg border border-border">
-                  <p className="font-semibold font-sans mb-2">📅 "I forgot to cancel my free trial"</p>
+                  <p className="font-semibold font-sans mb-2">📅 &ldquo;I forgot to cancel my free trial&rdquo;</p>
                   <p className="text-sm text-muted-foreground font-sans">
                     SubWise reminds you 2 days before your {subscription.name} trial ends, so you can decide if you want to keep it.
                   </p>
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border">
-                  <p className="font-semibold font-sans mb-2">💰 "I didn&apos;t realize how much I&apos;m spending"</p>
+                  <p className="font-semibold font-sans mb-2">💰 &ldquo;I didn&apos;t realize how much I&apos;m spending&rdquo;</p>
                   <p className="text-sm text-muted-foreground font-sans">
                     Track {subscription.name} spending over time. See if you&apos;re using it enough to justify ${subscription.monthlyPrice}/month (${(subscription.monthlyPrice * 12).toFixed(2)}/year).
                   </p>
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border">
-                  <p className="font-semibold font-sans mb-2">🎯 "I want to budget better"</p>
+                  <p className="font-semibold font-sans mb-2">🎯 &ldquo;I want to budget better&rdquo;</p>
                   <p className="text-sm text-muted-foreground font-sans">
                     Set spending limits and get alerts. SubWise helps you decide which subscriptions (including {subscription.name}) are worth keeping.
                   </p>

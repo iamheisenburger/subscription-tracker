@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,9 +15,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Email content to send to usesubwiseapp@gmail.com
-    const emailData = {
+    // Check if Resend is configured
+    if (!resend) {
+      console.error("Resend API key not configured");
+      return NextResponse.json(
+        { error: "Email service not configured" },
+        { status: 500 }
+      );
+    }
+
+    // Send email to usesubwiseapp@gmail.com
+    const emailResult = await resend.emails.send({
+      from: "SubWise <onboarding@resend.dev>", // Update this to your verified domain
       to: "usesubwiseapp@gmail.com",
+      replyTo: email, // Allow direct reply to user
       subject: `SubWise Contact: ${subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -79,13 +93,9 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
       `,
-    };
+    });
 
-    // In production, integrate with email service (Resend, SendGrid, etc.)
-    console.log("Contact form submission:", emailData);
-
-    // TODO: Send actual email using email service
-    // await sendEmail(emailData);
+    console.log("Contact form email sent:", emailResult);
 
     return NextResponse.json({
       success: true,

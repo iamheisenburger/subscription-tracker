@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +14,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if Resend is configured
+    if (!resend) {
+      console.error("Resend API key not configured");
+      return NextResponse.json(
+        { error: "Email service not configured" },
+        { status: 500 }
+      );
+    }
+
     // Send email notification to usesubwiseapp@gmail.com
-    const emailData = {
+    const emailResult = await resend.emails.send({
+      from: "SubWise <onboarding@resend.dev>", // Update this to your verified domain
       to: "usesubwiseapp@gmail.com",
       subject: "New SubWise Newsletter Subscription",
       html: `
@@ -35,14 +48,9 @@ export async function POST(req: NextRequest) {
           </p>
         </div>
       `,
-    };
+    });
 
-    // In production, integrate with email service (SendGrid, Resend, etc.)
-    // For now, log to console
-    console.log("Newsletter subscription:", emailData);
-
-    // TODO: Add to mailing list (MailChimp, ConvertKit, etc.)
-    // await addToMailingList(email);
+    console.log("Newsletter subscription email sent:", emailResult);
 
     return NextResponse.json({
       success: true,

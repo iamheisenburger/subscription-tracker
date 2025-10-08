@@ -2,6 +2,16 @@
 
 import Script from 'next/script'
 
+// Type definition for gtag function
+type GtagFunction = (...args: unknown[]) => void
+
+declare global {
+  interface Window {
+    gtag?: GtagFunction
+    dataLayer?: unknown[]
+  }
+}
+
 export function Analytics() {
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
@@ -32,14 +42,14 @@ export function Analytics() {
 
 // Event tracking helper functions
 export const trackEvent = (action: string, params?: Record<string, unknown>) => {
-  if (typeof window !== 'undefined' && (window as Window & { gtag?: Function }).gtag) {
-    (window as Window & { gtag: Function }).gtag('event', action, params)
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', action, params)
   }
 }
 
 export const trackPageView = (url: string) => {
-  if (typeof window !== 'undefined' && (window as Window & { gtag?: Function }).gtag) {
-    (window as Window & { gtag: Function }).gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID as string, {
       page_path: url,
     })
   }

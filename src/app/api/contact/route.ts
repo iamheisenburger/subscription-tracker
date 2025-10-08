@@ -92,12 +92,10 @@ export async function POST(req: NextRequest) {
             <p style="margin: 5px 0 0 0;">This is an automated notification from SubWise contact form.</p>
           </div>
         </div>
-      `,
-    });
+              `,
+            });
 
-    console.log("Contact form email sent:", emailResult);
-
-    return NextResponse.json({
+            return NextResponse.json({
       success: true,
       message: "Message sent successfully. We'll get back to you soon!",
     });

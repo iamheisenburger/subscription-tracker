@@ -55,7 +55,6 @@ function CheckoutContent() {
             planId={PREMIUM_PLAN_ID}
             planPeriod={billing === 'monthly' ? 'month' : 'annual'}
             onSubscriptionComplete={() => {
-              console.log('Subscription completed! Redirecting to dashboard...');
               // Force redirect to dashboard
               window.location.href = '/dashboard';
             }}

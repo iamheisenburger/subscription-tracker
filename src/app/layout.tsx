@@ -12,33 +12,55 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL('https://usesubwise.app'),
   title: {
-    default: "SubWise - Smart Subscription Management & Tracking",
-    template: "%s | SubWise"
+    default: "SubWise - Smart Subscription Tracker & Budget Manager | Never Miss a Renewal",
+    template: "%s | SubWise - Subscription Management"
   },
-  description: "Track, analyze, and manage all your subscriptions in one place. Get smart alerts, spending insights, and never miss a renewal with SubWise.",
-  keywords: ['subscription tracker', 'subscription management', 'recurring payments', 'spending tracker', 'budget management', 'subscription analytics'],
-  authors: [{ name: 'SubWise' }],
+  description: "Track all your subscriptions in one place. Get smart renewal alerts, analyze spending patterns, and save money with SubWise. Free plan available - start tracking Netflix, Spotify, Disney+ and more today.",
+  keywords: [
+    // Primary keywords
+    'subscription tracker', 'subscription management', 'subscription manager app',
+    // Action-based keywords
+    'track subscriptions', 'manage subscriptions', 'cancel subscriptions', 'subscription reminder',
+    // Problem-solving keywords
+    'stop unwanted subscriptions', 'subscription budget', 'subscription spending', 'subscription cost tracker',
+    // Platform-specific
+    'netflix subscription tracker', 'spotify subscription manager', 'disney plus tracker',
+    // Feature-based
+    'recurring payment tracker', 'subscription analytics', 'spending insights', 'budget management',
+    'subscription alerts', 'renewal reminders', 'subscription dashboard',
+    // Comparative & alternatives
+    'truebill alternative', 'rocket money alternative', 'hiatus alternative', 'bobby app alternative',
+    // Long-tail keywords
+    'how to track all my subscriptions', 'app to manage subscriptions', 'subscription tracking software',
+    'free subscription tracker', 'subscription expense tracker', 'monthly subscription manager'
+  ],
+  authors: [{ name: 'SubWise', url: 'https://usesubwise.app' }],
   creator: 'SubWise',
   publisher: 'SubWise',
+  applicationName: 'SubWise',
+  category: 'Finance & Budget Management',
+  classification: 'Subscription Tracking & Management Software',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://usesubwise.app',
-    title: 'SubWise - Smart Subscription Management',
-    description: 'Track, analyze, and manage all your subscriptions in one place. Never miss a renewal again.',
+    title: 'SubWise - Smart Subscription Tracker & Budget Manager',
+    description: 'Track all your subscriptions, get renewal alerts, and save money. Free plan with 3 subscriptions. Premium unlocks unlimited tracking, spending analytics & smart alerts.',
     siteName: 'SubWise',
     images: [{
       url: '/og-image.png',
       width: 1200,
       height: 630,
-      alt: 'SubWise - Subscription Management'
+      alt: 'SubWise - Track, Manage & Save on Your Subscriptions'
     }]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SubWise - Smart Subscription Management',
-    description: 'Track and manage all your subscriptions in one place',
+    title: 'SubWise - Never Miss a Subscription Renewal Again',
+    description: 'Smart subscription tracker with renewal alerts, spending analytics & budget management. Free plan available.',
     images: ['/og-image.png'],
+    creator: '@usesubwise',
+    site: '@usesubwise'
   },
   robots: {
     index: true,
@@ -51,9 +73,15 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    // Add your Google Search Console verification code here
-    // google: 'your-google-verification-code',
+  alternates: {
+    canonical: 'https://usesubwise.app',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'SubWise',
+    'format-detection': 'telephone=no',
   },
 };
 

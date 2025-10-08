@@ -48,11 +48,9 @@ export async function POST(req: NextRequest) {
           </p>
         </div>
       `,
-    });
+            });
 
-    console.log("Newsletter subscription email sent:", emailResult);
-
-    return NextResponse.json({
+            return NextResponse.json({
       success: true,
       message: "Successfully subscribed to newsletter",
     });

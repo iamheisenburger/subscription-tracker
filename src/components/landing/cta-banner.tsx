@@ -16,7 +16,7 @@ export const CTABanner = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/sign-up">
+            <Link href="/pricing">
               <Button size="lg" className="text-base px-8">
                 Start Free Trial <ArrowUpRight className="ml-2 h-4 w-4" />
               </Button>

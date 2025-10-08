@@ -22,7 +22,7 @@ export function MobileNav() {
   // const { isLoading, isPremium } = useUserTier();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t pb-safe">
       <div className="flex items-center justify-around px-2 py-2">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
@@ -44,19 +44,6 @@ export function MobileNav() {
             </Link>
           );
         })}
-        
-        {/* FAB Add Button */}
-        <div className="flex-1 flex justify-center relative">
-          <AddSubscriptionDialog>
-            <Button
-              size="sm"
-              className="h-12 w-12 rounded-full shadow-lg relative z-[60]"
-              aria-label="Add Subscription"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-          </AddSubscriptionDialog>
-        </div>
       </div>
     </div>
   );

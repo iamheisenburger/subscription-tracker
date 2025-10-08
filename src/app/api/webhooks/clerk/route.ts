@@ -4,9 +4,9 @@ import { Webhook } from 'svix';
 import { clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
+import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30; // Increase timeout to 30 seconds
 
 // Handle Clerk billing subscription events with intelligent plan detection
 async function handleSubscriptionEvent(
@@ -17,37 +17,25 @@ async function handleSubscriptionEvent(
     // Clerk billing subscription event structure
     const subscription = data as {
       id?: string;
+      user_id?: string;
       status?: string;
       plan_id?: string;
       interval?: string;
-      payer?: {
-        user_id?: string;
-        email?: string;
-        first_name?: string;
-        last_name?: string;
-      };
-      items?: Array<{
-        plan_id?: string;
-        interval?: string;
-        status?: string;
-        plan?: {
-          slug?: string;
-        };
-      }>;
+      current_period_start?: number;
+      current_period_end?: number;
+      trial_start?: number;
+      trial_end?: number;
       created_at?: number;
       updated_at?: number;
     };
 
-    // Extract user_id from payer object
-    const userId = subscription.payer?.user_id;
-    
-    // Extract plan info from either top-level (subscriptionItem events) or items array (subscription events)
-    const planId = subscription.plan_id || subscription.items?.find(item => item.status === 'active' || item.status === 'trialing')?.plan_id;
-    const interval = subscription.interval || subscription.items?.find(item => item.status === 'active' || item.status === 'trialing')?.interval;
+    const userId = subscription.user_id;
     const status = subscription.status;
+    const planId = subscription.plan_id;
+    const interval = subscription.interval;
 
     if (!userId) {
-      console.log('❌ No user_id in subscription event (no payer.user_id)');
+      console.log('❌ No user_id in subscription event');
       return;
     }
 
@@ -60,19 +48,28 @@ async function handleSubscriptionEvent(
       subscriptionId: subscription.id
     });
 
-    // **SIMPLE PLAN MATCHING**
-    // Your Clerk PRODUCTION plan ID from dashboard: cplan_33DAB0ChNOO9L2vRGzokuOvc4dl
-    const yourPremiumPlanId = 'cplan_33DAB0ChNOO9L2vRGzokuOvc4dl';
-    const knownPremiumKeys = ['premium_user', 'premium', yourPremiumPlanId];
-    const isPremiumPlan = planId && knownPremiumKeys.some(key => planId.includes(key));
+    // **INTELLIGENT PREMIUM DETECTION** 
+    // Instead of relying on hardcoded plan IDs, detect premium based on:
+    // 1. Any paid plan with active status
+    // 2. Non-free tier indicators
+    // 3. Subscription cost/interval patterns
     
-    // CRITICAL: Only process premium plans, skip free plans
-    if (!isPremiumPlan) {
-      console.log(`ℹ️ Skipping non-premium plan: ${planId} (free_user plan)`);
+    const isPremiumSubscription = detectPremiumSubscription(subscription);
+    
+    if (!isPremiumSubscription) {
+      console.log('ℹ️ Not a premium subscription (free/trial/unknown plan):', {
+        planId,
+        status,
+        reasoning: 'Plan appears to be free tier or trial-only'
+      });
       return;
     }
 
-    console.log('✅ Processing premium subscription:', { planId, status });
+    console.log('✅ Premium subscription detected:', {
+      planId,
+      status,
+      reasoning: 'Paid subscription with premium indicators'
+    });
 
     // Determine if subscription should grant premium access
     const isActive = status === 'active' || status === 'trialing';
@@ -99,28 +96,18 @@ async function handleSubscriptionEvent(
         subscriptionType: subscriptionType,
       });
 
-      // Update user metadata in Clerk with proper structure
+      // Update user metadata in Clerk for consistency
       const client = await clerkClient();
       await client.users.updateUser(userId, {
         publicMetadata: {
-          plan: 'premium_user', // Match your Clerk plan key
+          plan: 'premium',
           tier: 'premium_user',
           subscriptionType,
           billing: subscriptionType,
           subscription_id: subscription.id,
           subscription_status: status,
-          plan_id: planId,
-          upgraded_at: new Date().toISOString(),
-          // Add feature flags matching your Clerk dashboard structure
-          features: {
-            unlimited_subscriptions: true,
-            smart_alerts: true,
-            custom_categories: true,
-            advanced_notifications: true,
-            spending_trends: true,
-            export_csv_pdf: true,
-            priority_support: true
-          }
+          plan_id: planId, // Store actual plan ID for reference
+          upgraded_at: new Date().toISOString()
         }
       });
 
@@ -181,10 +168,11 @@ async function handleSubscriptionEvent(
 }
 
 /**
- * Legacy detection function - kept for reference
- * Now using simple plan key matching instead
+ * Intelligent Premium Subscription Detection
+ * 
+ * Detects premium subscriptions without relying on hardcoded plan IDs.
+ * This makes the system work for any Clerk billing configuration.
  */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 function detectPremiumSubscription(subscription: {
   id?: string;
   plan_id?: string;
@@ -298,9 +286,6 @@ export async function POST(req: Request) {
       status: (data as { status?: string }).status,
       interval: (data as { interval?: string }).interval
     });
-    
-    // **EXTREME DEBUG: Log FULL payload**
-    console.log('🚨 FULL WEBHOOK PAYLOAD:', JSON.stringify(data, null, 2));
   }
 
   try {
@@ -313,8 +298,25 @@ export async function POST(req: Request) {
         break;
 
       case 'user.updated':
-        // Skip complex tier detection - metadata will be set by subscription events
-        console.log(`ℹ️ User updated: ${(data.id as string).slice(-8)}`);
+        // Use centralized tier detection for user.updated events
+        const clerkClient_updated = await clerkClient();
+        const updatedUser = await clerkClient_updated.users.getUser(data.id as string);
+        
+        const tierResult = detectTierFromClerkUser(updatedUser);
+        logTierDetection(data.id as string, tierResult, 'clerk_webhook_user_updated');
+        
+        // Update tier if we have medium or high confidence
+        if (tierResult.confidence !== 'low') {
+          await fetchMutation(api.users.setTier, {
+            clerkId: data.id as string,
+            tier: tierResult.tier,
+            subscriptionType: tierResult.subscriptionType,
+          });
+          
+          console.log(`✅ Webhook: Updated user to ${tierResult.tier} (${tierResult.confidence} confidence)`);
+        } else {
+          console.log(`ℹ️ Webhook: Low confidence tier detection, no update made`);
+        }
         break;
 
       case 'organizationMembership.created':
@@ -396,11 +398,6 @@ export async function POST(req: Request) {
         break;
 
       // Handle subscription item events
-      case 'subscriptionitem.created':
-        console.log('✨ Subscription item created - upgrading user');
-        await handleSubscriptionEvent(data, 'created');
-        break;
-
       case 'subscriptionitem.abandon':
         console.log('🚫 Subscription abandoned');
         break;
@@ -410,32 +407,9 @@ export async function POST(req: Request) {
         await handleSubscriptionEvent(data, 'item_active');
         break;
 
-      case 'subscriptionitem.canceled':
       case 'subscriptionitem.cancelled':
-        console.log('🔴 Subscription item cancelled - downgrading user');
-        
-        const cancelPayload = data as {
-          payer?: { user_id?: string };
-        };
-        const cancelUserId = cancelPayload.payer?.user_id;
-        
-        if (cancelUserId) {
-          await fetchMutation(api.users.setTier, {
-            clerkId: cancelUserId,
-            tier: 'free_user',
-          });
-          
-          const client = await clerkClient();
-          await client.users.updateUser(cancelUserId, {
-            publicMetadata: {
-              plan: 'free',
-              tier: 'free_user',
-              subscription_status: 'cancelled',
-              downgraded_at: new Date().toISOString()
-            }
-          });
-          console.log(`✅ User ${cancelUserId.slice(-8)} downgraded to free`);
-        }
+        console.log('🔴 Subscription item cancelled');
+        await handleSubscriptionEvent(data, 'item_cancelled');
         break;
 
       default:

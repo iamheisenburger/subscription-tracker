@@ -116,23 +116,92 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ s
       
       <main className="min-h-screen bg-background py-24 px-4">
         <div className="max-w-4xl mx-auto space-y-8">
-          {/* Header */}
+          {/* Header with clear branding */}
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold font-sans">
+            <div className="inline-block px-4 py-1.5 bg-primary/10 rounded-full mb-4">
+              <p className="text-sm font-semibold text-primary font-sans">
+                Subscription Information & Tracking
+              </p>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold font-sans">
               {subscription.name} Subscription Tracker
             </h1>
-            <p className="text-xl text-muted-foreground font-sans">
-              Track your {subscription.name} subscription with SubWise and never miss a renewal
+            <p className="text-xl text-muted-foreground font-sans max-w-2xl mx-auto">
+              Track your {subscription.name} subscription with SubWise. Get renewal alerts, spending insights, and never miss a payment.
             </p>
           </div>
 
-          {/* Pricing Card */}
-          <Card className="border-2 border-primary">
+          {/* Main CTA - Above the fold */}
+          <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 shadow-lg">
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 rounded-full">
+                <span className="text-xs font-bold text-primary font-sans uppercase tracking-wide">
+                  ✨ SubWise Feature
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold font-sans">
+                Never Forget Your {subscription.name} Renewal
+              </h2>
+              <p className="text-lg text-muted-foreground font-sans max-w-xl mx-auto">
+                Track {subscription.name} alongside all your other subscriptions. Get alerts before you&apos;re charged, see your total spending, and save money.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button asChild size="lg" className="font-sans text-base px-8">
+                  <Link href="/sign-up">
+                    Start Tracking Free <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="font-sans text-base">
+                  <Link href="/pricing">
+                    View Plans & Pricing
+                  </Link>
+                </Button>
+              </div>
+              <div className="flex flex-wrap justify-center gap-6 pt-4 text-sm text-muted-foreground font-sans">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Free plan available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>No credit card required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Cancel anytime</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section divider */}
+          <div className="relative py-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-4 text-sm text-muted-foreground font-sans">
+                About {subscription.name}
+              </span>
+            </div>
+          </div>
+
+          {/* Pricing Card - Clearly labeled as Netflix info */}
+          <Card className="border-2 border-muted">
             <CardHeader>
-              <CardTitle className="text-2xl font-sans">Pricing</CardTitle>
-              <CardDescription className="font-sans">
-                Current {subscription.name} subscription costs
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-sans">{subscription.name} Pricing</CardTitle>
+                  <CardDescription className="font-sans mt-1">
+                    Official {subscription.name} subscription costs
+                  </CardDescription>
+                </div>
+                <Button asChild variant="ghost" size="sm">
+                  <a href={subscription.website} target="_blank" rel="noopener noreferrer" className="font-sans">
+                    Visit {subscription.name} →
+                  </a>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-baseline gap-2">
@@ -157,55 +226,97 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ s
               )}
 
               {subscription.freeTrial && (
-                <div className="flex items-center gap-2 text-green-600">
-                  <Calendar className="h-4 w-4" />
-                  <span className="font-sans">{subscription.freeTrial} free trial available</span>
+                <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <Calendar className="h-4 w-4" />
+                    <span className="font-sans font-medium">{subscription.name} offers {subscription.freeTrial} free trial</span>
+                  </div>
+                  <p className="text-xs text-green-600 dark:text-green-500 font-sans mt-1 ml-6">
+                    Track it with SubWise so you don&apos;t forget to cancel
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* CTA to track with SubWise */}
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-6 text-center space-y-4">
-              <h2 className="text-2xl font-bold font-sans">
-                Track {subscription.name} with SubWise
+          {/* Why SubWise section */}
+          <div className="bg-muted/30 rounded-xl p-8 space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold font-sans mb-2">
+                Why Track {subscription.name} with SubWise?
               </h2>
               <p className="text-muted-foreground font-sans">
-                Never forget about your {subscription.name} subscription. Get renewal reminders, spending insights, and manage all your subscriptions in one place.
+                Join thousands who never miss a renewal or overpay for subscriptions
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="font-sans">
-                  <Link href="/sign-up">
-                    Start Tracking Free <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="font-sans">
-                  <Link href="/pricing">
-                    View Plans
-                  </Link>
-                </Button>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Calendar className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-semibold font-sans">Smart Reminders</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  Get notified 7 days before {subscription.name} charges you
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <DollarSign className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-semibold font-sans">Spending Insights</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  See exactly how much {subscription.name} costs you per year
+                </p>
+              </div>
+              
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Check className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-semibold font-sans">All in One Place</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  Track {subscription.name} with all your other subscriptions
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center pt-4">
+              <Button asChild size="lg" className="font-sans">
+                <Link href="/sign-up">
+                  Start Tracking {subscription.name} Free <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <p className="text-xs text-muted-foreground font-sans mt-3">
+                Free plan: Track up to 3 subscriptions • Premium: Unlimited tracking from $5/month
+              </p>
+            </div>
+          </div>
 
           {/* Features */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl font-sans">What&apos;s Included</CardTitle>
+              <CardTitle className="text-2xl font-sans">{subscription.name} Features</CardTitle>
               <CardDescription className="font-sans">
-                Features you get with {subscription.name}
+                What you get with your {subscription.name} subscription
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
+              <ul className="grid md:grid-cols-2 gap-3">
                 {subscription.features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="font-sans">{feature}</span>
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="font-sans text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
+              
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <p className="text-sm font-sans text-center">
+                  <strong className="text-primary">💡 SubWise Tip:</strong> Track when you actually use these features to decide if {subscription.name} is worth keeping.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -236,63 +347,126 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ s
             </CardContent>
           </Card>
 
-          {/* SubWise Benefits */}
-          <Card className="border-2 border-primary">
+          {/* Real user scenarios */}
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
             <CardHeader>
-              <CardTitle className="text-2xl font-sans">Why Track with SubWise?</CardTitle>
+              <CardTitle className="text-2xl font-sans">Common {subscription.name} Scenarios</CardTitle>
               <CardDescription className="font-sans">
-                Benefits of managing your {subscription.name} subscription with SubWise
+                How SubWise helps real users manage their {subscription.name} subscription
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold font-sans">Renewal Reminders</p>
-                    <p className="text-sm text-muted-foreground font-sans">Get notified before {subscription.name} charges you</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold font-sans">Spending Insights</p>
-                    <p className="text-sm text-muted-foreground font-sans">See how much you spend on {subscription.name} yearly</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold font-sans">All in One Place</p>
-                    <p className="text-sm text-muted-foreground font-sans">Track {subscription.name} alongside all your other subscriptions</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold font-sans">Free to Start</p>
-                    <p className="text-sm text-muted-foreground font-sans">Track up to 3 subscriptions completely free</p>
-                  </div>
-                </li>
-              </ul>
-              <div className="mt-6">
-                <Button asChild className="w-full font-sans" size="lg">
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="p-4 bg-background rounded-lg border border-border">
+                  <p className="font-semibold font-sans mb-2">📅 "I forgot to cancel my free trial"</p>
+                  <p className="text-sm text-muted-foreground font-sans">
+                    SubWise reminds you 2 days before your {subscription.name} trial ends, so you can decide if you want to keep it.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border border-border">
+                  <p className="font-semibold font-sans mb-2">💰 "I didn&apos;t realize how much I&apos;m spending"</p>
+                  <p className="text-sm text-muted-foreground font-sans">
+                    Track {subscription.name} spending over time. See if you&apos;re using it enough to justify ${subscription.monthlyPrice}/month (${(subscription.monthlyPrice * 12).toFixed(2)}/year).
+                  </p>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border border-border">
+                  <p className="font-semibold font-sans mb-2">🎯 "I want to budget better"</p>
+                  <p className="text-sm text-muted-foreground font-sans">
+                    Set spending limits and get alerts. SubWise helps you decide which subscriptions (including {subscription.name}) are worth keeping.
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center pt-4">
+                <Button asChild size="lg" className="font-sans">
                   <Link href="/sign-up">
-                    Start Tracking {subscription.name} Free <ArrowRight className="ml-2 h-4 w-4" />
+                    Start Tracking Free <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
+                <p className="text-xs text-muted-foreground font-sans mt-3">
+                  No credit card required • Cancel anytime • Free forever plan available
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Official Link */}
-          <div className="text-center">
-            <Button asChild variant="outline" size="lg" className="font-sans">
-              <a href={subscription.website} target="_blank" rel="noopener noreferrer">
-                Visit {subscription.name} Official Site
-              </a>
-            </Button>
-          </div>
+          {/* FAQ Section for SEO */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl font-sans">Frequently Asked Questions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="font-semibold font-sans mb-2">How much does {subscription.name} cost?</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  {subscription.name} costs ${subscription.monthlyPrice} per month
+                  {subscription.annualPrice && ` or $${subscription.annualPrice} per year (save $${annualSavings})`}. 
+                  {subscription.freeTrial && ` They offer a ${subscription.freeTrial} free trial for new users.`}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold font-sans mb-2">How do I cancel {subscription.name}?</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  Follow these steps: {subscription.cancellationSteps.slice(0, 3).join(', ')}. See the full cancellation guide above.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold font-sans mb-2">Why should I track {subscription.name} with SubWise?</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  SubWise helps you avoid surprise charges, track yearly spending, and decide if {subscription.name} is worth ${(subscription.monthlyPrice * 12).toFixed(2)}/year. Get renewal reminders, spending analytics, and manage all subscriptions in one dashboard.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold font-sans mb-2">Is SubWise free?</h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  Yes! SubWise&apos;s free plan lets you track up to 3 subscriptions (including {subscription.name}). Premium plans start at $5/month for unlimited tracking, advanced analytics, and smart alerts.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Final CTA */}
+          <Card className="bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground border-0">
+            <CardContent className="p-8 md:p-12 text-center space-y-6">
+              <h2 className="text-3xl md:text-4xl font-bold font-sans">
+                Ready to Take Control of Your Subscriptions?
+              </h2>
+              <p className="text-lg opacity-90 font-sans max-w-2xl mx-auto">
+                Join thousands of users tracking {subscription.name} and other subscriptions with SubWise. Start free today.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button asChild size="lg" variant="secondary" className="font-sans text-base px-8">
+                  <Link href="/sign-up">
+                    Start Tracking Free <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="font-sans text-base bg-transparent border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+                  <a href={subscription.website} target="_blank" rel="noopener noreferrer">
+                    Visit {subscription.name} Official Site
+                  </a>
+                </Button>
+              </div>
+              <div className="flex flex-wrap justify-center gap-6 pt-6 text-sm opacity-90">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  <span>Free plan available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  <span>No credit card required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  <span>1,000+ happy users</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 

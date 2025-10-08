@@ -80,7 +80,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-medium font-sans">Monthly</h5>
-                    <span className="font-semibold font-sans">$9.00/mo</span>
+                    <span className="font-semibold font-sans">$5.00/mo</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-sans mb-4">
                     Perfect for trying out premium features
@@ -101,7 +101,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <span className="font-semibold font-sans">$7.50/mo</span>
+                      <span className="font-semibold font-sans">$3.50/mo</span>
                       <p className="text-xs text-muted-foreground font-sans">
                         $90.00/year
                       </p>
@@ -146,7 +146,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium font-sans">$9.00</p>
+                    <p className="font-medium font-sans">$5.00</p>
                     <Badge variant="secondary" className="font-sans text-xs">
                       Paid
                     </Badge>

@@ -40,7 +40,7 @@ export function MobileAnnualCTA() {
                   Save with Annual Billing
                 </h3>
                 <p className="text-xs text-muted-foreground font-sans">
-                  Get 2 months free • $7.50/mo
+                  Get 2 months free • $3.50/mo
                 </p>
               </div>
             </div>

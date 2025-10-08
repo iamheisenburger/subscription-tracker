@@ -206,3 +206,24 @@
     margin-bottom: 20px !important;
   }
 }
+
+/* Fix Clerk checkout button visibility in billing/plans page */
+/* Target Clerk's billing UI specifically */
+[data-clerk-billing] button,
+[data-clerk-modal] [class*="cl-formButton"],
+[role="dialog"] [class*="cl-formButton"] {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+
+/* Ensure all form buttons in Clerk modals are visible */
+[data-clerk-modal] button[type="submit"]:not([class*="secondary"]),
+[role="dialog"] button[type="submit"]:not([class*="secondary"]) {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border: none !important;
+  min-height: 40px !important;
+  font-weight: 600 !important;
+}

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Send email to usesubwiseapp@gmail.com
     const emailResult = await resend.emails.send({
-      from: "SubWise <onboarding@resend.dev>", // Update this to your verified domain
+      from: "SubWise <noreply@usesubwise.app>",
       to: "usesubwiseapp@gmail.com",
       replyTo: email, // Allow direct reply to user
       subject: `SubWise Contact: ${subject}`,

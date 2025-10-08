@@ -3,7 +3,7 @@ import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
 import { Pricing } from "@/components/landing/pricing";
 import { Testimonials } from "@/components/landing/testimonials";
-import { CtaBanner } from "@/components/landing/cta-banner";
+import { CTABanner } from "@/components/landing/cta-banner";
 import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
@@ -77,7 +77,7 @@ export default function Home() {
         <Features />
         <Pricing />
         <Testimonials />
-        <CtaBanner />
+        <CTABanner />
       </main>
       <Footer />
     </>

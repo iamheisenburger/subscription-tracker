@@ -31,15 +31,15 @@ export function Analytics() {
 }
 
 // Event tracking helper functions
-export const trackEvent = (action: string, params?: Record<string, any>) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', action, params)
+export const trackEvent = (action: string, params?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined' && (window as Window & { gtag?: Function }).gtag) {
+    (window as Window & { gtag: Function }).gtag('event', action, params)
   }
 }
 
 export const trackPageView = (url: string) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
+  if (typeof window !== 'undefined' && (window as Window & { gtag?: Function }).gtag) {
+    (window as Window & { gtag: Function }).gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
       page_path: url,
     })
   }

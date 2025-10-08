@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, ArrowRight, Calendar, DollarSign, X } from 'lucide-react';
+import { Check, ArrowRight, Calendar, DollarSign } from 'lucide-react';
 import { getSubscriptionBySlug, getAllSubscriptionSlugs } from '@/lib/subscription-database';
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
@@ -21,8 +21,9 @@ export async function generateStaticParams() {
 /**
  * Generate metadata for SEO
  */
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const subscription = getSubscriptionBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const subscription = getSubscriptionBySlug(slug);
   
   if (!subscription) {
     return {
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       title: `Track Your ${subscription.name} Subscription | SubWise`,
       description: `Never forget about your ${subscription.name} subscription. Get reminders, track spending, and manage renewals with SubWise.`,
       type: 'article',
-      url: `https://usesubwise.app/subscriptions/${params.slug}`,
+      url: `https://usesubwise.app/subscriptions/${slug}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -66,8 +67,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 /**
  * Subscription Detail Page
  */
-export default function SubscriptionPage({ params }: { params: { slug: string } }) {
-  const subscription = getSubscriptionBySlug(params.slug);
+export default async function SubscriptionPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const subscription = getSubscriptionBySlug(slug);
 
   if (!subscription) {
     notFound();

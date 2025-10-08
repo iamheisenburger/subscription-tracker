@@ -191,3 +191,18 @@
     letter-spacing: var(--tracking-normal);
   }
 }
+
+/* Mobile: Add bottom padding for navbar clearance */
+@media (max-width: 768px) {
+  /* Add bottom padding to Clerk modal/drawer content */
+  [data-clerk-modal],
+  [role="dialog"] {
+    padding-bottom: 80px !important;
+  }
+  
+  /* Ensure Clerk drawer buttons have clearance */
+  [data-clerk-modal] button[type="submit"],
+  [role="dialog"] button[type="submit"] {
+    margin-bottom: 20px !important;
+  }
+}

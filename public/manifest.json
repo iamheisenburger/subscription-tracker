@@ -5,7 +5,7 @@
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#7C3AED",
   "orientation": "portrait",
   "categories": ["finance", "productivity", "utilities"],
   "lang": "en-US",

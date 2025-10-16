@@ -51,6 +51,16 @@ export const create = mutation({
 });
 
 /**
+ * Get connection by ID
+ */
+export const getById = query({
+  args: { connectionId: v.id("bankConnections") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.connectionId);
+  },
+});
+
+/**
  * Get connection by Plaid item ID
  */
 export const getByPlaidItemId = query({
@@ -128,25 +138,35 @@ export const getActiveConnectionsCount = query({
 });
 
 /**
- * Update connection status
+ * Update connection status (supports both connectionId and plaidItemId)
  */
 export const updateStatus = mutation({
   args: {
-    plaidItemId: v.string(),
+    connectionId: v.optional(v.id("bankConnections")),
+    plaidItemId: v.optional(v.string()),
     status: v.union(
       v.literal("active"),
       v.literal("disconnected"),
       v.literal("error"),
       v.literal("requires_reauth")
     ),
+    error: v.optional(v.string()),
     errorCode: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const connection = await ctx.db
-      .query("bankConnections")
-      .withIndex("by_plaid_item", (q) => q.eq("plaidItemId", args.plaidItemId))
-      .first();
+    let connection;
+
+    if (args.connectionId) {
+      connection = await ctx.db.get(args.connectionId);
+    } else if (args.plaidItemId) {
+      connection = await ctx.db
+        .query("bankConnections")
+        .withIndex("by_plaid_item", (q) => q.eq("plaidItemId", args.plaidItemId!))
+        .first();
+    } else {
+      throw new Error("Either connectionId or plaidItemId must be provided");
+    }
 
     if (!connection) {
       throw new Error("Connection not found");
@@ -155,7 +175,7 @@ export const updateStatus = mutation({
     await ctx.db.patch(connection._id, {
       status: args.status,
       errorCode: args.errorCode,
-      errorMessage: args.errorMessage,
+      errorMessage: args.errorMessage || args.error,
       updatedAt: Date.now(),
     });
   },
@@ -171,12 +191,10 @@ export const updateSyncCursor = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.connectionId, {
+      syncCursor: args.cursor,
       lastSyncedAt: Date.now(),
       updatedAt: Date.now(),
     });
-
-    // Store cursor in a separate field (you might want to add this to schema)
-    // For now, we'll use a separate table or just update lastSyncedAt
   },
 });
 

@@ -45,6 +45,13 @@ crons.daily(
   internal.detection.detectPriceChanges,
 );
 
+// Daily bank sync for Automate users at 3 AM UTC
+crons.daily(
+  "daily bank sync",
+  { hourUTC: 3, minuteUTC: 0 },
+  internal.dailyBankSync.runDailyBankSync,
+);
+
 export default crons;
 
 

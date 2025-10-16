@@ -18,6 +18,7 @@ import type * as auditLogs from "../auditLogs.js";
 import type * as bankConnections from "../bankConnections.js";
 import type * as categories from "../categories.js";
 import type * as cron from "../cron.js";
+import type * as dailyBankSync from "../dailyBankSync.js";
 import type * as detection from "../detection.js";
 import type * as institutions from "../institutions.js";
 import type * as merchants from "../merchants.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   bankConnections: typeof bankConnections;
   categories: typeof categories;
   cron: typeof cron;
+  dailyBankSync: typeof dailyBankSync;
   detection: typeof detection;
   institutions: typeof institutions;
   merchants: typeof merchants;

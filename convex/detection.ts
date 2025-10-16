@@ -500,7 +500,20 @@ export const acceptCandidate = mutation({
     // Get merchant for category/description
     const merchant = await ctx.db.get(candidate.merchantId);
 
-    // Create subscription with overrides
+    // Get transactions to calculate accurate predictions
+    const transactions = await Promise.all(
+      candidate.transactionIds.map((txId) => ctx.db.get(txId))
+    );
+    const validTransactions = transactions.filter((tx) => tx !== null) as Doc<"transactions">[];
+
+    // Calculate renewal prediction
+    const prediction = calculateRenewalPrediction(
+      validTransactions,
+      args.overrides?.cadence || candidate.proposedCadence,
+      candidate.confidence
+    );
+
+    // Create subscription with overrides and predictions
     const subscriptionId = await ctx.db.insert("subscriptions", {
       userId: user._id,
       name: args.overrides?.name || candidate.proposedName,
@@ -514,6 +527,11 @@ export const acceptCandidate = mutation({
       detectionConfidence: candidate.confidence,
       merchantId: candidate.merchantId,
       lastChargeAt: candidate.proposedNextBilling - 30 * 24 * 60 * 60 * 1000, // Approximate
+      // Renewal prediction fields
+      predictedCadence: prediction.cadence,
+      predictedNextRenewal: prediction.nextRenewal,
+      predictionConfidence: prediction.confidence,
+      predictionLastUpdated: Date.now(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -579,6 +597,87 @@ export const dismissCandidate = mutation({
 });
 
 /**
+ * Calculate renewal prediction based on transaction history
+ * Returns predicted cadence, next renewal date, and confidence score
+ */
+function calculateRenewalPrediction(
+  transactions: Doc<"transactions">[],
+  detectedCadence: "weekly" | "monthly" | "yearly",
+  detectionConfidence: number
+): {
+  cadence: "weekly" | "monthly" | "yearly";
+  nextRenewal: number;
+  confidence: number;
+} {
+  // If less than 2 transactions, use detected values with lower confidence
+  if (transactions.length < 2) {
+    const now = Date.now();
+    const daysToAdd = detectedCadence === "weekly" ? 7 : detectedCadence === "monthly" ? 30 : 365;
+    return {
+      cadence: detectedCadence,
+      nextRenewal: now + daysToAdd * 24 * 60 * 60 * 1000,
+      confidence: detectionConfidence * 0.7, // Lower confidence with insufficient data
+    };
+  }
+
+  // Sort transactions by date
+  const sorted = [...transactions].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  // Calculate intervals between transactions
+  const intervals: number[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prevDate = new Date(sorted[i - 1].date).getTime();
+    const currDate = new Date(sorted[i].date).getTime();
+    const daysDiff = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+    intervals.push(daysDiff);
+  }
+
+  // Calculate median interval for prediction
+  const medianInterval = calculateMedian(intervals);
+
+  // Determine predicted cadence based on median interval
+  let predictedCadence: "weekly" | "monthly" | "yearly";
+  let expectedDays: number;
+
+  if (medianInterval >= 6 && medianInterval <= 8) {
+    predictedCadence = "weekly";
+    expectedDays = 7;
+  } else if (medianInterval >= 28 && medianInterval <= 33) {
+    predictedCadence = "monthly";
+    expectedDays = 30;
+  } else if (medianInterval >= 350 && medianInterval <= 380) {
+    predictedCadence = "yearly";
+    expectedDays = 365;
+  } else {
+    // Fallback to detected cadence
+    predictedCadence = detectedCadence;
+    expectedDays = detectedCadence === "weekly" ? 7 : detectedCadence === "monthly" ? 30 : 365;
+  }
+
+  // Calculate next renewal based on last transaction + median interval
+  const lastTransaction = sorted[sorted.length - 1];
+  const lastDate = new Date(lastTransaction.date).getTime();
+  const predictedNextRenewal = lastDate + expectedDays * 24 * 60 * 60 * 1000;
+
+  // Calculate prediction confidence based on interval consistency
+  const periodicityScore = calculatePeriodicityScore(intervals, expectedDays);
+
+  // Combine detection confidence with periodicity
+  const predictionConfidence = Math.min(
+    1.0,
+    (detectionConfidence * 0.6) + (periodicityScore * 0.4)
+  );
+
+  return {
+    cadence: predictedCadence,
+    nextRenewal: predictedNextRenewal,
+    confidence: predictionConfidence,
+  };
+}
+
+/**
  * Detect price changes for existing subscriptions
  * Called periodically via cron
  */
@@ -623,6 +722,19 @@ export const detectPriceChanges = internalMutation({
           oldAmount: subscription.cost,
           newAmount: latestAmount,
           percentChange,
+        });
+
+        // Create price history entry
+        await ctx.db.insert("priceHistory", {
+          subscriptionId: subscription._id,
+          userId: subscription.userId,
+          oldPrice: subscription.cost,
+          newPrice: latestAmount,
+          currency: subscription.currency,
+          percentChange,
+          detectedAt: Date.now(),
+          transactionId: recentTxs[0]._id,
+          createdAt: Date.now(),
         });
 
         // Update subscription amount

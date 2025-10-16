@@ -64,6 +64,15 @@ export default defineSchema({
     detectionConfidence: v.optional(v.number()), // 0-1 confidence score
     merchantId: v.optional(v.id("merchants")),
     lastChargeAt: v.optional(v.number()), // Last transaction date from bank
+    // Renewal prediction fields (Automate tier)
+    predictedCadence: v.optional(v.union(
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("yearly")
+    )), // Predicted billing frequency
+    predictedNextRenewal: v.optional(v.number()), // Predicted next renewal date
+    predictionConfidence: v.optional(v.number()), // 0-1 confidence in prediction
+    predictionLastUpdated: v.optional(v.number()), // When prediction was last calculated
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -363,5 +372,22 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_metric", ["metric"])
     .index("by_period", ["billingPeriodStart", "billingPeriodEnd"]),
+
+  // Price history tracking (Automate tier)
+  priceHistory: defineTable({
+    subscriptionId: v.id("subscriptions"),
+    userId: v.id("users"), // Denormalized for easy querying
+    oldPrice: v.number(),
+    newPrice: v.number(),
+    currency: v.string(),
+    percentChange: v.number(), // Positive or negative
+    detectedAt: v.number(), // When the change was detected
+    transactionId: v.optional(v.id("transactions")), // Transaction that triggered detection
+    createdAt: v.number(),
+  })
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_user", ["userId"])
+    .index("by_detected_at", ["detectedAt"])
+    .index("by_subscription_date", ["subscriptionId", "detectedAt"]),
 });
 

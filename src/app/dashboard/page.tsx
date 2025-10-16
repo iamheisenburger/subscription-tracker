@@ -9,6 +9,7 @@ import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { BankConnectionCTACard } from "@/components/dashboard/bank-connection-cta-card";
 import { AutomateDetectionQueue } from "@/components/dashboard/automate/automate-detection-queue";
 import { ConnectedBanksWidget } from "@/components/dashboard/automate/connected-banks-widget";
+import { FeaturePreviewCards } from "@/components/dashboard/automate/feature-preview-cards";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
@@ -50,6 +51,9 @@ export default async function DashboardPage() {
       {/* UpgradeBanner for Free/Plus users */}
       <UpgradeBanner />
       <BankConnectionCTACard />
+
+      {/* Feature Preview: Show what Automate users will unlock after connecting bank */}
+      <FeaturePreviewCards />
 
       {/* Savings Celebration */}
       <SavingsCelebration />

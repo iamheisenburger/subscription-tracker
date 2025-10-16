@@ -40,10 +40,10 @@ export function BankConnectionCTACard() {
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-foreground font-sans mb-2">
-                Connect Your Bank to Get Started
+                Connect Your Bank to Unlock Automate Features
               </h3>
               <p className="text-sm text-muted-foreground font-sans mb-4">
-                You&apos;re on the Automate plan! Connect your bank account to automatically detect subscriptions from your transactions.
+                You&apos;re on the Automate plan! Once you connect your bank, we&apos;ll unlock powerful automation features like smart detection, price tracking, and duplicate charge alerts. See what you&apos;ll get below.
               </p>
 
               {/* Features Grid */}

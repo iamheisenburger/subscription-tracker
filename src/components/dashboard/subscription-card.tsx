@@ -38,6 +38,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/lib/currency";
 import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { EditSubscriptionDialog } from "./edit-subscription-dialog";
+import { FeatureBadge, FeatureBadgesContainer } from "./feature-badge";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 interface SubscriptionCardProps {
   subscription: Doc<"subscriptions">;
@@ -45,12 +47,13 @@ interface SubscriptionCardProps {
   currency?: string;
 }
 
-export function SubscriptionCard({ 
-  subscription, 
-  showCategory = true, 
+export function SubscriptionCard({
+  subscription,
+  showCategory = true,
   currency = 'USD'
 }: SubscriptionCardProps) {
   const { user } = useUser();
+  const { tier } = useUserTier();
   const isMobile = useIsMobile();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -115,6 +118,15 @@ export function SubscriptionCard({
   // Format cost with user's preferred currency
   const formattedCost = formatCurrency(subscription.cost, subscription.currency);
 
+  // Determine which feature badges to show (only for Automate users)
+  const isAutomate = tier === "automate_1";
+  const showFeatureBadges = isAutomate && (
+    subscription.source === "detected" ||
+    subscription.detectionConfidence ||
+    subscription.predictedCadence ||
+    subscription.predictionConfidence
+  );
+
   return (
     <>
       <div className="group flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
@@ -127,10 +139,34 @@ export function SubscriptionCard({
             <p className="text-sm text-muted-foreground font-sans">
               Next: {format(subscription.nextBillingDate, "MMM dd, yyyy")} • {subscription.billingCycle}
             </p>
-            {showCategory && subscription.category && (
-              <Badge variant="secondary" className="text-xs font-sans mt-1">
-                {subscription.category}
-              </Badge>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {showCategory && subscription.category && (
+                <Badge variant="secondary" className="text-xs font-sans">
+                  {subscription.category}
+                </Badge>
+              )}
+            </div>
+            {showFeatureBadges && (
+              <FeatureBadgesContainer>
+                {subscription.source === "detected" && (
+                  <FeatureBadge
+                    type="auto-detected"
+                    confidence={subscription.detectionConfidence}
+                  />
+                )}
+                {isAutomate && subscription.lastChargeAt && (
+                  <FeatureBadge type="price-tracked" />
+                )}
+                {subscription.predictedCadence && subscription.predictionConfidence && (
+                  <FeatureBadge
+                    type="renewal-predicted"
+                    confidence={subscription.predictionConfidence}
+                  />
+                )}
+                {isAutomate && subscription.source === "detected" && (
+                  <FeatureBadge type="duplicate-alert" />
+                )}
+              </FeatureBadgesContainer>
             )}
           </div>
         </div>

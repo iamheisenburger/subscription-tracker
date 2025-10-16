@@ -74,7 +74,10 @@ async function handleSubscriptionEvent(
     // Determine if subscription should grant premium access
     const isActive = status === 'active' || status === 'trialing';
     const isPaused = status === 'paused' || eventType === 'paused';
-    
+
+    // Determine the correct tier based on plan ID (used in multiple branches)
+    const detectedTier = planId ? getTierFromPlanId(planId) : 'plus';
+
     if (isActive && !isPaused) {
       // Determine subscription type
       let subscriptionType: 'monthly' | 'annual' = 'monthly';
@@ -82,17 +85,19 @@ async function handleSubscriptionEvent(
         subscriptionType = 'annual';
       }
 
-      console.log('⬆️ Upgrading user to premium:', {
+      console.log('⬆️ Upgrading user to paid tier:', {
         userId: userId.slice(-8),
+        tier: detectedTier,
         subscriptionType,
         status,
-        eventType
+        eventType,
+        planId
       });
 
-      // Update user to premium in Convex
+      // Update user tier in Convex
       await fetchMutation(api.users.setTier, {
         clerkId: userId,
-        tier: 'premium_user',
+        tier: detectedTier,
         subscriptionType: subscriptionType,
       });
 
@@ -100,8 +105,8 @@ async function handleSubscriptionEvent(
       const client = await clerkClient();
       await client.users.updateUser(userId, {
         publicMetadata: {
-          plan: 'premium',
-          tier: 'premium_user',
+          plan: detectedTier,
+          tier: detectedTier,
           subscriptionType,
           billing: subscriptionType,
           subscription_id: subscription.id,
@@ -111,20 +116,21 @@ async function handleSubscriptionEvent(
         }
       });
 
-      console.log('✅ User upgraded to premium successfully');
+      console.log(`✅ User upgraded to ${detectedTier} tier successfully`);
 
     } else if (isPaused) {
-      console.log('⏸️ Subscription paused, maintaining premium access:', { 
-        userId: userId.slice(-8), 
-        status 
+      console.log('⏸️ Subscription paused, maintaining paid tier access:', {
+        userId: userId.slice(-8),
+        status,
+        tier: detectedTier
       });
-      
-      // For paused subscriptions, keep premium but update status
+
+      // For paused subscriptions, keep paid tier but update status
       const client = await clerkClient();
       await client.users.updateUser(userId, {
         publicMetadata: {
-          plan: 'premium',
-          tier: 'premium_user',
+          plan: detectedTier,
+          tier: detectedTier,
           subscription_status: 'paused',
           plan_id: planId,
           paused_at: new Date().toISOString()
@@ -168,8 +174,22 @@ async function handleSubscriptionEvent(
 }
 
 /**
+ * Determine tier from plan ID
+ */
+function getTierFromPlanId(planId: string): 'plus' | 'automate_1' {
+  const plusPlanId = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID;
+  const automatePlanId = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID;
+
+  if (planId === automatePlanId) return 'automate_1';
+  if (planId === plusPlanId) return 'plus';
+
+  // Default to plus for any other paid plan (backward compat)
+  return 'plus';
+}
+
+/**
  * Intelligent Premium Subscription Detection
- * 
+ *
  * Detects premium subscriptions without relying on hardcoded plan IDs.
  * This makes the system work for any Clerk billing configuration.
  */
@@ -185,9 +205,13 @@ function detectPremiumSubscription(subscription: {
 }): boolean {
   const { plan_id, status, interval, current_period_start, current_period_end } = subscription;
 
-  // Rule 1: If we have the configured plan ID, use it
-  if (plan_id && process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
-    if (plan_id === process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID) {
+  // Rule 1: Check against configured plan IDs (Plus and Automate)
+  if (plan_id) {
+    const plusPlanId = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID;
+    const automatePlanId = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID;
+    const legacyPremiumId = process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID; // Backward compat
+
+    if (plan_id === plusPlanId || plan_id === automatePlanId || plan_id === legacyPremiumId) {
       return true;
     }
   }
@@ -324,12 +348,17 @@ export async function POST(req: Request) {
         const userData = data.public_user_data as { user_id?: string };
         const orgSlug = orgData?.slug;
         const userId = userData?.user_id;
-        
-        // If user joined premium organization, upgrade them
-        if (orgSlug === 'premium' || orgSlug?.includes('premium')) {
+
+        // If user joined paid organization, upgrade them
+        if (orgSlug === 'plus' || orgSlug?.includes('plus')) {
           await fetchMutation(api.users.setTier, {
             clerkId: userId as string,
-            tier: 'premium_user',
+            tier: 'plus',
+          });
+        } else if (orgSlug === 'automate' || orgSlug?.includes('automate')) {
+          await fetchMutation(api.users.setTier, {
+            clerkId: userId as string,
+            tier: 'automate_1',
           });
         }
         break;

@@ -16,7 +16,9 @@ interface BillingSettingsProps {
 export function BillingSettings({ userId }: BillingSettingsProps) {
   const user = useQuery(api.users.getUserByClerkId, { clerkId: userId });
   const userTier = user?.tier || "free_user";
-  const isPremium = userTier === "premium_user";
+  const isPaid = userTier === "plus" || userTier === "automate_1" || userTier === "premium_user";
+  const isAutomate = userTier === "automate_1";
+  const isPlus = userTier === "plus" || userTier === "premium_user";
 
   return (
     <Card>
@@ -33,8 +35,8 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
         {/* Current Plan */}
         <div className="flex items-center justify-between p-4 border rounded-lg">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isPremium ? 'bg-primary/10' : 'bg-muted'}`}>
-              {isPremium ? (
+            <div className={`p-2 rounded-lg ${isPaid ? 'bg-primary/10' : 'bg-muted'}`}>
+              {isPaid ? (
                 <Crown className="h-5 w-5 text-primary" />
               ) : (
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
@@ -43,47 +45,49 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-medium font-sans">
-                  {isPremium ? "Premium Plan" : "Free Plan"}
+                  {isAutomate ? "Automate Plan" : isPlus ? "Plus Plan" : "Free Plan"}
                 </h3>
-                <Badge variant={isPremium ? "default" : "secondary"} className="font-sans">
-                  {isPremium ? "Active" : "Current"}
+                <Badge variant={isPaid ? "default" : "secondary"} className="font-sans">
+                  {isPaid ? "Active" : "Current"}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground font-sans">
-                {isPremium 
-                  ? "Unlimited subscriptions with advanced features"
-                  : "Up to 3 subscriptions with basic features"
+                {isAutomate
+                  ? "Automated bank sync + subscription detection"
+                  : isPlus
+                    ? "Unlimited subscriptions with advanced features"
+                    : "Up to 3 subscriptions with basic features"
                 }
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="font-semibold font-sans">
-              {isPremium ? "$5.00/month" : "Free"}
+              {isPaid ? "$9.00/month" : "Free"}
             </p>
-            {isPremium && (
+            {isPaid && (
               <p className="text-sm text-muted-foreground font-sans">
-                Billed monthly
+                Billed {user?.subscriptionType === "annual" ? "annually" : "monthly"}
               </p>
             )}
           </div>
         </div>
 
-        {!isPremium && (
+        {!isPaid && (
           <>
             <Separator />
-            
+
             {/* Upgrade Section */}
             <div className="space-y-4">
-              <h4 className="font-medium font-sans">Upgrade to Premium</h4>
+              <h4 className="font-medium font-sans">Upgrade Your Plan</h4>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-medium font-sans">Monthly</h5>
-                    <span className="font-semibold font-sans">$5.00/mo</span>
+                    <span className="font-semibold font-sans">$9.00/mo</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-sans mb-4">
-                    Perfect for trying out premium features
+                    Perfect for trying out Plus or Automate
                   </p>
                   <Link href="/dashboard/upgrade">
                     <Button variant="outline" className="w-full font-sans">
@@ -91,7 +95,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                     </Button>
                   </Link>
                 </div>
-                
+
                 <div className="p-4 border rounded-lg bg-primary/5 border-primary/20">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -101,9 +105,9 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <span className="font-semibold font-sans">$3.50/mo</span>
+                      <span className="font-semibold font-sans">$6.58/mo</span>
                       <p className="text-xs text-muted-foreground font-sans">
-                        $90.00/year
+                        $79.00/year
                       </p>
                     </div>
                   </div>
@@ -121,10 +125,10 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
           </>
         )}
 
-        {isPremium && (
+        {isPaid && (
           <>
             <Separator />
-            
+
             {/* Billing History */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -133,20 +137,25 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                   View All
                 </Button>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="font-medium font-sans">Premium Monthly</p>
+                      <p className="font-medium font-sans">
+                        {isAutomate ? "Automate" : "Plus"}{" "}
+                        {user?.subscriptionType === "annual" ? "Annual" : "Monthly"}
+                      </p>
                       <p className="text-sm text-muted-foreground font-sans">
                         January 21, 2025
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium font-sans">$5.00</p>
+                    <p className="font-medium font-sans">
+                      {user?.subscriptionType === "annual" ? "$79.00" : "$9.00"}
+                    </p>
                     <Badge variant="secondary" className="font-sans text-xs">
                       Paid
                     </Badge>

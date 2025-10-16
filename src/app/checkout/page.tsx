@@ -16,16 +16,24 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isLoaded, user } = useUser();
-  
+
   const billing = searchParams.get('billing') || 'annual';
-  const PREMIUM_PLAN_ID = "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
-  
+  const plan = searchParams.get('plan') || 'plus'; // Default to plus
+
+  // Clerk Plan IDs
+  const PLUS_PLAN_ID = "cplan_33b_oku0vc4d1";
+  const AUTOMATE_PLAN_ID = "cplan_349_aaGMut0q1";
+
+  // Determine which plan ID to use
+  const planId = plan === 'automate' ? AUTOMATE_PLAN_ID : PLUS_PLAN_ID;
+  const planName = plan === 'automate' ? 'Automate' : 'Plus';
+
   // If no user, redirect to sign-up
   useEffect(() => {
     if (isLoaded && !user) {
-      router.push('/sign-up?plan=premium&billing=' + billing);
+      router.push(`/sign-up?plan=${plan}&billing=${billing}`);
     }
-  }, [isLoaded, user, router, billing]);
+  }, [isLoaded, user, router, billing, plan]);
 
   if (!isLoaded || !user) {
     return (
@@ -42,7 +50,7 @@ function CheckoutContent() {
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold font-sans mb-2">
-            Complete Your Subscription
+            Complete Your {planName} Subscription
           </h1>
           <p className="text-muted-foreground font-sans">
             Click below to start your 7-day free trial
@@ -52,7 +60,7 @@ function CheckoutContent() {
         {/* Auto-trigger checkout */}
         <SignedIn>
           <CheckoutButton
-            planId={PREMIUM_PLAN_ID}
+            planId={planId}
             planPeriod={billing === 'monthly' ? 'month' : 'annual'}
             onSubscriptionComplete={() => {
               // Force redirect to dashboard

@@ -13,44 +13,63 @@ import { CheckoutButton } from "@clerk/nextjs/experimental";
  */
 export const CustomPricingDashboard = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
-  
-  // Your Clerk Premium Plan ID from production
-  const PREMIUM_PLAN_ID = "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
-  
+
+  // Clerk Plan IDs
+  const PLUS_PLAN_ID = "cplan_33b_oku0vc4d1";
+  const AUTOMATE_PLAN_ID = "cplan_349_aaGMut0q1";
+
   const freePlan = {
-    name: "Free",
-    description: "Perfect for getting started with subscription tracking. Track up to 3 subscriptions with essential features including spending overview, renewal reminders, and email support.",
+    name: "Free - Track",
+    description: "Perfect for getting started with subscription tracking. Track up to 3 subscriptions with essential features.",
     price: "$0",
     period: "Always free",
     features: [
-      "Max Subscriptions 3",
-      "Simple Spending Overview",
-      "Email Support",
-      "Basic Renewal Reminders",
-      "Manual Subscription Entry"
+      "Up to 3 manual subscriptions",
+      "Basic email reminders",
+      "Simple spending overview",
+      "Community support"
     ],
     cta: "Current Plan",
     isCurrentPlan: true
   };
 
-  const premiumPlan = {
-    name: "Premium",
-    description: "Unlock the full power of subscription tracking. Get unlimited subscriptions, advanced analytics, smart alerts, export capabilities, custom categories, and priority support with a 7-day free trial.",
-    price: billingCycle === 'monthly' ? "$5.00" : "$3.50",
+  const plusPlan = {
+    name: "Plus",
+    description: "Unlock unlimited subscriptions, advanced analytics, smart alerts, and export capabilities with priority support.",
+    price: billingCycle === 'monthly' ? "$9.00" : "$6.58",
     period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$5.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
+    originalPrice: billingCycle === 'annual' ? "$9.00" : null,
+    annualNote: billingCycle === 'annual' ? "Billed annually ($79.00/year)" : "Billed monthly",
     features: [
-      "Unlimited Subscriptions",
-      "Smart Alerts",
-      "Custom Categories",
-      "Advanced Notifications",
-      "Spending Trends",
-      "Export CSV PDF",
-      "Priority Support"
+      "Unlimited manual subscriptions",
+      "Multi-currency analytics",
+      "CSV/PDF export",
+      "Custom categories & smart alerts",
+      "Priority email support"
     ],
     cta: "Start 7-day free trial",
     badge: "7-day free trial"
+  };
+
+  const automatePlan = {
+    name: "Automate",
+    description: "Everything in Plus + automated bank sync, subscription detection, price change alerts, and cancel assistant.",
+    price: billingCycle === 'monthly' ? "$9.00" : "$6.58",
+    period: billingCycle === 'monthly' ? "/month" : "/month",
+    originalPrice: billingCycle === 'annual' ? "$9.00" : null,
+    annualNote: billingCycle === 'annual' ? "Billed annually ($79.00/year)" : "Billed monthly",
+    features: [
+      "Everything in Plus",
+      "1 bank connection (up to 3 accounts)",
+      "Auto subscription detection",
+      "Price change & duplicate alerts",
+      "Email receipt parsing",
+      "Cancel Assistant (self-serve)",
+      "Calendar export + Push/SMS",
+      "Daily sync & renewal prediction"
+    ],
+    cta: "Start 7-day free trial",
+    badge: "Most Popular"
   };
 
 
@@ -92,8 +111,8 @@ export const CustomPricingDashboard = () => {
           </div>
         </div>
 
-        {/* Pricing Cards - Properly Sized */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Pricing Cards - 3 Column Grid */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {/* Free Plan */}
           <Card className="border border-border relative">
             <CardHeader className="text-center pb-6">
@@ -121,38 +140,38 @@ export const CustomPricingDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Premium Plan */}
-          <Card className="border-2 border-primary relative shadow-md">
-            {premiumPlan.badge && (
+          {/* Plus Plan */}
+          <Card className="border border-border relative">
+            {plusPlan.badge && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold font-sans shadow-md">
-                  ✨ {premiumPlan.badge}
+                <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold font-sans shadow-md">
+                  ✨ {plusPlan.badge}
                 </span>
               </div>
             )}
             <CardHeader className="text-center pb-6 pt-6">
-              <CardTitle className="text-xl font-bold font-sans">{premiumPlan.name}</CardTitle>
+              <CardTitle className="text-xl font-bold font-sans">{plusPlan.name}</CardTitle>
               <CardDescription className="mt-2 font-sans text-sm">
-                {premiumPlan.description}
+                {plusPlan.description}
               </CardDescription>
               <div className="mt-4">
                 <div className="flex items-baseline justify-center gap-1.5">
-                  {premiumPlan.originalPrice && (
+                  {plusPlan.originalPrice && (
                     <span className="text-xl text-muted-foreground line-through font-sans">
-                      {premiumPlan.originalPrice}
+                      {plusPlan.originalPrice}
                     </span>
                   )}
-                  <span className="text-4xl font-bold font-sans">{premiumPlan.price}</span>
-                  <span className="text-base text-muted-foreground font-sans">{premiumPlan.period}</span>
+                  <span className="text-4xl font-bold font-sans">{plusPlan.price}</span>
+                  <span className="text-base text-muted-foreground font-sans">{plusPlan.period}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 font-sans">{premiumPlan.annualNote}</p>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{plusPlan.annualNote}</p>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <ul className="space-y-2">
-                {premiumPlan.features.map((feature) => (
+                {plusPlan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <span className="text-sm font-sans">{feature}</span>
                   </li>
                 ))}
@@ -160,7 +179,7 @@ export const CustomPricingDashboard = () => {
               {/* Clerk CheckoutButton - Opens checkout drawer */}
               <SignedIn>
                 <CheckoutButton
-                  planId={PREMIUM_PLAN_ID}
+                  planId={PLUS_PLAN_ID}
                   planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
                   onSubscriptionComplete={() => {
                     // Force redirect to dashboard
@@ -177,7 +196,70 @@ export const CustomPricingDashboard = () => {
                   }}
                 >
                   <Button className="w-full font-sans mt-6">
-                    {premiumPlan.cta}
+                    {plusPlan.cta}
+                  </Button>
+                </CheckoutButton>
+              </SignedIn>
+            </CardContent>
+          </Card>
+
+          {/* Automate Plan - Most Popular */}
+          <Card className="border-2 border-primary relative shadow-md">
+            {automatePlan.badge && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold font-sans shadow-md">
+                  ⚡ {automatePlan.badge}
+                </span>
+              </div>
+            )}
+            <CardHeader className="text-center pb-6 pt-6">
+              <CardTitle className="text-xl font-bold font-sans">{automatePlan.name}</CardTitle>
+              <CardDescription className="mt-2 font-sans text-sm">
+                {automatePlan.description}
+              </CardDescription>
+              <div className="mt-4">
+                <div className="flex items-baseline justify-center gap-1.5">
+                  {automatePlan.originalPrice && (
+                    <span className="text-xl text-muted-foreground line-through font-sans">
+                      {automatePlan.originalPrice}
+                    </span>
+                  )}
+                  <span className="text-4xl font-bold font-sans">{automatePlan.price}</span>
+                  <span className="text-base text-muted-foreground font-sans">{automatePlan.period}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{automatePlan.annualNote}</p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-2">
+                {automatePlan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm font-sans">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              {/* Clerk CheckoutButton - Opens checkout drawer */}
+              <SignedIn>
+                <CheckoutButton
+                  planId={AUTOMATE_PLAN_ID}
+                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
+                  onSubscriptionComplete={() => {
+                    // Force redirect to dashboard
+                    window.location.href = '/dashboard';
+                  }}
+                  newSubscriptionRedirectUrl="/dashboard"
+                  checkoutProps={{
+                    appearance: {
+                      elements: {
+                        // ONLY override the submit button color - everything else stays Clerk default
+                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
+                      }
+                    }
+                  }}
+                >
+                  <Button className="w-full font-sans mt-6">
+                    {automatePlan.cta}
                   </Button>
                 </CheckoutButton>
               </SignedIn>

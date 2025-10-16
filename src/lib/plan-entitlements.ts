@@ -290,8 +290,8 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
   plus: {
     tier: "plus",
     displayName: "Plus",
-    monthlyPrice: 5,
-    annualPrice: 35,
+    monthlyPrice: 9,
+    annualPrice: 79,
     features: [
       "Unlimited manual subscriptions",
       "Multi-currency analytics",
@@ -305,7 +305,7 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
     tier: "automate_1",
     displayName: "Automate",
     monthlyPrice: 9,
-    annualPrice: 78,
+    annualPrice: 79,
     features: [
       "Everything in Plus",
       "1 bank connection (up to 3 accounts)",

@@ -7,19 +7,19 @@ import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
-  const { isLoading, isMonthlyPremium, isAnnualPremium } = useUserTier();
-  
+  const { isLoading, isPremium } = useUserTier();
+
   // Don't show anything while loading to prevent flash
   if (isLoading) {
     return null;
   }
-  
-  // Hide banner for ALL premium users (they have small sidebar CTA instead)
+
+  // Hide banner for ALL paid users (they have small sidebar CTA instead)
   // Much better UX - no intrusive banners for paying customers!
-  if (isMonthlyPremium || isAnnualPremium) {
+  if (isPremium) {
     return null;
   }
-  
+
   // Show regular upgrade banner for free users only
   return (
     <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10">
@@ -31,10 +31,10 @@ export function UpgradeBanner() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-foreground font-sans">
-                Upgrade to Premium
+                Upgrade to Plus or Automate
               </h3>
               <p className="text-sm text-muted-foreground font-sans">
-                Unlock unlimited subscriptions, advanced analytics, and more features.
+                Unlock unlimited subscriptions, advanced analytics, and automated features.
               </p>
               <div className="grid grid-cols-2 md:flex md:flex-row md:items-center gap-3 md:space-x-4 mt-2 text-xs text-muted-foreground">
                 <div className="flex items-center space-x-1">
@@ -66,10 +66,10 @@ export function UpgradeBanner() {
           </div>
           <div className="text-center sm:text-right">
             <div className="text-2xl font-bold text-foreground font-sans">
-              $5<span className="text-sm font-normal">/mo</span>
+              $9<span className="text-sm font-normal">/mo</span>
             </div>
             <div className="text-sm text-muted-foreground font-sans">
-              or $3.50/mo annually
+              or $6.58/mo annually
             </div>
             <Link href="/dashboard/upgrade">
               <Button className="mt-3 w-full sm:w-auto font-sans">

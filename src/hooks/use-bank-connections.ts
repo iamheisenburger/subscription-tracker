@@ -41,8 +41,14 @@ export function useBankConnections() {
     return deleteMutation({ connectionId: connectionId as any, clerkUserId });
   };
 
+  // Transform connections to match expected type (null -> undefined for institution)
+  const transformedConnections = (connections || []).map((conn) => ({
+    ...conn,
+    institution: conn.institution ?? undefined,
+  }));
+
   return {
-    connections: connections || [],
+    connections: transformedConnections,
     activeConnectionsCount: activeConnectionsCount || 0,
     isLoading: connections === undefined || activeConnectionsCount === undefined,
     disconnect,

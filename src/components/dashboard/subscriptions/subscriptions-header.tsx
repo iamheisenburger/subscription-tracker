@@ -31,12 +31,12 @@ interface SubscriptionsHeaderProps {
   filterCount?: number;
 }
 
-export function SubscriptionsHeader({ 
-  search, 
-  onSearchChange, 
-  activeFilter, 
-  onFilterChange, 
-  categoryFilter, 
+export function SubscriptionsHeader({
+  search,
+  onSearchChange,
+  activeFilter,
+  onFilterChange,
+  categoryFilter,
   onCategoryChange,
   billingSet,
   onBillingToggle,
@@ -44,10 +44,14 @@ export function SubscriptionsHeader({
   onCategoryToggle,
   filterCount,
 }: SubscriptionsHeaderProps) {
-  const { isPremium } = useUserTier();
+  const { isPremium, tier } = useUserTier();
   const { user } = useUser();
   const categories = useQuery(api.categories.listCategories, user?.id ? { clerkId: user.id } : "skip");
-  
+
+  const isAutomate = tier === "automate_1";
+  const isPlus = tier === "plus" || tier === "premium_user";
+  const isFree = tier === "free_user";
+
   return (
     <div className="space-y-4">
       {/* Page Header */}
@@ -57,17 +61,42 @@ export function SubscriptionsHeader({
             Subscriptions
           </h1>
           <p className="text-muted-foreground font-sans">
-            Manage all your subscriptions in one place
+            {isAutomate
+              ? "Track manual and auto-detected subscriptions"
+              : "Manage all your subscriptions in one place"}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <AddSubscriptionDialog>
-            <Button className="font-sans">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Subscription
-            </Button>
-          </AddSubscriptionDialog>
+          {/* Automate tier: Manual add as secondary action */}
+          {isAutomate && (
+            <AddSubscriptionDialog>
+              <Button variant="outline" className="font-sans">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Manual
+              </Button>
+            </AddSubscriptionDialog>
+          )}
+
+          {/* Plus tier: Add subscription as primary action */}
+          {isPlus && (
+            <AddSubscriptionDialog>
+              <Button className="font-sans">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Subscription
+              </Button>
+            </AddSubscriptionDialog>
+          )}
+
+          {/* Free tier: Disabled with tooltip */}
+          {isFree && (
+            <AddSubscriptionDialog>
+              <Button disabled className="font-sans opacity-50 cursor-not-allowed">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Subscription
+              </Button>
+            </AddSubscriptionDialog>
+          )}
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { UpcomingRenewals } from "@/components/dashboard/upcoming-renewals";
 import { RenewalConfirmationSystem } from "@/components/dashboard/renewal-confirmation-system";
 import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
+import { BankConnectionCTACard } from "@/components/dashboard/bank-connection-cta-card";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
@@ -39,8 +40,11 @@ export default async function DashboardPage() {
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />
 
-      {/* Upgrade Banner */}
+      {/* Conditional CTAs based on tier and bank status */}
+      {/* BankConnectionCTACard for Automate users with no banks */}
+      {/* UpgradeBanner for Free/Plus users */}
       <UpgradeBanner />
+      <BankConnectionCTACard />
 
       {/* Savings Celebration */}
       <SavingsCelebration />

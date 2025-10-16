@@ -38,7 +38,7 @@ export function ConnectedBanksList() {
 
   return (
     <div className="space-y-3">
-      {connections.map((connection: any) => (
+      {connections.map((connection) => (
         <BankConnectionCard
           key={connection._id}
           connection={connection}

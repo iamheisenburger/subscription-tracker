@@ -36,7 +36,7 @@ export function DetectionReviewModal({
   const acceptMutation = useMutation(api.detection.acceptCandidate);
   const dismissMutation = useMutation(api.detection.dismissCandidate);
 
-  const handleAccept = async (candidateId: string, overrides?: any) => {
+  const handleAccept = async (candidateId: string, overrides?: Record<string, unknown>) => {
     if (!clerkUserId) return;
 
     try {
@@ -97,7 +97,7 @@ export function DetectionReviewModal({
               No Pending Detections
             </h3>
             <p className="text-sm text-muted-foreground font-sans text-center max-w-sm">
-              We'll notify you when we detect new recurring subscriptions from
+              We&apos;ll notify you when we detect new recurring subscriptions from
               your transactions.
             </p>
           </div>
@@ -106,7 +106,7 @@ export function DetectionReviewModal({
         {!isLoading && hasCandidates && (
           <ScrollArea className="max-h-[calc(85vh-120px)]">
             <div className="space-y-4 pr-4">
-              {candidates.map((candidate: any) => (
+              {candidates.map((candidate) => (
                 <DetectionCandidateCard
                   key={candidate._id}
                   candidate={candidate}

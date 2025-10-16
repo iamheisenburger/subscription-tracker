@@ -25,7 +25,7 @@ interface DetectionCandidateCardProps {
       knownProviderKey?: string;
     };
   };
-  onAccept: (candidateId: string, overrides?: any) => Promise<void>;
+  onAccept: (candidateId: string, overrides?: Record<string, unknown>) => Promise<void>;
   onDismiss: (candidateId: string) => Promise<void>;
 }
 

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 /**
  * Handle TRANSACTIONS webhooks
  */
-async function handleTransactionsWebhook(code: string, itemId: string, payload: any) {
+async function handleTransactionsWebhook(code: string, itemId: string, payload: Record<string, unknown>) {
   switch (code) {
     case "SYNC_UPDATES_AVAILABLE":
     case "DEFAULT_UPDATE":
@@ -70,7 +70,7 @@ async function handleTransactionsWebhook(code: string, itemId: string, payload: 
 /**
  * Handle ITEM webhooks (connection status changes)
  */
-async function handleItemWebhook(code: string, itemId: string, payload: any) {
+async function handleItemWebhook(code: string, itemId: string, payload: Record<string, unknown>) {
   switch (code) {
     case "ERROR":
       // Update connection status to error

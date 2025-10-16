@@ -31,11 +31,13 @@ export function useBankConnections() {
 
   const disconnect = async (connectionId: string) => {
     if (!clerkUserId) throw new Error("Not authenticated");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return disconnectMutation({ connectionId: connectionId as any, clerkUserId });
   };
 
   const deleteConnection = async (connectionId: string) => {
     if (!clerkUserId) throw new Error("Not authenticated");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return deleteMutation({ connectionId: connectionId as any, clerkUserId });
   };
 

@@ -60,7 +60,7 @@ export function PlaidLinkButton({
 
   // Handle successful link
   const handleSuccess = useCallback(
-    async (publicToken: string, metadata: any) => {
+    async (publicToken: string, metadata: Record<string, unknown>) => {
       try {
         setLoading(true);
 
@@ -97,10 +97,11 @@ export function PlaidLinkButton({
   );
 
   // Handle exit
-  const handleExit = useCallback((error: any, metadata: any) => {
+  const handleExit = useCallback((error: unknown, metadata: unknown) => {
     if (error) {
       console.error("Plaid Link error:", error, metadata);
-      if (error.error_code !== "INVALID_LINK_TOKEN") {
+      const errorObj = error as { error_code?: string };
+      if (errorObj.error_code !== "INVALID_LINK_TOKEN") {
         toast.error("Bank connection cancelled or failed");
       }
     }

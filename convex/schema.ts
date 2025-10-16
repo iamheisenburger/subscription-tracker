@@ -8,11 +8,12 @@ export default defineSchema({
     email: v.string(),
     tier: v.union(
       v.literal("free_user"),
-      v.literal("premium_user"),
       v.literal("plus"),
-      v.literal("automate"),
-      v.literal("family"),
-      v.literal("teams")
+      v.literal("automate_1"),
+      v.literal("premium_user"), // Legacy support
+      v.literal("automate"), // Legacy support
+      v.literal("family"), // Legacy support (will be migrated)
+      v.literal("teams") // Legacy support (will be migrated)
     ),
     subscriptionLimit: v.number(),
     premiumExpiresAt: v.optional(v.number()),

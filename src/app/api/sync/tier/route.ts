@@ -29,8 +29,8 @@ export async function POST() {
           console.log('✅ Webhook failure detected - active subscription found, fixing automatically');
           await client.users.updateUser(userId, {
             publicMetadata: {
-              tier: 'premium_user',
-              plan: 'premium',
+              tier: 'plus',
+              plan: 'plus',
               subscriptionType: subscriptionStatus.subscriptionType,
               billing: subscriptionStatus.subscriptionType,
               plan_id: subscriptionStatus.planId,
@@ -41,16 +41,16 @@ export async function POST() {
           });
           await fetchMutation(api.users.setTier, {
             clerkId: userId,
-            tier: 'premium_user',
+            tier: 'plus',
             subscriptionType: subscriptionStatus.subscriptionType,
           });
           return NextResponse.json({
             success: true,
-            tier: 'premium_user',
+            tier: 'plus',
             subscriptionType: subscriptionStatus.subscriptionType,
             confidence: 'high',
             source: 'webhook_failure_recovery',
-            message: '🎉 Webhook failure detected and automatically fixed! You now have premium access.',
+            message: '🎉 Webhook failure detected and automatically fixed! You now have Plus access.',
             recovery: {
               issue: 'Webhook failure - empty metadata despite active subscription',
               solution: 'Automatically restored premium status',
@@ -74,8 +74,8 @@ export async function POST() {
         subscriptionType: tierResult.subscriptionType,
         confidence: tierResult.confidence,
         source: tierResult.source,
-        message: tierResult.tier === 'premium_user' 
-          ? 'Premium subscription detected and activated!'
+        message: tierResult.tier !== 'free_user'
+          ? `${tierResult.tier === 'plus' ? 'Plus' : 'Automate'} subscription detected and activated!`
           : 'Account status verified - you\'re on the free plan'
       });
     }

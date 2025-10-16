@@ -86,7 +86,12 @@ export const upgradeTopremium = mutation({
 export const setTier = mutation({
   args: {
     clerkId: v.string(),
-    tier: v.union(v.literal("free_user"), v.literal("premium_user")),
+    tier: v.union(
+      v.literal("free_user"),
+      v.literal("plus"),
+      v.literal("automate_1"),
+      v.literal("premium_user") // Legacy support
+    ),
     subscriptionType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
   },
   handler: async (ctx, args) => {
@@ -100,26 +105,27 @@ export const setTier = mutation({
     }
 
     const now = Date.now();
-    const isPremium = args.tier === "premium_user";
-    const wasAlreadyPremium = user.tier === "premium_user";
+    // Check if user has any paid tier (plus, automate_1, or legacy premium_user)
+    const isPaidTier = args.tier === "plus" || args.tier === "automate_1" || args.tier === "premium_user";
+    const wasAlreadyPaid = user.tier === "plus" || user.tier === "automate_1" || user.tier === "premium_user";
 
     const updateData: any = {
       tier: args.tier,
-      subscriptionLimit: isPremium ? -1 : 3,
+      subscriptionLimit: isPaidTier ? -1 : 3,
       updatedAt: now,
     };
 
-    // Only set subscriptionType for premium users
-    if (isPremium && args.subscriptionType) {
+    // Only set subscriptionType for paid users
+    if (isPaidTier && args.subscriptionType) {
       updateData.subscriptionType = args.subscriptionType;
-    } else if (!isPremium) {
+    } else if (!isPaidTier) {
       updateData.subscriptionType = undefined;
     }
 
     await ctx.db.patch(user._id, updateData);
 
-    // Auto-add SubWise subscription when user FIRST upgrades to premium
-    if (isPremium && !wasAlreadyPremium) {
+    // Auto-add SubWise subscription when user FIRST upgrades to paid tier
+    if (isPaidTier && !wasAlreadyPaid) {
       await addSubWiseSubscription(ctx, user._id, args.subscriptionType || "monthly");
     }
 

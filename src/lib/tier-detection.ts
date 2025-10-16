@@ -22,7 +22,7 @@ interface ExtendedUser extends User {
 }
 
 export interface TierDetectionResult {
-  tier: 'free_user' | 'premium_user' | 'plus' | 'automate_1';
+  tier: 'free_user' | 'plus' | 'automate_1';
   subscriptionType?: 'monthly' | 'annual';
   confidence: 'high' | 'medium' | 'low';
   source: string;
@@ -59,19 +59,17 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
   } | undefined;
 
   // Check for any valid tier in metadata
-  const validTiers = ['premium_user', 'premium', 'plus', 'automate_1', 'automate', 'free_user'];
+  const validTiers = ['plus', 'automate_1', 'automate', 'premium_user', 'premium', 'free_user'];
   const metadataTier = publicMeta?.tier || publicMeta?.plan;
 
   if (metadataTier && validTiers.includes(metadataTier)) {
-    // Map old tier names to new ones
-    let tier: 'free_user' | 'premium_user' | 'plus' | 'automate_1' = 'free_user';
+    // Map tier names (including legacy premium_user → plus)
+    let tier: 'free_user' | 'plus' | 'automate_1' = 'free_user';
 
     if (metadataTier === 'automate' || metadataTier === 'automate_1') {
       tier = 'automate_1';
-    } else if (metadataTier === 'plus') {
-      tier = 'plus';
-    } else if (metadataTier === 'premium_user' || metadataTier === 'premium') {
-      // Map old premium_user to new plus tier
+    } else if (metadataTier === 'plus' || metadataTier === 'premium_user' || metadataTier === 'premium') {
+      // Current tier OR legacy premium → plus
       tier = 'plus';
     } else {
       tier = 'free_user';
@@ -99,14 +97,14 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
     billing?: string;
   } | undefined;
 
-  if (privateMeta?.tier === 'premium_user' || privateMeta?.plan === 'premium') {
+  if (privateMeta?.tier === 'plus' || privateMeta?.tier === 'premium_user' || privateMeta?.plan === 'premium' || privateMeta?.plan === 'plus') {
     const subscriptionType = determineSubscriptionType(
       privateMeta.subscriptionType,
       privateMeta.billing
     );
 
     return {
-      tier: 'premium_user',
+      tier: 'plus',
       subscriptionType,
       confidence: 'high',
       source: 'clerk_private_metadata',
@@ -114,16 +112,18 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
     };
   }
 
-  // 3. Check Organization Memberships (medium confidence)  
-  const premiumOrgMembership = extendedUser.organizationMemberships?.find(
-    (membership: OrganizationMembership) => 
-      membership.organization?.slug === 'premium' || 
+  // 3. Check Organization Memberships (medium confidence)
+  const paidOrgMembership = extendedUser.organizationMemberships?.find(
+    (membership: OrganizationMembership) =>
+      membership.organization?.slug === 'plus' ||
+      membership.organization?.slug === 'premium' ||
+      membership.organization?.name?.toLowerCase().includes('plus') ||
       membership.organization?.name?.toLowerCase().includes('premium')
   );
 
-  if (premiumOrgMembership) {
+  if (paidOrgMembership) {
     return {
-      tier: 'premium_user',
+      tier: 'plus',
       subscriptionType: 'monthly', // Default when unclear
       confidence: 'medium',
       source: 'clerk_organization_membership',
@@ -138,7 +138,7 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
 
   if (hasStripeAccount) {
     return {
-      tier: 'premium_user',
+      tier: 'plus',
       subscriptionType: 'monthly', // Default when unclear
       confidence: 'medium',
       source: 'clerk_external_accounts',
@@ -277,19 +277,17 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
   } | undefined;
 
   // Check for any valid tier in metadata
-  const validTiers = ['premium_user', 'premium', 'plus', 'automate_1', 'automate', 'free_user'];
+  const validTiers = ['plus', 'automate_1', 'automate', 'premium_user', 'premium', 'free_user'];
   const metadataTier = publicMeta?.tier || publicMeta?.plan;
 
   if (metadataTier && validTiers.includes(metadataTier)) {
-    // Map old tier names to new ones
-    let tier: 'free_user' | 'premium_user' | 'plus' | 'automate_1' = 'free_user';
+    // Map tier names (including legacy premium_user → plus)
+    let tier: 'free_user' | 'plus' | 'automate_1' = 'free_user';
 
     if (metadataTier === 'automate' || metadataTier === 'automate_1') {
       tier = 'automate_1';
-    } else if (metadataTier === 'plus') {
-      tier = 'plus';
-    } else if (metadataTier === 'premium_user' || metadataTier === 'premium') {
-      // Map old premium_user to new plus tier
+    } else if (metadataTier === 'plus' || metadataTier === 'premium_user' || metadataTier === 'premium') {
+      // Current tier OR legacy premium → plus
       tier = 'plus';
     } else {
       tier = 'free_user';
@@ -309,15 +307,17 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
     };
   }
 
-  const premiumOrgMembership = user.organizationMemberships?.find(
+  const paidOrgMembership = user.organizationMemberships?.find(
     membership =>
+      membership.organization.slug === 'plus' ||
       membership.organization.slug === 'premium' ||
+      membership.organization.name?.toLowerCase().includes('plus') ||
       membership.organization.name?.toLowerCase().includes('premium')
   );
 
-  if (premiumOrgMembership) {
+  if (paidOrgMembership) {
     return {
-      tier: 'premium_user',
+      tier: 'plus',
       subscriptionType: 'monthly',
       confidence: 'medium',
       source: 'client_organization_membership',

@@ -30,7 +30,10 @@ export function BankConnectionCTACard() {
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10">
+    <Card
+      data-bank-cta
+      className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10"
+    >
       <CardContent className="p-6 md:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Left: Content */}

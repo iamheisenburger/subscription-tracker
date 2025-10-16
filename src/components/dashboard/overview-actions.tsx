@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Download, Plus } from "lucide-react";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
+import { AutomateStatusBadge } from "./automate-status-badge";
+import { FeaturesDropdown } from "./features-dropdown";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -114,10 +116,15 @@ export function OverviewActions() {
 
   // Automate tier: Different UI based on bank connection status
   if (isAutomate) {
-    // For Automate users: ALWAYS show Add Manual (outline) + Export
-    // Banner handles primary "Connect Bank" CTA for users with no banks
+    // For Automate users: Status Badge + Features Dropdown + Add Manual + Export
     return (
       <div className="flex items-center gap-2">
+        {/* Automate Status Badge */}
+        <AutomateStatusBadge />
+
+        {/* Features Dropdown */}
+        <FeaturesDropdown />
+
         <AddSubscriptionDialog>
           <Button variant="outline" className="font-sans">
             <Plus className="mr-2 h-4 w-4" />

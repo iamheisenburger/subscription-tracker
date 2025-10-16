@@ -7,6 +7,7 @@ import { PreferencesSettings } from "./preferences-settings";
 import { EnhancedSpendingSettings } from "../enhanced-spending-settings";
 import { ConnectBankSection } from "../bank/connect-bank-section";
 import { ConnectedBanksList } from "../bank/connected-banks-list";
+import { FeaturesSection } from "./features-section";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
@@ -90,6 +91,9 @@ export function SettingsContent({ user }: SettingsContentProps) {
             </div>
           </div>
         </div>
+
+        {/* Features Overview */}
+        <FeaturesSection />
 
         {/* Bank Connections */}
         <div className="p-6 border rounded-lg bg-card">

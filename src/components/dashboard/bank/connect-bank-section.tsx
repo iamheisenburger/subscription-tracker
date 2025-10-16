@@ -87,7 +87,7 @@ export function ConnectBankSection() {
               Connection Limit Reached
             </h4>
             <p className="text-sm text-orange-800 dark:text-orange-400 font-sans mt-1">
-              You've connected {activeConnectionsCount} of{" "}
+              You&apos;ve connected {activeConnectionsCount} of{" "}
               {entitlement.connectionsIncluded} available bank
               {entitlement.connectionsIncluded !== 1 ? "s" : ""}. To add more
               banks, disconnect an existing connection first.

@@ -41,6 +41,7 @@ export function DetectionReviewModal({
 
     try {
       await acceptMutation({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         candidateId: candidateId as any,
         clerkUserId,
         overrides,
@@ -58,6 +59,7 @@ export function DetectionReviewModal({
 
     try {
       await dismissMutation({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         candidateId: candidateId as any,
         clerkUserId,
       });

@@ -24,10 +24,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2, Pause, Play, Calendar } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Pause, Play, Calendar, Lightbulb } from "lucide-react";
 import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { EditSubscriptionDialog } from "./edit-subscription-dialog";
 import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
+import { CancelAssistantModal } from "./cancel-assistant-modal";
 
 interface SubscriptionCardActionsProps {
   subscription: Doc<"subscriptions">;
@@ -38,9 +39,10 @@ export function SubscriptionCardActions({
 }: SubscriptionCardActionsProps) {
   const { user } = useUser();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelAssistant, setShowCancelAssistant] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [optimisticActive, setOptimisticActive] = useState<boolean | null>(null);
-  
+
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
   const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 
@@ -139,6 +141,10 @@ export function SubscriptionCardActions({
             <Calendar className="mr-2 h-4 w-4" />
             Export to Calendar
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowCancelAssistant(true)} className="font-sans">
+            <Lightbulb className="mr-2 h-4 w-4" />
+            Cancel Assistant
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
@@ -166,6 +172,12 @@ export function SubscriptionCardActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CancelAssistantModal
+        subscription={subscription}
+        open={showCancelAssistant}
+        onOpenChange={setShowCancelAssistant}
+      />
     </>
   );
 }

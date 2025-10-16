@@ -6,7 +6,14 @@ export default defineSchema({
     // Clerk user ID
     clerkId: v.string(),
     email: v.string(),
-    tier: v.union(v.literal("free_user"), v.literal("premium_user")),
+    tier: v.union(
+      v.literal("free_user"),
+      v.literal("premium_user"),
+      v.literal("plus"),
+      v.literal("automate"),
+      v.literal("family"),
+      v.literal("teams")
+    ),
     subscriptionLimit: v.number(),
     premiumExpiresAt: v.optional(v.number()),
     trialEndsAt: v.optional(v.number()),
@@ -17,11 +24,16 @@ export default defineSchema({
     // Push notification settings
     pushSubscription: v.optional(v.record(v.string(), v.any())), // Web Push subscription object
     pushEnabled: v.optional(v.boolean()), // User's push notification preference
+    // Bank integration fields
+    connectionsUsed: v.optional(v.number()), // Number of bank connections currently active
+    orgId: v.optional(v.id("organizations")), // For Family/Teams tier
+    role: v.optional(v.union(v.literal("owner"), v.literal("member"))), // Role within organization
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_clerk_id", ["clerkId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_org", ["orgId"]),
 
   subscriptions: defineTable({
     userId: v.id("users"),
@@ -29,8 +41,8 @@ export default defineSchema({
     cost: v.number(),
     currency: v.string(),
     billingCycle: v.union(
-      v.literal("monthly"), 
-      v.literal("yearly"), 
+      v.literal("monthly"),
+      v.literal("yearly"),
       v.literal("weekly")
     ),
     nextBillingDate: v.number(),
@@ -39,15 +51,26 @@ export default defineSchema({
     isActive: v.boolean(),
     renewalStatus: v.optional(v.union(
       v.literal("pending_confirmation"),
-      v.literal("confirmed_renewed"), 
+      v.literal("confirmed_renewed"),
       v.literal("confirmed_cancelled")
     )),
+    // Bank integration fields
+    source: v.optional(v.union(
+      v.literal("manual"),
+      v.literal("detected"),
+      v.literal("email_receipt")
+    )),
+    detectionConfidence: v.optional(v.number()), // 0-1 confidence score
+    merchantId: v.optional(v.id("merchants")),
+    lastChargeAt: v.optional(v.number()), // Last transaction date from bank
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_active", ["userId", "isActive"])
-    .index("by_next_billing", ["nextBillingDate"]),
+    .index("by_next_billing", ["nextBillingDate"])
+    .index("by_merchant", ["merchantId"])
+    .index("by_source", ["source"]),
 
   categories: defineTable({
     userId: v.id("users"),
@@ -63,11 +86,15 @@ export default defineSchema({
     userId: v.id("users"),
     emailEnabled: v.boolean(),
     pushEnabled: v.boolean(),
+    smsEnabled: v.optional(v.boolean()), // For Automate+ tiers
     renewalReminders: v.boolean(),
     priceChangeAlerts: v.boolean(),
     spendingAlerts: v.boolean(),
+    newSubscriptionDetected: v.optional(v.boolean()), // Alert for auto-detected subscriptions
+    duplicateChargeAlerts: v.optional(v.boolean()), // Alert for duplicate charges
     reminderDays: v.array(v.number()), // [7, 3, 1]
     spendingThreshold: v.optional(v.number()),
+    phoneNumber: v.optional(v.string()), // For SMS alerts
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -81,7 +108,9 @@ export default defineSchema({
       v.literal("price_change"),
       v.literal("spending_alert"),
       v.literal("trial_expiry"),
-      v.literal("test")
+      v.literal("test"),
+      v.literal("new_subscription_detected"),
+      v.literal("duplicate_charge")
     ),
     scheduledFor: v.number(), // timestamp
     status: v.union(
@@ -117,5 +146,221 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_read", ["userId", "read"])
     .index("by_created", ["createdAt"]),
+
+  // ===== BANK INTEGRATION TABLES =====
+
+  // Feature flags for gradual rollout
+  featureFlags: defineTable({
+    flag: v.string(), // e.g., "bank_integrations", "email_parsing", "cancel_assistant"
+    enabled: v.boolean(),
+    description: v.optional(v.string()),
+    rolloutPercentage: v.optional(v.number()), // For gradual rollout (0-100)
+    allowedTiers: v.optional(v.array(v.string())), // Which tiers can access this feature
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_flag", ["flag"])
+    .index("by_enabled", ["enabled"]),
+
+  // Plan entitlements and limits by tier
+  planEntitlements: defineTable({
+    tier: v.string(), // "free_user", "plus", "automate", "family", "teams"
+    connectionsIncluded: v.number(), // Number of free bank connections
+    connectionOveragePrice: v.number(), // Price per additional connection (e.g., 3.00 for $3/mo)
+    profilesLimit: v.number(), // Number of user profiles allowed
+    syncFrequency: v.string(), // "manual", "daily", "hourly"
+    canLinkBanks: v.boolean(), // Whether tier allows bank connections at all
+    canParseEmails: v.boolean(), // Email receipt parsing
+    canUseCancelAssistant: v.boolean(), // Cancel assistant access
+    maxHistoryMonths: v.number(), // Transaction history window (24 months max)
+    maxAccountsPerConnection: v.number(), // Accounts per institution link (default 3)
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tier", ["tier"]),
+
+  // Plaid institutions metadata
+  institutions: defineTable({
+    plaidInstitutionId: v.string(), // Plaid's institution ID
+    name: v.string(),
+    logoUrl: v.optional(v.string()),
+    primaryColor: v.optional(v.string()),
+    url: v.optional(v.string()),
+    countryCode: v.string(), // "US", "CA", etc.
+    products: v.array(v.string()), // ["transactions", "auth", "balance"]
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_plaid_id", ["plaidInstitutionId"])
+    .index("by_country", ["countryCode"]),
+
+  // Bank connections (one per institution)
+  bankConnections: defineTable({
+    userId: v.id("users"),
+    orgId: v.optional(v.id("organizations")), // For Family/Teams
+    institutionId: v.id("institutions"),
+    plaidItemId: v.string(), // Plaid's item_id
+    accessToken: v.string(), // Encrypted by Convex
+    status: v.union(
+      v.literal("active"),
+      v.literal("disconnected"),
+      v.literal("error"),
+      v.literal("requires_reauth")
+    ),
+    consentExpiresAt: v.optional(v.number()),
+    lastSyncedAt: v.optional(v.number()),
+    syncCursor: v.optional(v.string()), // Plaid transaction sync cursor
+    errorCode: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_org", ["orgId"])
+    .index("by_status", ["status"])
+    .index("by_plaid_item", ["plaidItemId"])
+    .index("by_user_status", ["userId", "status"]),
+
+  // Bank accounts within a connection
+  accounts: defineTable({
+    bankConnectionId: v.id("bankConnections"),
+    plaidAccountId: v.string(),
+    name: v.string(), // "Checking", "Credit Card"
+    officialName: v.optional(v.string()),
+    type: v.string(), // "depository", "credit", "loan", etc.
+    subtype: v.optional(v.string()), // "checking", "savings", "credit card"
+    mask: v.optional(v.string()), // Last 4 digits
+    currency: v.string(),
+    balanceCurrent: v.optional(v.number()),
+    balanceAvailable: v.optional(v.number()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_connection", ["bankConnectionId"])
+    .index("by_plaid_id", ["plaidAccountId"])
+    .index("by_connection_active", ["bankConnectionId", "isActive"]),
+
+  // Transactions from bank accounts
+  transactions: defineTable({
+    accountId: v.id("accounts"),
+    plaidTransactionId: v.string(),
+    merchantId: v.optional(v.id("merchants")),
+    amount: v.number(), // Positive = debit, Negative = credit (Plaid convention)
+    currency: v.string(),
+    date: v.string(), // YYYY-MM-DD (authorized date)
+    authorizedDate: v.optional(v.string()),
+    postedDate: v.optional(v.string()),
+    merchantName: v.optional(v.string()), // Raw merchant name from Plaid
+    merchantNameNormalized: v.optional(v.string()), // Normalized by our system
+    categoryId: v.optional(v.string()), // Plaid category ID
+    category: v.optional(v.array(v.string())), // Plaid category hierarchy
+    pending: v.boolean(),
+    paymentChannel: v.optional(v.string()), // "online", "in store", etc.
+    transactionType: v.optional(v.string()),
+    description: v.optional(v.string()),
+    mcc: v.optional(v.string()), // Merchant Category Code
+    hash: v.string(), // For deduplication
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_account", ["accountId"])
+    .index("by_plaid_id", ["plaidTransactionId"])
+    .index("by_merchant", ["merchantId"])
+    .index("by_date", ["date"])
+    .index("by_account_date", ["accountId", "date"])
+    .index("by_hash", ["hash"]),
+
+  // Normalized merchants directory
+  merchants: defineTable({
+    displayName: v.string(),
+    website: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    knownProviderKey: v.optional(v.string()), // e.g., "netflix", "spotify"
+    aliases: v.array(v.string()), // ["NETFLIX.COM", "Netflix*1234", "NFLX"]
+    mccCodes: v.optional(v.array(v.string())), // Common MCC codes for this merchant
+    typicalCadence: v.optional(v.string()), // "monthly", "annual" if known
+    cancelUrl: v.optional(v.string()), // For Cancel Assistant (Phase 2)
+    cancelSteps: v.optional(v.array(v.string())), // Steps to cancel (Phase 2)
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name", ["displayName"])
+    .index("by_provider_key", ["knownProviderKey"]),
+
+  // Subscription detection candidates (pending user review)
+  detectionCandidates: defineTable({
+    userId: v.id("users"),
+    merchantId: v.id("merchants"),
+    transactionIds: v.array(v.id("transactions")), // Supporting transactions
+    proposedName: v.string(),
+    proposedAmount: v.number(),
+    proposedCurrency: v.string(),
+    proposedCadence: v.union(v.literal("weekly"), v.literal("monthly"), v.literal("yearly")),
+    proposedNextBilling: v.number(),
+    confidence: v.number(), // 0-1
+    detectionReason: v.string(), // Human-readable explanation
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("dismissed"),
+      v.literal("merged")
+    ),
+    acceptedSubscriptionId: v.optional(v.id("subscriptions")), // If accepted
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_merchant", ["merchantId"]),
+
+  // Audit logs for sensitive operations
+  auditLogs: defineTable({
+    userId: v.id("users"),
+    action: v.string(), // "bank_connected", "bank_disconnected", "data_deleted", etc.
+    resourceType: v.optional(v.string()), // "bank_connection", "subscription", etc.
+    resourceId: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_action", ["action"])
+    .index("by_created", ["createdAt"])
+    .index("by_user_action", ["userId", "action"]),
+
+  // Organizations for Family/Teams tiers (Phase 3 prep)
+  organizations: defineTable({
+    name: v.string(),
+    type: v.union(v.literal("family"), v.literal("team")),
+    ownerId: v.id("users"),
+    maxSeats: v.number(),
+    maxConnections: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner", ["ownerId"])
+    .index("by_type", ["type"]),
+
+  // Usage meters for billing
+  usageMeters: defineTable({
+    userId: v.id("users"),
+    orgId: v.optional(v.id("organizations")),
+    metric: v.string(), // "bank_connections", "profiles", etc.
+    value: v.number(),
+    limit: v.number(),
+    overageUnits: v.number(), // Units beyond the included limit
+    overageCharge: v.number(), // Total overage cost
+    billingPeriodStart: v.number(),
+    billingPeriodEnd: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_org", ["orgId"])
+    .index("by_metric", ["metric"])
+    .index("by_period", ["billingPeriodStart", "billingPeriodEnd"]),
 });
 

@@ -501,3 +501,5 @@ export function getTotalSearchVolume(): number {
   return SUBSCRIPTION_DATABASE.reduce((total, sub) => total + sub.searchVolume, 0);
 }
 
+
+

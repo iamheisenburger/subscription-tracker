@@ -3,6 +3,7 @@
 import { UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 import { NotificationCenter } from "../notification-center";
+import { DetectionBadge } from "../detection/detection-badge";
 
 export function DashboardHeader() {
   return (
@@ -19,9 +20,12 @@ export function DashboardHeader() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
+          {/* Detection Badge */}
+          <DetectionBadge />
+
           {/* Theme Toggle */}
           <ThemeToggle />
-          
+
           {/* Notifications */}
           <NotificationCenter />
 

@@ -38,6 +38,13 @@ crons.daily(
   internal.subscription_renewal.checkExpiredSubscriptions,
 );
 
+// Detect price changes daily at 11 AM UTC
+crons.daily(
+  "detect price changes",
+  { hourUTC: 11, minuteUTC: 0 },
+  internal.detection.detectPriceChanges,
+);
+
 export default crons;
 
 

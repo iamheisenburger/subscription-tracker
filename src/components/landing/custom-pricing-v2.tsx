@@ -33,10 +33,10 @@ export const CustomPricingV2 = () => {
   const plusPlan = {
     name: "Plus",
     description: "Unlock unlimited subscriptions, advanced analytics, smart alerts, and export capabilities with priority support.",
-    price: billingCycle === 'monthly' ? "$9.00" : "$6.58",
+    price: billingCycle === 'monthly' ? "$5.00" : "$3.50",
     period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$9.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($79.00/year)" : "Billed monthly",
+    originalPrice: billingCycle === 'annual' ? "$5.00" : null,
+    annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
     features: [
       "Unlimited manual subscriptions",
       "Multi-currency analytics",
@@ -52,10 +52,10 @@ export const CustomPricingV2 = () => {
   const automatePlan = {
     name: "Automate",
     description: "Everything in Plus + automated bank sync, subscription detection, price change alerts, and cancel assistant.",
-    price: billingCycle === 'monthly' ? "$9.00" : "$6.58",
+    price: billingCycle === 'monthly' ? "$9.00" : "$6.50",
     period: billingCycle === 'monthly' ? "/month" : "/month",
     originalPrice: billingCycle === 'annual' ? "$9.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($79.00/year)" : "Billed monthly",
+    annualNote: billingCycle === 'annual' ? "Billed annually ($78.00/year)" : "Billed monthly",
     features: [
       "Everything in Plus",
       "1 bank connection (up to 3 accounts)",

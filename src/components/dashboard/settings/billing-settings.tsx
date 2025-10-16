@@ -63,7 +63,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
           </div>
           <div className="text-right">
             <p className="font-semibold font-sans">
-              {isPaid ? "$9.00/month" : "Free"}
+              {isAutomate ? "$9.00/month" : isPlus ? "$5.00/month" : "Free"}
             </p>
             {isPaid && (
               <p className="text-sm text-muted-foreground font-sans">
@@ -84,10 +84,10 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-medium font-sans">Monthly</h5>
-                    <span className="font-semibold font-sans">$9.00/mo</span>
+                    <span className="font-semibold font-sans">From $5.00/mo</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-sans mb-4">
-                    Perfect for trying out Plus or Automate
+                    Plus at $5.00/mo or Automate at $9.00/mo
                   </p>
                   <Link href="/dashboard/upgrade">
                     <Button variant="outline" className="w-full font-sans">
@@ -105,9 +105,9 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <span className="font-semibold font-sans">$6.58/mo</span>
+                      <span className="font-semibold font-sans">From $3.50/mo</span>
                       <p className="text-xs text-muted-foreground font-sans">
-                        $79.00/year
+                        Plus $42/yr • Automate $78/yr
                       </p>
                     </div>
                   </div>
@@ -154,7 +154,10 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
                   </div>
                   <div className="text-right">
                     <p className="font-medium font-sans">
-                      {user?.subscriptionType === "annual" ? "$79.00" : "$9.00"}
+                      {user?.subscriptionType === "annual"
+                        ? (isAutomate ? "$78.00" : "$42.00")
+                        : (isAutomate ? "$9.00" : "$5.00")
+                      }
                     </p>
                     <Badge variant="secondary" className="font-sans text-xs">
                       Paid

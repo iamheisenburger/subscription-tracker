@@ -59,7 +59,7 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
   } | undefined;
 
   // Check for any valid tier in metadata
-  const validTiers = ['premium_user', 'plus', 'automate_1', 'automate', 'free_user'];
+  const validTiers = ['premium_user', 'premium', 'plus', 'automate_1', 'automate', 'free_user'];
   const metadataTier = publicMeta?.tier || publicMeta?.plan;
 
   if (metadataTier && validTiers.includes(metadataTier)) {
@@ -71,7 +71,8 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
     } else if (metadataTier === 'plus') {
       tier = 'plus';
     } else if (metadataTier === 'premium_user' || metadataTier === 'premium') {
-      tier = 'premium_user';
+      // Map old premium_user to new plus tier
+      tier = 'plus';
     } else {
       tier = 'free_user';
     }
@@ -276,7 +277,7 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
   } | undefined;
 
   // Check for any valid tier in metadata
-  const validTiers = ['premium_user', 'plus', 'automate_1', 'automate', 'free_user'];
+  const validTiers = ['premium_user', 'premium', 'plus', 'automate_1', 'automate', 'free_user'];
   const metadataTier = publicMeta?.tier || publicMeta?.plan;
 
   if (metadataTier && validTiers.includes(metadataTier)) {
@@ -288,7 +289,8 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
     } else if (metadataTier === 'plus') {
       tier = 'plus';
     } else if (metadataTier === 'premium_user' || metadataTier === 'premium') {
-      tier = 'premium_user';
+      // Map old premium_user to new plus tier
+      tier = 'plus';
     } else {
       tier = 'free_user';
     }

@@ -29,16 +29,16 @@ export function useBankConnections() {
   // Delete mutation
   const deleteMutation = useMutation(api.bankConnections.deleteConnection);
 
-  const disconnect = async (connectionId: string) => {
+  const disconnect = async (connectionId: string): Promise<void> => {
     if (!clerkUserId) throw new Error("Not authenticated");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return disconnectMutation({ connectionId: connectionId as any, clerkUserId });
+    await disconnectMutation({ connectionId: connectionId as any, clerkUserId });
   };
 
-  const deleteConnection = async (connectionId: string) => {
+  const deleteConnection = async (connectionId: string): Promise<void> => {
     if (!clerkUserId) throw new Error("Not authenticated");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return deleteMutation({ connectionId: connectionId as any, clerkUserId });
+    await deleteMutation({ connectionId: connectionId as any, clerkUserId });
   };
 
   // Transform connections to match expected type (null -> undefined for institution)

@@ -60,9 +60,16 @@ export function PlaidLinkButton({
 
   // Handle successful link
   const handleSuccess = useCallback(
-    async (publicToken: string, metadata: Record<string, unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async (publicToken: string, metadata: any) => {
       try {
         setLoading(true);
+
+        // Type assertion for Plaid metadata structure
+        const plaidMetadata = metadata as {
+          institution?: { institution_id?: string; name?: string };
+          accounts?: unknown[];
+        };
 
         // Exchange public token for access token
         const response = await fetch("/api/plaid/exchange-token", {
@@ -70,9 +77,9 @@ export function PlaidLinkButton({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             publicToken,
-            institutionId: metadata.institution?.institution_id,
-            institutionName: metadata.institution?.name,
-            accounts: metadata.accounts,
+            institutionId: plaidMetadata.institution?.institution_id,
+            institutionName: plaidMetadata.institution?.name,
+            accounts: plaidMetadata.accounts,
           }),
         });
 

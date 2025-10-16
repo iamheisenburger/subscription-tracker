@@ -74,6 +74,12 @@ export function DetectionReviewModal({
   const isLoading = candidates === undefined;
   const hasCandidates = candidates && candidates.length > 0;
 
+  // Transform candidates to match expected type (null -> undefined for merchant)
+  const transformedCandidates = (candidates || []).map((candidate) => ({
+    ...candidate,
+    merchant: candidate.merchant ?? undefined,
+  }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh]">
@@ -108,7 +114,7 @@ export function DetectionReviewModal({
         {!isLoading && hasCandidates && (
           <ScrollArea className="max-h-[calc(85vh-120px)]">
             <div className="space-y-4 pr-4">
-              {candidates.map((candidate) => (
+              {transformedCandidates.map((candidate) => (
                 <DetectionCandidateCard
                   key={candidate._id}
                   candidate={candidate}

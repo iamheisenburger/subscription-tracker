@@ -1,12 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Building2 } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { useBankConnections } from "@/hooks/use-bank-connections";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
-import { PlaidLinkButton } from "./bank/plaid-link-button";
-import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,17 +20,11 @@ import {
 } from "@/components/ui/tooltip";
 
 export function OverviewActions() {
-  const { isPremium, tier } = useUserTier();
-  const { activeConnectionsCount, isLoading } = useBankConnections();
+  const { tier } = useUserTier();
 
   const isAutomate = tier === "automate_1";
   const isPlus = tier === "plus" || tier === "premium_user";
   const isFree = tier === "free_user";
-  const hasBankConnected = activeConnectionsCount > 0;
-
-  const handleBankSuccess = () => {
-    window.location.reload();
-  };
 
   // Free tier: Disabled add button with upgrade tooltip
   if (isFree) {
@@ -93,47 +84,8 @@ export function OverviewActions() {
 
   // Automate tier: Different UI based on bank connection status
   if (isAutomate) {
-    // No bank connected: Primary = Connect Bank, Secondary = Add Manual
-    if (!hasBankConnected && !isLoading) {
-      return (
-        <div className="flex items-center gap-2">
-          <PlaidLinkButton onSuccess={handleBankSuccess}>
-            <Button className="font-sans">
-              <Building2 className="mr-2 h-4 w-4" />
-              Connect Bank
-            </Button>
-          </PlaidLinkButton>
-
-          <AddSubscriptionDialog>
-            <Button variant="ghost" className="font-sans">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Manual
-            </Button>
-          </AddSubscriptionDialog>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="font-sans">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="font-sans">Export Data</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <a href="/api/export/csv" className="font-sans">Download CSV</a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href="/api/export/pdf" className="font-sans">Download PDF</a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    }
-
-    // Bank connected: Add Manual as secondary action + Export
+    // For Automate users: ALWAYS show Add Manual (outline) + Export
+    // Banner handles primary "Connect Bank" CTA for users with no banks
     return (
       <div className="flex items-center gap-2">
         <AddSubscriptionDialog>

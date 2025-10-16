@@ -67,7 +67,7 @@ export function CancelAssistantModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="font-sans text-2xl flex items-center gap-2">
             <Lightbulb className="h-6 w-6 text-primary" />

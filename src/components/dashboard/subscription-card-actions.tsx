@@ -24,9 +24,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2, Pause, Play } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Pause, Play, Calendar } from "lucide-react";
 import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { EditSubscriptionDialog } from "./edit-subscription-dialog";
+import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
 
 interface SubscriptionCardActionsProps {
   subscription: Doc<"subscriptions">;
@@ -61,9 +62,9 @@ export function SubscriptionCardActions({
 
   const handleTogglePause = async () => {
     if (!user?.id || isToggling) return;
-    
+
     const newStatus = !subscription.isActive;
-    
+
     // OPTIMISTIC UPDATE: Change UI immediately
     setOptimisticActive(newStatus);
     setIsToggling(true);
@@ -85,7 +86,17 @@ export function SubscriptionCardActions({
       setTimeout(() => setOptimisticActive(null), 100);
     }
   };
-  
+
+  const handleExportToCalendar = () => {
+    try {
+      exportSubscriptionToCalendar(subscription);
+      toast.success("Calendar event exported! Check your downloads.");
+    } catch (error) {
+      console.error("Error exporting to calendar:", error);
+      toast.error("Failed to export calendar event.");
+    }
+  };
+
   const displayActive = optimisticActive !== null ? optimisticActive : subscription.isActive;
 
   return (
@@ -123,6 +134,10 @@ export function SubscriptionCardActions({
                 Resume Subscription
               </>
             )}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportToCalendar} className="font-sans">
+            <Calendar className="mr-2 h-4 w-4" />
+            Export to Calendar
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Download, Plus } from "lucide-react";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
+import { exportAllSubscriptionsToCalendar } from "@/lib/calendar-export";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +26,28 @@ import {
 
 export function OverviewActions() {
   const { tier } = useUserTier();
+  const { user } = useUser();
+
+  // Fetch active subscriptions for calendar export
+  const subscriptions = useQuery(
+    api.subscriptions.getUserSubscriptions,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
+
+  const handleExportAllToCalendar = () => {
+    if (!subscriptions || subscriptions.length === 0) {
+      toast.error("No subscriptions to export");
+      return;
+    }
+
+    try {
+      exportAllSubscriptionsToCalendar(subscriptions);
+      toast.success("Calendar events exported! Check your downloads.");
+    } catch (error) {
+      console.error("Error exporting to calendar:", error);
+      toast.error("Failed to export calendar events.");
+    }
+  };
 
   const isAutomate = tier === "automate_1";
   const isPlus = tier === "plus" || tier === "premium_user";
@@ -70,6 +97,9 @@ export function OverviewActions() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="font-sans">Export Data</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleExportAllToCalendar} className="font-sans">
+              Export to Calendar
+            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <a href="/api/export/csv" className="font-sans">Download CSV</a>
             </DropdownMenuItem>
@@ -105,6 +135,9 @@ export function OverviewActions() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="font-sans">Export Data</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleExportAllToCalendar} className="font-sans">
+              Export to Calendar
+            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <a href="/api/export/csv" className="font-sans">Download CSV</a>
             </DropdownMenuItem>

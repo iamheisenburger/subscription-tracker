@@ -62,7 +62,7 @@ export async function createLinkToken(params: CreateLinkTokenParams): Promise<st
       },
       client_name: "SubWise Subscription Tracker",
       products: params.products || [Products.Transactions],
-      country_codes: params.countryCodes || [CountryCode.Us],
+      country_codes: params.countryCodes || [CountryCode.Us, CountryCode.Gb, CountryCode.De],
       language: "en",
       webhook: params.webhookUrl,
       redirect_uri: params.redirectUri,

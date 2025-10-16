@@ -54,7 +54,7 @@ async function handleTransactionsWebhook(code: string, itemId: string, payload: 
 
     case "TRANSACTIONS_REMOVED":
       // Handle removed transactions
-      const removedTransactions = payload.removed_transactions || [];
+      const removedTransactions = (payload.removed_transactions as string[]) || [];
       for (const txId of removedTransactions) {
         await fetchMutation(api.transactions.deleteByPlaidId, {
           plaidTransactionId: txId,
@@ -74,11 +74,12 @@ async function handleItemWebhook(code: string, itemId: string, payload: Record<s
   switch (code) {
     case "ERROR":
       // Update connection status to error
+      const errorObj = payload.error as { error_code?: string; error_message?: string } | undefined;
       await fetchMutation(api.bankConnections.updateStatus, {
         plaidItemId: itemId,
         status: "error",
-        errorCode: payload.error?.error_code,
-        errorMessage: payload.error?.error_message,
+        errorCode: errorObj?.error_code,
+        errorMessage: errorObj?.error_message,
       });
       break;
 

@@ -22,7 +22,7 @@ interface ExtendedUser extends User {
 }
 
 export interface TierDetectionResult {
-  tier: 'free_user' | 'premium_user';
+  tier: 'free_user' | 'premium_user' | 'plus' | 'automate_1';
   subscriptionType?: 'monthly' | 'annual';
   confidence: 'high' | 'medium' | 'low';
   source: string;
@@ -58,14 +58,31 @@ export function detectTierFromClerkUser(user: User): TierDetectionResult {
     subscription_status?: string;
   } | undefined;
 
-  if (publicMeta?.tier === 'premium_user' || publicMeta?.plan === 'premium') {
+  // Check for any valid tier in metadata
+  const validTiers = ['premium_user', 'plus', 'automate_1', 'automate', 'free_user'];
+  const metadataTier = publicMeta?.tier || publicMeta?.plan;
+
+  if (metadataTier && validTiers.includes(metadataTier)) {
+    // Map old tier names to new ones
+    let tier: 'free_user' | 'premium_user' | 'plus' | 'automate_1' = 'free_user';
+
+    if (metadataTier === 'automate' || metadataTier === 'automate_1') {
+      tier = 'automate_1';
+    } else if (metadataTier === 'plus') {
+      tier = 'plus';
+    } else if (metadataTier === 'premium_user' || metadataTier === 'premium') {
+      tier = 'premium_user';
+    } else {
+      tier = 'free_user';
+    }
+
     const subscriptionType = determineSubscriptionType(
       publicMeta.subscriptionType,
       publicMeta.billing
     );
-    
+
     return {
-      tier: 'premium_user',
+      tier,
       subscriptionType,
       confidence: 'high',
       source: 'clerk_public_metadata',
@@ -258,14 +275,31 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
     subscription_status?: string;
   } | undefined;
 
-  if (publicMeta?.tier === 'premium_user' || publicMeta?.plan === 'premium') {
+  // Check for any valid tier in metadata
+  const validTiers = ['premium_user', 'plus', 'automate_1', 'automate', 'free_user'];
+  const metadataTier = publicMeta?.tier || publicMeta?.plan;
+
+  if (metadataTier && validTiers.includes(metadataTier)) {
+    // Map old tier names to new ones
+    let tier: 'free_user' | 'premium_user' | 'plus' | 'automate_1' = 'free_user';
+
+    if (metadataTier === 'automate' || metadataTier === 'automate_1') {
+      tier = 'automate_1';
+    } else if (metadataTier === 'plus') {
+      tier = 'plus';
+    } else if (metadataTier === 'premium_user' || metadataTier === 'premium') {
+      tier = 'premium_user';
+    } else {
+      tier = 'free_user';
+    }
+
     const subscriptionType = determineSubscriptionType(
       publicMeta.subscriptionType,
       publicMeta.billing
     );
-    
+
     return {
-      tier: 'premium_user',
+      tier,
       subscriptionType,
       confidence: 'high',
       source: 'client_public_metadata',
@@ -274,8 +308,8 @@ export function detectTierFromUserResource(user: UserResource): TierDetectionRes
   }
 
   const premiumOrgMembership = user.organizationMemberships?.find(
-    membership => 
-      membership.organization.slug === 'premium' || 
+    membership =>
+      membership.organization.slug === 'premium' ||
       membership.organization.name?.toLowerCase().includes('premium')
   );
 

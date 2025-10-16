@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ChevronRight, TrendingUp } from "lucide-react";
 import { DetectionReviewModal } from "../detection/detection-review-modal";
+import { DetectionQueueEmptyState } from "./detection-queue-empty-state";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 interface DetectionCardProps {
@@ -90,9 +91,9 @@ export function AutomateDetectionQueue() {
 
   const count = candidates?.length || 0;
 
-  // Don't show if no pending detections
+  // Show empty state if no pending detections
   if (count === 0) {
-    return null;
+    return <DetectionQueueEmptyState />;
   }
 
   // Limit to first 5 for preview

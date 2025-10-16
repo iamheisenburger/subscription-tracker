@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, RefreshCw, Settings, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { useBankConnections } from "@/hooks/use-bank-connections";
+import { BankWidgetEmptyState } from "./bank-widget-empty-state";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
@@ -107,9 +108,9 @@ export function ConnectedBanksWidget() {
     return null;
   }
 
-  // Don't show if no banks connected
+  // Show empty state if no banks connected
   if (!isLoading && activeConnectionsCount === 0) {
-    return null;
+    return <BankWidgetEmptyState />;
   }
 
   // TODO: Get actual bank connections from Convex

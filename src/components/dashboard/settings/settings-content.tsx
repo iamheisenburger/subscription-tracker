@@ -5,8 +5,6 @@ import { CategoriesManager } from "./categories-manager";
 import { EmailTestSection } from "./email-test-section";
 import { PreferencesSettings } from "./preferences-settings";
 import { EnhancedSpendingSettings } from "../enhanced-spending-settings";
-import { ConnectBankSection } from "../bank/connect-bank-section";
-import { ConnectedBanksList } from "../bank/connected-banks-list";
 import { EmailConnectionSettings } from "./email-connection-settings";
 import { FeaturesSection } from "./features-section";
 import { useUserTier } from "@/hooks/use-user-tier";
@@ -98,16 +96,6 @@ export function SettingsContent({ user }: SettingsContentProps) {
 
         {/* Email Connections - Primary Detection Method */}
         <EmailConnectionSettings />
-
-        {/* Bank Connections */}
-        <div className="p-6 border rounded-lg bg-card">
-          <h2 className="text-lg font-semibold font-sans mb-4">Bank Connections</h2>
-          <ConnectBankSection />
-          <div className="mt-6">
-            <h3 className="text-sm font-medium font-sans mb-3">Connected Banks</h3>
-            <ConnectedBanksList />
-          </div>
-        </div>
 
         {/* Currency Preferences (with live rates) */}
         <div className="p-6 border rounded-lg bg-card">

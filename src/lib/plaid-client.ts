@@ -98,15 +98,16 @@ export async function exchangePublicToken(
 
 /**
  * Get institution information
+ * Try multiple country codes if the first one fails (for sandbox compatibility)
  */
 export async function getInstitution(
   institutionId: string,
-  countryCode: CountryCode = CountryCode.Us
+  countryCodes: CountryCode[] = [CountryCode.Us, CountryCode.Gb, CountryCode.De]
 ): Promise<InstitutionInfo> {
   try {
     const response = await plaidClient.institutionsGetById({
       institution_id: institutionId,
-      country_codes: [countryCode],
+      country_codes: countryCodes,
     });
 
     const institution = response.data.institution;

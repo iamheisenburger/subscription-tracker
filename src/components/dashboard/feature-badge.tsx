@@ -32,7 +32,7 @@ const FEATURE_BADGE_CONFIG: Record<FeatureBadgeType, FeatureBadgeConfig> = {
   "price-tracked": {
     icon: TrendingUp,
     label: "Price tracked",
-    tooltip: "Monitoring for price changes in your transactions",
+    tooltip: "Price history tracked - you'll be notified of any changes when you update the cost",
     variant: "secondary",
     className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
   },

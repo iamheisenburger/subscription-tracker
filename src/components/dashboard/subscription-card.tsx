@@ -120,11 +120,13 @@ export function SubscriptionCard({
 
   // Determine which feature badges to show (only for Automate users)
   const isAutomate = tier === "automate_1";
+  const isManual = subscription.source === "manual" || !subscription.source;
   const showFeatureBadges = isAutomate && (
     subscription.source === "detected" ||
     subscription.detectionConfidence ||
     subscription.predictedCadence ||
-    subscription.predictionConfidence
+    subscription.predictionConfidence ||
+    isManual // Show price tracking badge for manual entries
   );
 
   return (
@@ -148,22 +150,29 @@ export function SubscriptionCard({
             </div>
             {showFeatureBadges && (
               <FeatureBadgesContainer>
+                {/* Auto-detected badge - only for detected subscriptions */}
                 {subscription.source === "detected" && (
                   <FeatureBadge
                     type="auto-detected"
                     confidence={subscription.detectionConfidence}
                   />
                 )}
-                {isAutomate && subscription.lastChargeAt && (
+
+                {/* Price tracked - show for ALL Automate subscriptions (manual or detected) */}
+                {isAutomate && (
                   <FeatureBadge type="price-tracked" />
                 )}
+
+                {/* Renewal predicted - show when prediction exists */}
                 {subscription.predictedCadence && subscription.predictionConfidence && (
                   <FeatureBadge
                     type="renewal-predicted"
                     confidence={subscription.predictionConfidence}
                   />
                 )}
-                {isAutomate && subscription.source === "detected" && (
+
+                {/* Duplicate alert - only for detected subscriptions with bank data */}
+                {isAutomate && subscription.source === "detected" && subscription.lastChargeAt && (
                   <FeatureBadge type="duplicate-alert" />
                 )}
               </FeatureBadgesContainer>

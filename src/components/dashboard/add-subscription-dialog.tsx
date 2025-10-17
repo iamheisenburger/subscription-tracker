@@ -311,7 +311,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
               >
                 Cancel
               </Button>
-              <Button type="submit" className="font-sans">
+              <Button type="submit" className="font-sans bg-primary hover:bg-primary/90">
                 Add Subscription
               </Button>
             </div>

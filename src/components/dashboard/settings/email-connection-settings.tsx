@@ -7,6 +7,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import { Id } from "../../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,7 +80,7 @@ export function EmailConnectionSettings() {
     try {
       await disconnectEmail({
         clerkUserId: user!.id,
-        connectionId: connectionId as any,
+        connectionId: connectionId as Id<"emailConnections">,
       });
       toast.success("Email disconnected", {
         description: "Your email has been disconnected successfully.",

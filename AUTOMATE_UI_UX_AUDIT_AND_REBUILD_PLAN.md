@@ -1293,6 +1293,219 @@ export function PriceHistoryChart({ subscriptionId }: PriceHistoryChartProps) {
 
 ---
 
-**End of Audit & Plan**
+---
 
-*This document represents an unbiased assessment from first principles. The current UI works for Free/Plus tiers (simple tracking). The Automate tier requires a fundamental rethink to surface automation value. The Hybrid Approach strikes the best balance between speed and impact.*
+## 🔄 STRATEGIC PIVOT (January 2025 Update)
+
+### ✅ PHASE 1-3 COMPLETED
+
+**What Was Built:**
+- ✅ Full Insights page with 4 tabs (Activity Feed, Price History, Predictions, Alerts)
+- ✅ All Convex backend queries (insights.ts with 6 functions)
+- ✅ Interactive subscription cards with dropdown actions
+- ✅ Clickable feature badges linking to Insights
+- ✅ NotificationsBell component in header
+- ✅ Sidebar navigation with Insights item
+- ✅ Mobile-responsive design throughout
+- ✅ Proper TypeScript interfaces
+- ✅ Deployed to production (Convex + GitHub)
+
+**Current Score: 4/10 → 7/10** (UI layer complete, but no data flowing)
+
+---
+
+### 🚨 CRITICAL REALIZATION: Plaid Not Viable for US Users
+
+**Problem Discovered:**
+- User's business registration is Germany-based
+- Plaid Germany only supports EU/UK banks
+- US banks (target market) cannot connect
+- **Verdict: Plaid Germany is NOT worth it for US-focused product**
+
+**Decision Made:**
+- ❌ Skip Plaid integration entirely (for now)
+- ✅ **Pivot to Email Detection as PRIMARY value prop**
+
+---
+
+### 📧 NEW STRATEGY: Email-First Automation
+
+**Why Email > Bank Detection:**
+
+1. **Works Globally** - No geographic restrictions
+2. **Richer Data** - Receipts contain merchant details, cancel links, support info
+3. **Earlier Detection** - Catches free trials before first charge
+4. **All Payment Methods** - Credit cards, PayPal, Apple Pay, gift cards, etc.
+5. **Proven Model** - Truebill ($1.275B acquisition) uses email as primary source
+
+**What Makes SubWise Valuable (vs. Manual Email Checking):**
+- 🎯 **Aggregation** - One dashboard for all emails
+- 🎯 **Intelligence** - Auto-categorize, dedupe, normalize
+- 🎯 **Proactivity** - Alerts before renewals, not after
+- 🎯 **Actionability** - Cancel links, guides, support info
+- 🎯 **Analytics** - Price tracking, spending trends, savings opportunities
+
+---
+
+### 📋 REVISED IMPLEMENTATION PLAN
+
+**Current State:**
+- ✅ 30% Complete - Beautiful UI/UX layer (Insights page, interactive cards, navigation)
+- ❌ 0% Complete - Actual automation (detection, tracking, alerts)
+- ⚠️ 20% Complete - Manual features (already worked)
+
+**What's Missing to Deliver Value:**
+
+### **PHASE 4: Email Detection Integration (Week 1-2)** 🔥 **TOP PRIORITY**
+
+**Goal:** Make the Insights page actually useful by detecting subscriptions from email
+
+#### A. Gmail API Integration (Days 1-3)
+1. Set up Google Cloud project + OAuth consent screen
+2. Enable Gmail API
+3. Create OAuth credentials for web app
+4. Build `/api/gmail/auth` - OAuth flow initiation
+5. Build `/api/gmail/callback` - Handle OAuth callback, store tokens
+6. Build `convex/email-connections.ts` - Store Gmail tokens per user
+
+#### B. Receipt Parsing Engine (Days 4-7)
+1. Build `convex/email-scanner.ts`:
+   - Query Gmail API for receipts/invoices
+   - Filter by labels: `category:purchases`, `receipt`, `invoice`
+   - Parse email bodies for patterns:
+     - Merchant name (Netflix, Spotify, etc.)
+     - Amount ($X.XX)
+     - Billing cycle (monthly, annual)
+     - Next charge date
+     - Subscription ID / order number
+2. Build merchant normalization:
+   - "AMZN*Prime" → "Amazon Prime"
+   - "NETLFIX.COM" → "Netflix"
+   - Database of common subscription merchants
+3. Create detection candidates (same flow as bank detection)
+4. Display in Activity Feed tab
+
+#### C. Outlook/Microsoft Graph (Days 8-10) - **OPTIONAL**
+- Similar OAuth flow for Outlook users
+- Query Microsoft Graph API for email receipts
+- Reuse same parsing engine
+
+**Time:** 10-14 days focused work
+
+---
+
+### **PHASE 5: Price Tracking Automation (Week 3)** 🔥 **HIGH PRIORITY**
+
+**Goal:** Populate Price History tab with real data
+
+#### Tasks:
+1. Build `convex/price-tracker.ts`:
+   - On every new email receipt parsed
+   - Check if subscription exists
+   - Compare amount to last recorded price
+   - If different → Create `priceHistory` entry
+   - Queue notification if price increased
+2. Build price history enrichment:
+   - Calculate stats (total change %, change count)
+   - Prepare chart data for frontend
+3. Test with real Gmail receipts
+
+**Time:** 3-4 days
+
+---
+
+### **PHASE 6: Smart Notification Triggers (Week 3-4)** 🔥 **MEDIUM PRIORITY**
+
+**Goal:** Populate Alerts tab + send email notifications
+
+#### Tasks:
+1. Build `convex/notification-triggers.ts`:
+   - **Price increase detected** → Queue notification
+   - **Duplicate charge detected** → Queue notification
+   - **Renewal in 7/3/1 days** → Schedule notification
+   - **Free trial ending** → Alert 2 days before
+2. Integrate Resend API for email notifications:
+   - HTML email templates
+   - "Your Netflix price increased $2"
+   - "Hulu renews in 3 days ($14.99)"
+3. User preferences:
+   - Settings UI to enable/disable notification types
+   - Email vs in-app only
+
+**Time:** 3-4 days
+
+---
+
+### **PHASE 7 (Future): Enhanced Features**
+
+**Browser Extension** (7-10 days):
+- Detect signup flows on merchant websites
+- Pre-fill SubWise with subscription details
+- Convenient but not critical
+
+**Bank Integration Revisit** (when/if US entity registered):
+- If user registers US LLC later
+- Apply for Plaid US
+- Add as complementary data source (not primary)
+
+---
+
+### 🎯 UPDATED SUCCESS METRICS
+
+**Before Email Detection:**
+- User Value: $0-3/month (just a pretty manual tracker)
+- Would they pay $9/month? **No**
+
+**After Email Detection:**
+- User finds 3 forgotten subscriptions → Saves $40/month
+- Gets price increase alert → Saves $5/month
+- Free trial reminder → Avoids $15 unwanted charge
+- **Total Value: $60+/month saved**
+- **Price: $9/month**
+- **ROI: 567%** ← This is why they pay
+
+**Conversion Funnel:**
+1. User connects Gmail → See detections within 60 seconds
+2. Activity Feed shows found subscriptions
+3. Price History shows tracking is working
+4. Alerts tab shows proactive monitoring
+5. User realizes: "This actually saves me money"
+6. Conversion to paid
+
+---
+
+### 💬 HONEST ASSESSMENT (Updated)
+
+**Question:** "Was this all worthless?"
+
+**Answer:** **No, but it's incomplete.**
+
+**What we built = Foundation layer (30%)**
+- Beautiful UI that's ready to receive data
+- Professional navigation and flows
+- Mobile-responsive, type-safe, production-ready
+
+**What we didn't build = Value layer (50%)**
+- Email scanning (the actual automation)
+- Receipt parsing (the intelligence)
+- Price tracking (the insights)
+- Notification automation (the proactivity)
+
+**Analogy:**
+- We built a Ferrari dashboard (gorgeous, functional)
+- But there's no engine yet
+- Once we add the engine (email detection), it all comes alive
+
+**Next 2 Weeks:**
+- Gmail integration (Days 1-7)
+- Receipt parsing (Days 8-14)
+- Price tracking (Days 15-17)
+- Notification triggers (Days 18-21)
+
+**After 3 weeks:** You'll have a $9/month product people actually want to pay for.
+
+---
+
+**End of Audit & Plan (Updated January 2025)**
+
+*Phase 1-3 (UI/UX) completed successfully. Phase 4-6 (Email Detection + Automation) is now the critical path to product viability.*

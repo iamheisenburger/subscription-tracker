@@ -166,8 +166,17 @@ export function AlertsTab() {
   );
 }
 
+interface Notification {
+  _id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: number;
+}
+
 interface NotificationCardProps {
-  notification: Record<string, unknown>;
+  notification: Notification;
 }
 
 function NotificationCard({ notification }: NotificationCardProps) {

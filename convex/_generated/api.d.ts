@@ -20,6 +20,7 @@ import type * as categories from "../categories.js";
 import type * as cron from "../cron.js";
 import type * as dailyBankSync from "../dailyBankSync.js";
 import type * as detection from "../detection.js";
+import type * as insights from "../insights.js";
 import type * as institutions from "../institutions.js";
 import type * as merchants from "../merchants.js";
 import type * as notifications from "../notifications.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   cron: typeof cron;
   dailyBankSync: typeof dailyBankSync;
   detection: typeof detection;
+  insights: typeof insights;
   institutions: typeof institutions;
   merchants: typeof merchants;
   notifications: typeof notifications;

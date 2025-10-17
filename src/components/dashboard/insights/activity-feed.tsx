@@ -14,11 +14,30 @@ import { Sparkles, TrendingUp, AlertCircle, CheckCircle2, XCircle, Bell } from "
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface DetectionData {
+  proposedName: string;
+  proposedAmount: number;
+  proposedCadence: string;
+  confidence: number;
+}
+
+interface PriceChangeData {
+  subscriptionName: string;
+  oldPrice: number;
+  newPrice: number;
+  percentChange: number;
+}
+
+interface NotificationData {
+  title: string;
+  message: string;
+}
+
 interface ActivityItem {
   id: string;
   type: "detection_accepted" | "detection_dismissed" | "price_change" | "notification";
   timestamp: number;
-  data: Record<string, unknown>;
+  data: DetectionData | PriceChangeData | NotificationData;
 }
 
 export function ActivityFeed() {
@@ -116,13 +135,13 @@ function ActivityFeedItem({ item }: { item: ActivityItem }) {
   const getTitle = () => {
     switch (item.type) {
       case "detection_accepted":
-        return `Detected: ${item.data.proposedName}`;
+        return `Detected: ${(item.data as DetectionData).proposedName}`;
       case "detection_dismissed":
-        return `Dismissed detection: ${item.data.proposedName}`;
+        return `Dismissed detection: ${(item.data as DetectionData).proposedName}`;
       case "price_change":
-        return `Price change: ${item.data.subscriptionName}`;
+        return `Price change: ${(item.data as PriceChangeData).subscriptionName}`;
       case "notification":
-        return item.data.title;
+        return (item.data as NotificationData).title;
       default:
         return "Activity";
     }
@@ -130,39 +149,45 @@ function ActivityFeedItem({ item }: { item: ActivityItem }) {
 
   const getDescription = () => {
     switch (item.type) {
-      case "detection_accepted":
+      case "detection_accepted": {
+        const data = item.data as DetectionData;
         return (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-foreground">
-              ${item.data.proposedAmount.toFixed(2)}
+              ${data.proposedAmount.toFixed(2)}
             </span>
-            <span className="text-muted-foreground">/{item.data.proposedCadence}</span>
+            <span className="text-muted-foreground">/{data.proposedCadence}</span>
             <Badge variant="outline" className="text-xs">
-              {Math.round(item.data.confidence * 100)}% confidence
+              {Math.round(data.confidence * 100)}% confidence
             </Badge>
           </div>
         );
-      case "detection_dismissed":
+      }
+      case "detection_dismissed": {
+        const data = item.data as DetectionData;
         return (
           <span className="text-muted-foreground">
-            ${item.data.proposedAmount.toFixed(2)}/{item.data.proposedCadence}
+            ${data.proposedAmount.toFixed(2)}/{data.proposedCadence}
           </span>
         );
-      case "price_change":
-        const change = item.data.percentChange > 0 ? "+" : "";
-        const color = item.data.percentChange > 0 ? "text-red-600" : "text-green-600";
+      }
+      case "price_change": {
+        const data = item.data as PriceChangeData;
+        const change = data.percentChange > 0 ? "+" : "";
+        const color = data.percentChange > 0 ? "text-red-600" : "text-green-600";
         return (
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
-              ${item.data.oldPrice.toFixed(2)} → ${item.data.newPrice.toFixed(2)}
+              ${data.oldPrice.toFixed(2)} → ${data.newPrice.toFixed(2)}
             </span>
             <span className={`font-medium ${color}`}>
-              ({change}{item.data.percentChange.toFixed(1)}%)
+              ({change}{data.percentChange.toFixed(1)}%)
             </span>
           </div>
         );
+      }
       case "notification":
-        return <span className="text-muted-foreground">{item.data.message}</span>;
+        return <span className="text-muted-foreground">{(item.data as NotificationData).message}</span>;
       default:
         return null;
     }

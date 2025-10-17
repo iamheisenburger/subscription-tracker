@@ -81,8 +81,20 @@ export function PredictionsList() {
   );
 }
 
+interface Prediction {
+  _id: string;
+  name: string;
+  cost: number;
+  currency: string;
+  billingCycle: string;
+  renewalDate: number;
+  isPredicted: boolean;
+  predictionConfidence?: number;
+  predictedCadence?: string;
+}
+
 interface PredictionCardProps {
-  prediction: Record<string, unknown>;
+  prediction: Prediction;
 }
 
 function PredictionCard({ prediction }: PredictionCardProps) {

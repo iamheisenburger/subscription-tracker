@@ -95,8 +95,17 @@ export function NotificationsBell() {
   );
 }
 
+interface Notification {
+  _id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: number;
+}
+
 interface NotificationItemProps {
-  notification: Record<string, unknown>;
+  notification: Notification;
 }
 
 function NotificationItem({ notification }: NotificationItemProps) {

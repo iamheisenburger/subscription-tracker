@@ -134,14 +134,15 @@ export const getPriceHistory = query({
 
     if (args.subscriptionId) {
       // Get price history for specific subscription
+      const subId = args.subscriptionId; // Store in variable to satisfy TypeScript
       const history = await ctx.db
         .query("priceHistory")
-        .withIndex("by_subscription", (q) => q.eq("subscriptionId", args.subscriptionId))
+        .withIndex("by_subscription", (q) => q.eq("subscriptionId", subId))
         .order("desc")
         .collect();
 
       // Enrich with subscription name
-      const subscription = await ctx.db.get(args.subscriptionId);
+      const subscription = await ctx.db.get(subId);
 
       return history.map((h) => ({
         ...h,

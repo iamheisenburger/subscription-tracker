@@ -45,9 +45,8 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
       // Check if subscription already exists for this merchant
       const existingSubscription = await ctx.db
         .query("subscriptions")
-        .withIndex("by_user_and_name", (q) =>
-          q.eq("userId", args.userId).eq("name", receipt.merchantName!)
-        )
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .filter((q) => q.eq(q.field("name"), receipt.merchantName!))
         .first();
 
       if (existingSubscription) {
@@ -84,37 +83,50 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
 
         // Update candidate confidence if this receipt has higher confidence
         if (receipt.parsingConfidence! > existingCandidate.confidence) {
+          // Validate billing cycle
+          const billingCycle = receipt.billingCycle === "weekly" ||
+                              receipt.billingCycle === "monthly" ||
+                              receipt.billingCycle === "yearly"
+            ? receipt.billingCycle
+            : "monthly";
+
           await ctx.db.patch(existingCandidate._id, {
             confidence: receipt.parsingConfidence!,
             proposedAmount: receipt.amount,
             proposedCurrency: receipt.currency!,
-            proposedCadence: receipt.billingCycle || "monthly",
-            updatedAt: now,
+            proposedCadence: billingCycle,
           });
         }
 
         continue;
       }
 
+      // Validate billing cycle
+      const billingCycle = receipt.billingCycle === "weekly" ||
+                          receipt.billingCycle === "monthly" ||
+                          receipt.billingCycle === "yearly"
+        ? receipt.billingCycle
+        : "monthly";
+
       // Create new detection candidate
       const candidateId = await ctx.db.insert("detectionCandidates", {
         userId: args.userId,
         source: "email",
+        emailReceiptId: receipt._id,
         proposedName: receipt.merchantName,
         proposedAmount: receipt.amount,
         proposedCurrency: receipt.currency || "USD",
-        proposedCadence: receipt.billingCycle || "monthly",
+        proposedCadence: billingCycle,
+        proposedNextBilling: receipt.nextChargeDate || now + 30 * 24 * 60 * 60 * 1000,
         confidence: receipt.parsingConfidence!,
+        detectionReason: `Detected from email receipt: ${receipt.subject}`,
         status: "pending",
         rawData: {
-          emailFrom: receipt.from,
-          emailSubject: receipt.subject,
-          receivedAt: receipt.receivedAt,
-          messageId: receipt.messageId,
+          from: receipt.from,
+          subject: receipt.subject,
+          orderId: receipt.orderId,
         },
-        detectedAt: now,
         createdAt: now,
-        updatedAt: now,
       });
 
       // Link receipt to candidate
@@ -124,21 +136,8 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
 
       createdCount++;
 
-      // Create notification for user
-      await ctx.db.insert("notifications", {
-        userId: args.userId,
-        type: "detection_new",
-        title: "New subscription detected",
-        message: `We found ${receipt.merchantName} (${receipt.amount} ${receipt.currency}/${receipt.billingCycle || "monthly"}) in your email`,
-        data: {
-          proposedName: receipt.merchantName,
-          proposedAmount: receipt.amount,
-          proposedCadence: receipt.billingCycle || "monthly",
-          confidence: receipt.parsingConfidence!,
-        },
-        read: false,
-        createdAt: now,
-      });
+      // TODO: Create notification for user once notifications table is added to schema
+      console.log(`New detection candidate: ${receipt.merchantName} (${receipt.amount} ${receipt.currency}/${billingCycle})`);
     }
 
     console.log(`Created ${createdCount} detection candidates from email receipts`);
@@ -186,22 +185,11 @@ async function trackPriceChange(
     updatedAt: now,
   });
 
-  // Create notification if price increased
+  // TODO: Create notification if price increased (once notifications table is added)
   if (newAmount > oldAmount) {
-    await ctx.db.insert("notifications", {
-      userId: subscription.userId,
-      type: "price_increase",
-      title: `${subscription.name} price increased`,
-      message: `Price changed from ${oldAmount} to ${newAmount} ${currency} (+${percentChange.toFixed(1)}%)`,
-      data: {
-        subscriptionName: subscription.name,
-        oldPrice: oldAmount,
-        newPrice: newAmount,
-        percentChange,
-      },
-      read: false,
-      createdAt: now,
-    });
+    console.log(
+      `Price increased for ${subscription.name}: ${oldAmount} → ${newAmount} ${currency} (+${percentChange.toFixed(1)}%)`
+    );
   }
 }
 

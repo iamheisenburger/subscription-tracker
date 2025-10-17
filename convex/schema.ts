@@ -301,8 +301,8 @@ export default defineSchema({
   // Subscription detection candidates (pending user review)
   detectionCandidates: defineTable({
     userId: v.id("users"),
-    merchantId: v.id("merchants"),
-    transactionIds: v.array(v.id("transactions")), // Supporting transactions
+    merchantId: v.optional(v.id("merchants")), // Optional for email-based detection
+    transactionIds: v.optional(v.array(v.id("transactions"))), // Optional for email-based detection
     proposedName: v.string(),
     proposedAmount: v.number(),
     proposedCurrency: v.string(),
@@ -317,13 +317,30 @@ export default defineSchema({
       v.literal("merged")
     ),
     acceptedSubscriptionId: v.optional(v.id("subscriptions")), // If accepted
+    // Source tracking
+    source: v.optional(v.union(
+      v.literal("email"),
+      v.literal("bank"),
+      v.literal("manual")
+    )),
+    // Email-specific fields
+    emailReceiptId: v.optional(v.id("emailReceipts")), // Link to originating email receipt
+    rawData: v.optional(v.object({
+      from: v.optional(v.string()),
+      subject: v.optional(v.string()),
+      orderId: v.optional(v.string()),
+      merchantDomain: v.optional(v.string()),
+    })),
     createdAt: v.number(),
     reviewedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_user_status", ["userId", "status"])
-    .index("by_merchant", ["merchantId"]),
+    .index("by_merchant", ["merchantId"])
+    .index("by_source", ["source"])
+    .index("by_user_source", ["userId", "source"])
+    .index("by_user_and_name", ["userId", "proposedName"]),
 
   // Audit logs for sensitive operations
   auditLogs: defineTable({

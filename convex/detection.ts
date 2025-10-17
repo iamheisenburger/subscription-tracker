@@ -452,7 +452,7 @@ export const getPendingCandidates = query({
     // Enrich with merchant data
     const enriched = await Promise.all(
       candidates.map(async (candidate) => {
-        const merchant = await ctx.db.get(candidate.merchantId);
+        const merchant = candidate.merchantId ? await ctx.db.get(candidate.merchantId) : null;
         return {
           ...candidate,
           merchant,
@@ -498,11 +498,11 @@ export const acceptCandidate = mutation({
     }
 
     // Get merchant for category/description
-    const merchant = await ctx.db.get(candidate.merchantId);
+    const merchant = candidate.merchantId ? await ctx.db.get(candidate.merchantId) : null;
 
     // Get transactions to calculate accurate predictions
     const transactions = await Promise.all(
-      candidate.transactionIds.map((txId) => ctx.db.get(txId))
+      (candidate.transactionIds || []).map((txId) => ctx.db.get(txId))
     );
     const validTransactions = transactions.filter((tx) => tx !== null) as Doc<"transactions">[];
 

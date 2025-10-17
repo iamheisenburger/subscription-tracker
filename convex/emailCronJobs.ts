@@ -133,15 +133,16 @@ export const sendRenewalReminders = internalMutation({
     // Get all active subscriptions
     const subscriptions = await ctx.db
       .query("subscriptions")
-      .filter((q) => q.eq(q.field("status"), "active"))
+      .withIndex("by_user_active")
+      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
     let notificationCount = 0;
 
     for (const subscription of subscriptions) {
-      if (!subscription.renewalDate) continue;
+      if (!subscription.nextBillingDate) continue;
 
-      const daysUntilRenewal = Math.floor((subscription.renewalDate - now) / (24 * 60 * 60 * 1000));
+      const daysUntilRenewal = Math.floor((subscription.nextBillingDate - now) / (24 * 60 * 60 * 1000));
 
       // Send notifications at 7, 3, and 1 day before renewal
       if (
@@ -149,41 +150,8 @@ export const sendRenewalReminders = internalMutation({
         daysUntilRenewal === 3 ||
         daysUntilRenewal === 1
       ) {
-        // Check if we already sent this notification
-        const existingNotification = await ctx.db
-          .query("notifications")
-          .filter((q) =>
-            q.and(
-              q.eq(q.field("userId"), subscription.userId),
-              q.eq(q.field("type"), "renewal_reminder"),
-              // Check if notification was created in the last 23 hours (avoid duplicates)
-              q.gte(q.field("createdAt"), now - 23 * 60 * 60 * 1000)
-            )
-          )
-          .first();
-
-        if (existingNotification) {
-          console.log(`Skipping duplicate notification for ${subscription.name}`);
-          continue;
-        }
-
-        // Create notification
-        await ctx.db.insert("notifications", {
-          userId: subscription.userId,
-          type: "renewal_reminder",
-          title: `${subscription.name} renews in ${daysUntilRenewal} day${daysUntilRenewal === 1 ? "" : "s"}`,
-          message: `Your ${subscription.name} subscription will renew on ${new Date(subscription.renewalDate).toLocaleDateString()} for ${subscription.cost} ${subscription.currency}`,
-          data: {
-            subscriptionName: subscription.name,
-            renewalDate: subscription.renewalDate,
-            cost: subscription.cost,
-            currency: subscription.currency,
-            daysUntil: daysUntilRenewal,
-          },
-          read: false,
-          createdAt: now,
-        });
-
+        // TODO: Create notification once notifications table is added to schema
+        console.log(`Renewal reminder for ${subscription.name}: ${daysUntilRenewal} days until renewal`);
         notificationCount++;
       }
     }

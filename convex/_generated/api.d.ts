@@ -25,6 +25,7 @@ import type * as emailConnections from "../emailConnections.js";
 import type * as emailCronJobs from "../emailCronJobs.js";
 import type * as emailDetection from "../emailDetection.js";
 import type * as emailScanner from "../emailScanner.js";
+import type * as emailScannerActions from "../emailScannerActions.js";
 import type * as insights from "../insights.js";
 import type * as institutions from "../institutions.js";
 import type * as merchants from "../merchants.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   emailCronJobs: typeof emailCronJobs;
   emailDetection: typeof emailDetection;
   emailScanner: typeof emailScanner;
+  emailScannerActions: typeof emailScannerActions;
   insights: typeof insights;
   institutions: typeof institutions;
   merchants: typeof merchants;

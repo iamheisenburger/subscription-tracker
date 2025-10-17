@@ -6,7 +6,7 @@
  * Redesigned to take minimal vertical space (~80px vs ~250px)
  */
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +37,7 @@ export function ConnectedEmailsWidget() {
     user?.id ? { clerkUserId: user.id } : "skip"
   );
 
-  const triggerScan = useMutation(api.emailScanner.triggerUserEmailScan);
+  const triggerScan = useAction(api.emailScannerActions.triggerUserEmailScan);
 
   if (connections === undefined || scanStats === undefined || detectionStats === undefined) {
     return (

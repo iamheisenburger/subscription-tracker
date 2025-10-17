@@ -442,3 +442,151 @@ function decodeBase64(encoded: string): string {
     return "";
   }
 }
+
+/**
+ * HELPER MUTATIONS FOR ACTIONS
+ * These are called by emailScannerActions.ts
+ */
+
+/**
+ * Get connection by ID (for actions)
+ */
+export const getConnectionById = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.connectionId);
+  },
+});
+
+/**
+ * Get user's connections (internal query for actions)
+ */
+export const getUserConnectionsInternal = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (!user) return [];
+
+    return await ctx.db
+      .query("emailConnections")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+  },
+});
+
+/**
+ * Update connection status (for actions)
+ */
+export const updateConnectionStatus = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    status: v.union(
+      v.literal("active"),
+      v.literal("disconnected"),
+      v.literal("error"),
+      v.literal("requires_reauth")
+    ),
+    errorCode: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { connectionId, ...updates } = args;
+
+    await ctx.db.patch(connectionId, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Update connection tokens after refresh (for actions)
+ */
+export const updateConnectionTokens = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    accessToken: v.string(),
+    tokenExpiresAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      accessToken: args.accessToken,
+      tokenExpiresAt: args.tokenExpiresAt,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Update connection last sync time (for actions)
+ */
+export const updateConnectionLastSync = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    syncCursor: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      lastSyncedAt: Date.now(),
+      syncCursor: args.syncCursor,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Store email receipt (for actions)
+ */
+export const storeEmailReceipt = internalMutation({
+  args: {
+    userId: v.id("users"),
+    connectionId: v.id("emailConnections"),
+    gmailMessageId: v.string(),
+    subject: v.string(),
+    from: v.string(),
+    receivedAt: v.number(),
+    rawBody: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Check for duplicates
+    const existing = await ctx.db
+      .query("emailReceipts")
+      .withIndex("by_message_id", (q) => q.eq("messageId", args.gmailMessageId))
+      .first();
+
+    if (existing) {
+      console.log("Skipping duplicate receipt:", args.gmailMessageId);
+      return { success: false, error: "Duplicate" };
+    }
+
+    const now = Date.now();
+
+    await ctx.db.insert("emailReceipts", {
+      emailConnectionId: args.connectionId,
+      userId: args.userId,
+      messageId: args.gmailMessageId,
+      from: args.from,
+      subject: args.subject,
+      receivedAt: args.receivedAt,
+      parsed: false,
+      rawBody: args.rawBody,
+      createdAt: now,
+    });
+
+    return { success: true };
+  },
+});

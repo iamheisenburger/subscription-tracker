@@ -26,9 +26,9 @@ export const scanAllActiveConnections = internalMutation({
       return { message: "No active connections to scan" };
     }
 
-    // Schedule scan for each connection
+    // Schedule scan for each connection using Actions
     for (const connection of connections) {
-      await ctx.scheduler.runAfter(0, internal.emailScanner.scanGmailForReceipts, {
+      await ctx.scheduler.runAfter(0, internal.emailScannerActions.scanGmailForReceipts, {
         connectionId: connection._id,
       });
     }

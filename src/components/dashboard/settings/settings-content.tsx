@@ -7,6 +7,7 @@ import { PreferencesSettings } from "./preferences-settings";
 import { EnhancedSpendingSettings } from "../enhanced-spending-settings";
 import { ConnectBankSection } from "../bank/connect-bank-section";
 import { ConnectedBanksList } from "../bank/connected-banks-list";
+import { EmailConnectionSettings } from "./email-connection-settings";
 import { FeaturesSection } from "./features-section";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
@@ -94,6 +95,9 @@ export function SettingsContent({ user }: SettingsContentProps) {
 
         {/* Features Overview */}
         <FeaturesSection />
+
+        {/* Email Connections - Primary Detection Method */}
+        <EmailConnectionSettings />
 
         {/* Bank Connections */}
         <div className="p-6 border rounded-lg bg-card">

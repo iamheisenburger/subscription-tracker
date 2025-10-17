@@ -20,7 +20,7 @@ export function DetectionQueueEmptyState() {
           <div>
             <CardTitle className="text-base font-sans">Auto-Detection Active</CardTitle>
             <CardDescription className="text-xs font-sans">
-              Monitoring your transactions for recurring subscriptions
+              Monitoring your email for recurring subscriptions
             </CardDescription>
           </div>
         </div>
@@ -32,7 +32,7 @@ export function DetectionQueueEmptyState() {
             <div>
               <p className="font-medium font-sans text-foreground">How it works</p>
               <p className="text-xs text-muted-foreground font-sans">
-                We scan your connected bank accounts daily for recurring charges. When we detect a pattern, you&apos;ll see it here for review.
+                We scan your connected email daily for subscription receipts and invoices. When we detect a recurring payment, you&apos;ll see it here for review.
               </p>
             </div>
           </div>

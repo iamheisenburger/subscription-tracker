@@ -389,5 +389,61 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_detected_at", ["detectedAt"])
     .index("by_subscription_date", ["subscriptionId", "detectedAt"]),
+
+  // ===== EMAIL INTEGRATION TABLES =====
+
+  // Email connections (Gmail, Outlook, etc.)
+  emailConnections: defineTable({
+    userId: v.id("users"),
+    provider: v.union(v.literal("gmail"), v.literal("outlook")),
+    email: v.string(), // The connected email address
+    accessToken: v.string(), // Encrypted OAuth access token
+    refreshToken: v.string(), // Encrypted OAuth refresh token
+    tokenExpiresAt: v.number(), // When access token expires
+    status: v.union(
+      v.literal("active"),
+      v.literal("disconnected"),
+      v.literal("error"),
+      v.literal("requires_reauth")
+    ),
+    lastSyncedAt: v.optional(v.number()), // Last time we scanned emails
+    syncCursor: v.optional(v.string()), // Pagination cursor for email queries
+    errorCode: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_email", ["email"])
+    .index("by_user_provider", ["userId", "provider"])
+    .index("by_status", ["status"]),
+
+  // Email receipts parsed from inbox
+  emailReceipts: defineTable({
+    emailConnectionId: v.id("emailConnections"),
+    userId: v.id("users"), // Denormalized for fast queries
+    messageId: v.string(), // Gmail message ID or Outlook ID
+    from: v.string(), // Sender email
+    subject: v.string(),
+    receivedAt: v.number(), // When email was received
+    merchantName: v.optional(v.string()), // Detected merchant
+    amount: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    billingCycle: v.optional(v.string()), // If mentioned in email
+    nextChargeDate: v.optional(v.number()),
+    orderId: v.optional(v.string()),
+    subscriptionId: v.optional(v.id("subscriptions")), // If matched to existing subscription
+    detectionCandidateId: v.optional(v.id("detectionCandidates")), // If created candidate
+    parsed: v.boolean(), // Whether we successfully parsed subscription info
+    parsingConfidence: v.optional(v.number()), // 0-1 confidence in parsing
+    rawBody: v.optional(v.string()), // Store for debugging/reprocessing
+    createdAt: v.number(),
+  })
+    .index("by_connection", ["emailConnectionId"])
+    .index("by_user", ["userId"])
+    .index("by_message_id", ["messageId"])
+    .index("by_merchant", ["merchantName"])
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_user_received", ["userId", "receivedAt"]),
 });
 

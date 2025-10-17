@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Plus } from "lucide-react";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { AddSubscriptionDialog } from "./add-subscription-dialog";
-import { AutomateStatusBadge } from "./automate-status-badge";
-import { FeaturesDropdown } from "./features-dropdown";
+import { NotificationsBell } from "./notifications-bell";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -114,16 +113,12 @@ export function OverviewActions() {
     );
   }
 
-  // Automate tier: Different UI based on bank connection status
+  // Automate tier: Notification Bell + Add Manual + Export
   if (isAutomate) {
-    // For Automate users: Status Badge + Features Dropdown + Add Manual + Export
     return (
       <div className="flex items-center gap-2">
-        {/* Automate Status Badge */}
-        <AutomateStatusBadge />
-
-        {/* Features Dropdown */}
-        <FeaturesDropdown />
+        {/* Notification Bell - NEW */}
+        <NotificationsBell />
 
         <AddSubscriptionDialog>
           <Button variant="outline" className="font-sans">
@@ -143,13 +138,13 @@ export function OverviewActions() {
             <DropdownMenuLabel className="font-sans">Export Data</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleExportAllToCalendar} className="font-sans">
-              Export to Calendar
+              Calendar (.ics)
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <a href="/api/export/csv" className="font-sans">Download CSV</a>
+              <a href="/api/export/csv" className="font-sans">CSV</a>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <a href="/api/export/pdf" className="font-sans">Download PDF</a>
+              <a href="/api/export/pdf" className="font-sans">PDF</a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

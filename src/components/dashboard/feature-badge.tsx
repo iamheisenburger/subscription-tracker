@@ -55,9 +55,10 @@ const FEATURE_BADGE_CONFIG: Record<FeatureBadgeType, FeatureBadgeConfig> = {
 interface FeatureBadgeProps {
   type: FeatureBadgeType;
   confidence?: number; // Optional confidence score (0-1) to show in tooltip
+  clickable?: boolean; // Whether badge should show hover state
 }
 
-export function FeatureBadge({ type, confidence }: FeatureBadgeProps) {
+export function FeatureBadge({ type, confidence, clickable = false }: FeatureBadgeProps) {
   const config = FEATURE_BADGE_CONFIG[type];
   const Icon = config.icon;
 
@@ -65,17 +66,22 @@ export function FeatureBadge({ type, confidence }: FeatureBadgeProps) {
     ? `${config.tooltip} (${Math.round(confidence * 100)}% confidence)`
     : config.tooltip;
 
+  const clickableTooltipSuffix = clickable ? " • Click to view details" : "";
+
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant={config.variant} className={`font-sans text-xs flex items-center gap-1 ${config.className}`}>
+          <Badge
+            variant={config.variant}
+            className={`font-sans text-xs flex items-center gap-1 ${config.className} ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+          >
             <Icon className="h-3 w-3" />
             <span>{config.label}</span>
           </Badge>
         </TooltipTrigger>
         <TooltipContent side="top" className="font-sans max-w-xs">
-          <p>{tooltipContent}</p>
+          <p>{tooltipContent}{clickableTooltipSuffix}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

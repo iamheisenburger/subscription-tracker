@@ -6,13 +6,16 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { 
-  CreditCard, 
-  Edit, 
-  Trash2, 
-  Pause, 
+import {
+  CreditCard,
+  Edit,
+  Trash2,
+  Pause,
   Play,
-  MoreVertical
+  MoreVertical,
+  Calendar,
+  TrendingUp,
+  HelpCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +43,9 @@ import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { EditSubscriptionDialog } from "./edit-subscription-dialog";
 import { FeatureBadge, FeatureBadgesContainer } from "./feature-badge";
 import { useUserTier } from "@/hooks/use-user-tier";
+import { CancelAssistantModal } from "./cancel-assistant-modal";
+import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
+import Link from "next/link";
 
 interface SubscriptionCardProps {
   subscription: Doc<"subscriptions">;
@@ -57,6 +63,7 @@ export function SubscriptionCard({
   const isMobile = useIsMobile();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   // Optimistic UI state
@@ -86,13 +93,13 @@ export function SubscriptionCard({
 
   const handleTogglePause = async () => {
     if (!user?.id || isToggling) return;
-    
+
     const newStatus = !subscription.isActive;
-    
+
     // OPTIMISTIC UPDATE: Change UI immediately
     setOptimisticActive(newStatus);
     setIsToggling(true);
-    
+
     try {
       await toggleStatus({
         clerkId: user.id,
@@ -109,6 +116,16 @@ export function SubscriptionCard({
       setIsToggling(false);
       // Clear optimistic state after mutation completes
       setTimeout(() => setOptimisticActive(null), 100);
+    }
+  };
+
+  const handleExportToCalendar = () => {
+    try {
+      exportSubscriptionToCalendar(subscription);
+      toast.success(`${subscription.name} added to calendar!`);
+    } catch (error) {
+      console.error("Error exporting to calendar:", error);
+      toast.error("Failed to export to calendar.");
     }
   };
   
@@ -152,28 +169,38 @@ export function SubscriptionCard({
               <FeatureBadgesContainer>
                 {/* Auto-detected badge - only for detected subscriptions */}
                 {subscription.source === "detected" && (
-                  <FeatureBadge
-                    type="auto-detected"
-                    confidence={subscription.detectionConfidence}
-                  />
+                  <Link href={`/dashboard/insights?sub=${subscription._id}&tab=activity`}>
+                    <FeatureBadge
+                      type="auto-detected"
+                      confidence={subscription.detectionConfidence}
+                      clickable
+                    />
+                  </Link>
                 )}
 
                 {/* Price tracked - show for ALL Automate subscriptions (manual or detected) */}
                 {isAutomate && (
-                  <FeatureBadge type="price-tracked" />
+                  <Link href={`/dashboard/insights?sub=${subscription._id}&tab=price-history`}>
+                    <FeatureBadge type="price-tracked" clickable />
+                  </Link>
                 )}
 
                 {/* Renewal predicted - show when prediction exists */}
                 {subscription.predictedCadence && subscription.predictionConfidence && (
-                  <FeatureBadge
-                    type="renewal-predicted"
-                    confidence={subscription.predictionConfidence}
-                  />
+                  <Link href={`/dashboard/insights?tab=predictions`}>
+                    <FeatureBadge
+                      type="renewal-predicted"
+                      confidence={subscription.predictionConfidence}
+                      clickable
+                    />
+                  </Link>
                 )}
 
                 {/* Duplicate alert - only for detected subscriptions with bank data */}
                 {isAutomate && subscription.source === "detected" && subscription.lastChargeAt && (
-                  <FeatureBadge type="duplicate-alert" />
+                  <Link href={`/dashboard/insights?tab=alerts`}>
+                    <FeatureBadge type="duplicate-alert" clickable />
+                  </Link>
                 )}
               </FeatureBadgesContainer>
             )}
@@ -193,82 +220,84 @@ export function SubscriptionCard({
             </Badge>
           </div>
 
-          {/* Mobile: Dropdown Menu */}
-          {isMobile ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">More actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="font-sans"
-                  onSelect={() => setShowEditDialog(true)}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="font-sans"
-                  onSelect={handleTogglePause}
-                  disabled={isToggling}
-                >
-                  {displayActive ? (
-                    <>
-                      <Pause className="mr-2 h-4 w-4" />
-                      Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Resume
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive font-sans"
-                  onSelect={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            /* Desktop: Individual Buttons */
-            <>
-              <EditSubscriptionDialog subscription={subscription}>
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Edit className="h-4 w-4" />
-                  <span className="sr-only">Edit</span>
-                </Button>
-              </EditSubscriptionDialog>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={handleTogglePause}
+          {/* Actions Dropdown (Mobile & Desktop) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${isMobile ? "" : "opacity-0 group-hover:opacity-100 transition-opacity"}`}
+              >
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">More actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              {/* Automate Tier Actions (if applicable) */}
+              {isAutomate && (
+                <>
+                  <Link href={`/dashboard/insights?sub=${subscription._id}`}>
+                    <DropdownMenuItem className="font-sans">
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      View Insights
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuItem
+                    className="font-sans"
+                    onSelect={handleExportToCalendar}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Export to Calendar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="font-sans"
+                    onSelect={() => setShowCancelDialog(true)}
+                  >
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Cancel Subscription
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {/* Standard Actions */}
+              <DropdownMenuItem
+                className="font-sans"
+                onSelect={() => setShowEditDialog(true)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="font-sans"
+                onSelect={handleTogglePause}
                 disabled={isToggling}
               >
-                {displayActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                <span className="sr-only">{displayActive ? "Pause" : "Resume"}</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
+                {displayActive ? (
+                  <>
+                    <Pause className="mr-2 h-4 w-4" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Resume
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive font-sans"
+                onSelect={() => setShowDeleteDialog(true)}
               >
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">Delete</span>
-              </Button>
-            </>
-          )}
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -295,10 +324,17 @@ export function SubscriptionCard({
       </AlertDialog>
 
       {/* Edit Dialog */}
-      <EditSubscriptionDialog 
-        subscription={subscription} 
-        open={showEditDialog} 
-        onOpenChange={setShowEditDialog} 
+      <EditSubscriptionDialog
+        subscription={subscription}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+      />
+
+      {/* Cancel Assistant Modal */}
+      <CancelAssistantModal
+        subscription={subscription}
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
       />
     </>
   );

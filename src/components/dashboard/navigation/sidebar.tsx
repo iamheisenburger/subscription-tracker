@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, CreditCard, BarChart3, Settings, Crown, Plus, DollarSign } from "lucide-react";
+import { Home, CreditCard, BarChart3, Settings, Crown, Plus, DollarSign, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { useUserTier } from "@/hooks/use-user-tier";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
+  { name: "Insights", href: "/dashboard/insights", icon: Sparkles, automate: true },
   { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
   { name: "Budget", href: "/dashboard/budget", icon: DollarSign, premium: true },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, premium: true },
@@ -19,7 +20,8 @@ const navigation = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const { isLoading, isPremium, isMonthlyPremium, isAnnualPremium, isMonthlyOrUnknownPremium } = useUserTier();
+  const { tier, isLoading, isPremium, isMonthlyPremium, isAnnualPremium, isMonthlyOrUnknownPremium } = useUserTier();
+  const isAutomate = tier === "automate_1";
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
@@ -49,7 +51,12 @@ export function DashboardSidebar() {
       <nav className="flex-1 space-y-2 p-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
-          
+
+          // Hide Insights if not Automate user
+          if (item.automate && !isAutomate) {
+            return null;
+          }
+
           // SHOW ALL FEATURES - don't hide premium features, tease them instead
           return (
             <Link key={item.name} href={item.href}>

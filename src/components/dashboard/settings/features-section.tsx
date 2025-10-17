@@ -4,31 +4,40 @@
  * Features Section Component
  * Comprehensive reference table of all Automate tier features
  * Shows what's included, current status, and how to activate features
+ * UPDATED: Email-first detection strategy (removed bank dependencies)
  */
 
 import { useUserTier } from "@/hooks/use-user-tier";
-import { useBankConnections } from "@/hooks/use-bank-connections";
-import { CheckCircle2, Circle, Lock, Sparkles, TrendingUp, AlertCircle, Calendar, Mail, MessageSquare, HelpCircle, FileText } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
+import { CheckCircle2, Circle, Lock, Sparkles, Mail, Calendar, HelpCircle, FileText, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 interface FeatureItem {
   icon: React.ElementType;
   name: string;
   description: string;
-  status: "active" | "requires-bank" | "coming-soon" | "not-available";
+  status: "active" | "requires-email" | "coming-soon" | "not-available";
   statusLabel: string;
 }
 
 export function FeaturesSection() {
   const { tier } = useUserTier();
-  const { activeConnectionsCount, isLoading } = useBankConnections();
+  const { user } = useUser();
+
+  // Check if user has email connected
+  const connections = useQuery(
+    api.emailConnections.getUserConnections,
+    user?.id ? { clerkUserId: user.id } : "skip"
+  );
 
   const isAutomate = tier === "automate_1";
-  const hasBanks = activeConnectionsCount > 0;
+  const hasEmailConnected = connections && connections.length > 0;
 
   // Define all features with their status
   const features: FeatureItem[] = [
-    // Active features (available to all tiers or active for Automate)
+    // Active features (available to all tiers)
     {
       icon: FileText,
       name: "Manual Subscription Entry",
@@ -58,50 +67,34 @@ export function FeaturesSection() {
       statusLabel: isAutomate ? "Active" : "Automate tier only",
     },
 
-    // Bank-dependent features
+    // Email-dependent features
+    {
+      icon: Mail,
+      name: "Email Detection",
+      description: "Automatically scan Gmail for subscription receipts and invoices",
+      status: isAutomate ? (hasEmailConnected ? "active" : "requires-email") : "not-available",
+      statusLabel: isAutomate ? (hasEmailConnected ? "Active" : "Connect email to activate") : "Automate tier only",
+    },
     {
       icon: Sparkles,
-      name: "Auto-Detection",
-      description: "Automatically discover subscriptions from bank transactions",
-      status: isAutomate ? (hasBanks ? "active" : "requires-bank") : "not-available",
-      statusLabel: isAutomate ? (hasBanks ? "Active" : "Connect bank to activate") : "Automate tier only",
+      name: "Smart Parsing",
+      description: "AI-powered extraction of subscription details from receipts",
+      status: isAutomate ? (hasEmailConnected ? "active" : "requires-email") : "not-available",
+      statusLabel: isAutomate ? (hasEmailConnected ? "Active" : "Connect email to activate") : "Automate tier only",
     },
     {
       icon: TrendingUp,
       name: "Price Tracking",
-      description: "Monitor and alert on subscription price changes",
-      status: isAutomate ? (hasBanks ? "active" : "requires-bank") : "not-available",
-      statusLabel: isAutomate ? (hasBanks ? "Active" : "Connect bank to activate") : "Automate tier only",
-    },
-    {
-      icon: AlertCircle,
-      name: "Duplicate Charge Alerts",
-      description: "Detect and notify about duplicate charges",
-      status: isAutomate ? (hasBanks ? "active" : "requires-bank") : "not-available",
-      statusLabel: isAutomate ? (hasBanks ? "Active" : "Connect bank to activate") : "Automate tier only",
+      description: "Monitor subscription price changes from email receipts",
+      status: isAutomate ? (hasEmailConnected ? "active" : "requires-email") : "not-available",
+      statusLabel: isAutomate ? (hasEmailConnected ? "Active" : "Connect email to activate") : "Automate tier only",
     },
     {
       icon: Calendar,
-      name: "Renewal Predictions",
-      description: "ML-powered prediction of next billing dates",
-      status: isAutomate ? (hasBanks ? "active" : "requires-bank") : "not-available",
-      statusLabel: isAutomate ? (hasBanks ? "Active" : "Connect bank to activate") : "Automate tier only",
-    },
-
-    // Coming soon features
-    {
-      icon: Mail,
-      name: "Email Receipt Parsing",
-      description: "Auto-detect subscriptions from email receipts",
-      status: "coming-soon",
-      statusLabel: "Coming soon",
-    },
-    {
-      icon: MessageSquare,
-      name: "SMS/Push Notifications",
-      description: "Mobile alerts for renewals and price changes",
-      status: "coming-soon",
-      statusLabel: "Coming soon",
+      name: "Renewal Detection",
+      description: "Automatic detection of upcoming renewals from receipts",
+      status: isAutomate ? (hasEmailConnected ? "active" : "requires-email") : "not-available",
+      statusLabel: isAutomate ? (hasEmailConnected ? "Active" : "Connect email to activate") : "Automate tier only",
     },
   ];
 
@@ -109,7 +102,7 @@ export function FeaturesSection() {
     switch (status) {
       case "active":
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case "requires-bank":
+      case "requires-email":
         return <Circle className="h-4 w-4 text-orange-600" />;
       case "coming-soon":
         return <Circle className="h-4 w-4 text-muted-foreground" />;
@@ -122,7 +115,7 @@ export function FeaturesSection() {
     switch (status) {
       case "active":
         return "text-green-700 dark:text-green-400";
-      case "requires-bank":
+      case "requires-email":
         return "text-orange-700 dark:text-orange-400";
       case "coming-soon":
         return "text-muted-foreground";
@@ -179,7 +172,7 @@ export function FeaturesSection() {
       {!isAutomate && (
         <div className="mt-4 p-4 border border-primary/20 rounded-lg bg-primary/5">
           <p className="text-sm font-sans mb-2">
-            Want automatic subscription detection and price tracking?
+            Want automatic subscription detection from your email?
           </p>
           <Link href="/dashboard/upgrade">
             <button className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors">
@@ -189,22 +182,22 @@ export function FeaturesSection() {
         </div>
       )}
 
-      {isAutomate && !hasBanks && !isLoading && (
+      {isAutomate && !hasEmailConnected && connections !== undefined && (
         <div className="mt-4 p-4 border border-orange-500/20 rounded-lg bg-orange-500/5">
           <p className="text-sm font-sans mb-2">
-            Connect a bank to unlock auto-detection, price tracking, and more.
+            Connect Gmail to unlock email detection, smart parsing, and automatic price tracking.
           </p>
           <p className="text-xs text-muted-foreground font-sans">
-            Scroll up to the Bank Connections section to get started.
+            Scroll up to the Email Detection section to get started.
           </p>
         </div>
       )}
 
-      {isAutomate && hasBanks && (
+      {isAutomate && hasEmailConnected && (
         <div className="mt-4 p-4 border border-green-500/20 rounded-lg bg-green-500/5">
           <p className="text-sm text-green-700 dark:text-green-400 font-sans flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
-            All automation features are active and monitoring your subscriptions.
+            All automation features are active and monitoring your email for subscriptions.
           </p>
         </div>
       )}

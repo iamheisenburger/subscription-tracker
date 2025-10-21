@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 /**
- * Shows success toast when Gmail is successfully connected
- * Triggered by ?gmail_connected=true query parameter
+ * Shows success/error toasts for Gmail connection
+ * Triggered by URL params: ?gmail_connected=true or ?gmail_error=xxx
  *
  * FIX: Force page reload to refetch all queries (connections, tier, etc.)
  * This prevents race condition where UI shows stale cached data
@@ -16,7 +16,9 @@ export function GmailConnectionToast() {
 
   useEffect(() => {
     const gmailConnected = searchParams.get("gmail_connected");
+    const gmailError = searchParams.get("gmail_error");
 
+    // Handle SUCCESS
     if (gmailConnected === "true") {
       toast.success("Gmail Connected Successfully!", {
         description: "Scanning your inbox for subscriptions...",
@@ -29,6 +31,42 @@ export function GmailConnectionToast() {
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1000); // Small delay so toast is visible
+    }
+
+    // Handle ERRORS
+    if (gmailError) {
+      let errorMessage = "Failed to connect Gmail. Please try again.";
+
+      switch (gmailError) {
+        case "missing_params":
+          errorMessage = "OAuth flow incomplete. Please try again.";
+          break;
+        case "token_exchange_failed":
+          errorMessage = "Failed to exchange authorization code. Please try again.";
+          break;
+        case "no_refresh_token":
+          errorMessage = "You may have already connected this account. Try disconnecting first, then reconnect.";
+          break;
+        case "userinfo_failed":
+          errorMessage = "Could not retrieve your email address. Please try again.";
+          break;
+        case "storage_failed":
+          errorMessage = "Failed to save connection. Please try again.";
+          break;
+        case "unknown":
+          errorMessage = "An unknown error occurred. Please try again.";
+          break;
+      }
+
+      toast.error("Gmail Connection Failed", {
+        description: errorMessage,
+        duration: 7000, // Longer for errors
+      });
+
+      // Clean URL (remove error param)
+      const url = new URL(window.location.href);
+      url.searchParams.delete("gmail_error");
+      window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams]);
 

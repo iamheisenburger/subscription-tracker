@@ -17,13 +17,13 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Gmail OAuth error:", error);
       return NextResponse.redirect(
-        new URL(`/dashboard/settings?gmail_error=${encodeURIComponent(error)}`, request.url)
+        new URL(`/dashboard?gmail_error=${encodeURIComponent(error)}`, request.url)
       );
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        new URL("/dashboard/settings?gmail_error=missing_params", request.url)
+        new URL("/dashboard?gmail_error=missing_params", request.url)
       );
     }
 
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       const errorData = await tokenResponse.text();
       console.error("Token exchange failed:", errorData);
       return NextResponse.redirect(
-        new URL("/dashboard/settings?gmail_error=token_exchange_failed", request.url)
+        new URL("/dashboard?gmail_error=token_exchange_failed", request.url)
       );
     }
 
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     if (!refresh_token) {
       console.error("No refresh token received - user may have already authorized");
       return NextResponse.redirect(
-        new URL("/dashboard/settings?gmail_error=no_refresh_token", request.url)
+        new URL("/dashboard?gmail_error=no_refresh_token", request.url)
       );
     }
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     if (!userinfoResponse.ok) {
       console.error("Failed to get user info");
       return NextResponse.redirect(
-        new URL("/dashboard/settings?gmail_error=userinfo_failed", request.url)
+        new URL("/dashboard?gmail_error=userinfo_failed", request.url)
       );
     }
 
@@ -100,13 +100,13 @@ export async function GET(request: NextRequest) {
     } catch (convexError) {
       console.error("Failed to store Gmail connection:", convexError);
       return NextResponse.redirect(
-        new URL("/dashboard/settings?gmail_error=storage_failed", request.url)
+        new URL("/dashboard?gmail_error=storage_failed", request.url)
       );
     }
   } catch (error) {
     console.error("Gmail callback error:", error);
     return NextResponse.redirect(
-      new URL("/dashboard/settings?gmail_error=unknown", request.url)
+      new URL("/dashboard?gmail_error=unknown", request.url)
     );
   }
 }

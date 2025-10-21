@@ -101,14 +101,26 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         continue;
       }
 
-      // Validate billing cycle
-      const billingCycle = receipt.billingCycle === "weekly" ||
-                          receipt.billingCycle === "monthly" ||
-                          receipt.billingCycle === "yearly"
-        ? receipt.billingCycle
-        : "monthly";
+      // ============================================================================
+      // SMART RENEWAL PREDICTION - Analyze receipt patterns for this merchant
+      // ============================================================================
 
-      // Create new detection candidate
+      // Get ALL receipts for this merchant to analyze patterns
+      const merchantReceipts = await ctx.db
+        .query("emailReceipts")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("merchantName"), receipt.merchantName!),
+            q.eq(q.field("parsed"), true)
+          )
+        )
+        .collect();
+
+      // Analyze receipt patterns to predict billing cycle and next renewal
+      const prediction = analyzeReceiptPatterns(merchantReceipts, receipt.billingCycle);
+
+      // Create new detection candidate with smart predictions
       const candidateId = await ctx.db.insert("detectionCandidates", {
         userId: args.userId,
         source: "email",
@@ -116,10 +128,10 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         proposedName: receipt.merchantName,
         proposedAmount: receipt.amount,
         proposedCurrency: receipt.currency || "USD",
-        proposedCadence: billingCycle,
-        proposedNextBilling: receipt.nextChargeDate || now + 30 * 24 * 60 * 60 * 1000,
-        confidence: receipt.parsingConfidence!,
-        detectionReason: `Detected from email receipt: ${receipt.subject}`,
+        proposedCadence: prediction.cadence,
+        proposedNextBilling: prediction.nextRenewal,
+        confidence: prediction.confidence,
+        detectionReason: prediction.reason,
         status: "pending",
         rawData: {
           from: receipt.from,
@@ -137,7 +149,7 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
       createdCount++;
 
       // TODO: Create notification for user once notifications table is added to schema
-      console.log(`New detection candidate: ${receipt.merchantName} (${receipt.amount} ${receipt.currency}/${billingCycle})`);
+      console.log(`New detection candidate: ${receipt.merchantName} (${receipt.amount} ${receipt.currency}/${prediction.cadence}) - Confidence: ${Math.round(prediction.confidence * 100)}%`);
     }
 
     console.log(`Created ${createdCount} detection candidates from email receipts`);
@@ -386,3 +398,191 @@ export const runFullEmailDetectionPipeline = mutation({
     };
   },
 });
+
+// ============================================================================
+// SMART RENEWAL PREDICTION - Pattern Analysis Functions
+// ============================================================================
+
+/**
+ * Analyze receipt patterns to predict billing cycle and next renewal
+ * Adapted from bank transaction detection logic
+ */
+function analyzeReceiptPatterns(
+  receipts: any[],
+  parsedCycle: string | null | undefined
+): {
+  cadence: "weekly" | "monthly" | "yearly";
+  nextRenewal: number;
+  confidence: number;
+  reason: string;
+} {
+  const now = Date.now();
+
+  // Single receipt: use parsed cycle with low confidence
+  if (receipts.length === 1) {
+    const receipt = receipts[0];
+    const cadence = validateCadence(parsedCycle);
+    const daysToAdd = cadence === "weekly" ? 7 : cadence === "monthly" ? 30 : 365;
+
+    const nextRenewal = receipt.nextChargeDate ||
+                       receipt.receivedAt + daysToAdd * 24 * 60 * 60 * 1000;
+
+    return {
+      cadence,
+      nextRenewal,
+      confidence: 0.5, // Low confidence with single receipt
+      reason: `Single ${cadence} receipt detected`,
+    };
+  }
+
+  // Multiple receipts: analyze pattern
+  // Sort by received date
+  const sorted = [...receipts].sort((a, b) => a.receivedAt - b.receivedAt);
+
+  // Calculate intervals between receipts (in days)
+  const intervals: number[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prevDate = sorted[i - 1].receivedAt;
+    const currDate = sorted[i].receivedAt;
+    const daysDiff = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+    intervals.push(daysDiff);
+  }
+
+  // Calculate median interval
+  const medianInterval = calculateMedian(intervals);
+
+  // Determine cadence based on median interval
+  let cadence: "weekly" | "monthly" | "yearly";
+  let expectedInterval: number;
+
+  if (medianInterval >= 6 && medianInterval <= 8) {
+    cadence = "weekly";
+    expectedInterval = 7;
+  } else if (medianInterval >= 25 && medianInterval <= 35) {
+    cadence = "monthly";
+    expectedInterval = 30;
+  } else if (medianInterval >= 350 && medianInterval <= 380) {
+    cadence = "yearly";
+    expectedInterval = 365;
+  } else {
+    // No clear pattern - fallback to parsed cycle
+    cadence = validateCadence(parsedCycle);
+    expectedInterval = cadence === "weekly" ? 7 : cadence === "monthly" ? 30 : 365;
+  }
+
+  // Calculate periodicity score (how consistent are intervals?)
+  const periodicityScore = calculatePeriodicityScore(intervals, expectedInterval);
+
+  // Calculate confidence based on:
+  // - Number of receipts (more = higher confidence)
+  // - Periodicity score (consistent intervals = higher confidence)
+  // - Parsed cycle match (if parsed cycle matches detected pattern)
+  let confidence = periodicityScore * 0.7;
+
+  // Bonus for multiple receipts
+  if (receipts.length >= 3) {
+    confidence += 0.15;
+  }
+  if (receipts.length >= 5) {
+    confidence += 0.1;
+  }
+
+  // Bonus if parsed cycle matches detected pattern
+  if (parsedCycle && parsedCycle === cadence) {
+    confidence += 0.05;
+  }
+
+  // Cap at 1.0
+  confidence = Math.min(1.0, confidence);
+
+  // Predict next renewal based on last receipt + median interval
+  const lastReceipt = sorted[sorted.length - 1];
+  const nextRenewal = lastReceipt.receivedAt + expectedInterval * 24 * 60 * 60 * 1000;
+
+  // Build detection reason
+  const reason = buildDetectionReason(
+    receipts.length,
+    cadence,
+    periodicityScore,
+    medianInterval,
+    expectedInterval
+  );
+
+  return {
+    cadence,
+    nextRenewal,
+    confidence,
+    reason,
+  };
+}
+
+/**
+ * Validate and normalize cadence string
+ */
+function validateCadence(cadence: string | null | undefined): "weekly" | "monthly" | "yearly" {
+  if (cadence === "weekly" || cadence === "monthly" || cadence === "yearly") {
+    return cadence;
+  }
+  return "monthly"; // Default fallback
+}
+
+/**
+ * Calculate median value from array
+ */
+function calculateMedian(values: number[]): number {
+  if (values.length === 0) return 30; // Default to monthly
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+/**
+ * Calculate periodicity score (0-1, how consistent are intervals?)
+ */
+function calculatePeriodicityScore(intervals: number[], expectedInterval: number): number {
+  if (intervals.length === 0) return 0.5;
+
+  // Calculate how close each interval is to expected
+  const deviations = intervals.map((interval) => {
+    const deviation = Math.abs(interval - expectedInterval);
+    const percentDeviation = deviation / expectedInterval;
+    return Math.max(0, 1 - percentDeviation);
+  });
+
+  // Average score
+  return deviations.reduce((sum, score) => sum + score, 0) / deviations.length;
+}
+
+/**
+ * Build human-readable detection reason
+ */
+function buildDetectionReason(
+  receiptCount: number,
+  cadence: string,
+  periodicityScore: number,
+  medianInterval: number,
+  expectedInterval: number
+): string {
+  const reasons: string[] = [];
+
+  // Receipt count
+  reasons.push(`${receiptCount} receipt${receiptCount > 1 ? "s" : ""} found`);
+
+  // Pattern detection
+  if (receiptCount > 1) {
+    const avgDays = Math.round(medianInterval);
+    if (periodicityScore >= 0.9) {
+      reasons.push(`highly consistent ${cadence} pattern (~${avgDays} days apart)`);
+    } else if (periodicityScore >= 0.7) {
+      reasons.push(`consistent ${cadence} pattern (~${avgDays} days apart)`);
+    } else if (periodicityScore >= 0.5) {
+      reasons.push(`likely ${cadence} pattern (~${avgDays} days apart)`);
+    } else {
+      reasons.push(`estimated as ${cadence}`);
+    }
+  }
+
+  return reasons.join(", ");
+}

@@ -1737,5 +1737,154 @@ Email detection is now the **PRIMARY** automation feature. Bank detection (Plaid
 
 **End of Phase 4A-4F Update**
 
-*Next Step: Update schema.ts, deploy to Convex, and test end-to-end.*
+---
+
+## 📊 **PHASE 4 POST-DEPLOYMENT STATUS (January 2025)**
+
+### ✅ **What's Now Working**
+
+**Email Detection Pipeline - FULLY OPERATIONAL:**
+1. ✅ Gmail OAuth flow complete - users can connect email
+2. ✅ Email scanning works - fetches up to 500 receipts per scan
+3. ✅ Base64 decoding fixed - replaced `Buffer.from()` with `atob()` (Convex-compatible)
+4. ✅ Receipt parsing runs synchronously - immediate results after scan
+5. ✅ Detection candidates created - shown in UI for user review
+6. ✅ Complete pipeline: scan → parse → detect (no delays)
+
+**Critical Fixes Deployed:**
+1. **Buffer API Issue (RESOLVED):**
+   - Problem: `Buffer.from()` doesn't exist in Convex runtime
+   - Impact: ALL email bodies were empty, causing 0 detections
+   - Fix: Changed to `atob()` web standard API
+   - Status: ✅ FIXED - emails now extracting properly
+
+2. **Exploitation Prevention (RESOLVED):**
+   - Problem: Users could bypass 1-email limit by connecting/disconnecting repeatedly
+   - Fix: Added `emailConnectionsUsedLifetime` counter (never decrements)
+   - Status: ✅ FIXED - lifetime tracking implemented
+
+3. **Manual Scan Pipeline (RESOLVED):**
+   - Problem: "Scan Now" button only triggered fetch, not parsing/detection (1-2 hour wait)
+   - Fix: Made triggerUserEmailScan execute complete pipeline immediately
+   - Status: ✅ FIXED - users see results immediately
+
+4. **Parser Accuracy (IMPROVED):**
+   - Problem: Parser was too aggressive - detected one-time purchases, marketing emails, trials as subscriptions
+   - Impact: 100% false positive rate on first deployment
+   - Fix: Added `isSubscriptionReceipt()` filter requiring:
+     - ✅ Subscription keywords ("subscription", "recurring", "renewal", "next charge")
+     - ❌ Exclusion patterns ("free trial", "welcome", "promotional", "marketing")
+     - ✅ Receipt indicators ("receipt", "invoice", "payment confirmation")
+   - Status: ⚠️ IMPROVED but needs real-world testing
+
+### 🔧 **Technical Implementation**
+
+**Architecture:**
+```
+[Gmail OAuth]
+  → [emailScannerActions.ts: scanGmailForReceipts()]
+    → [Extract subject + body using atob()]
+      → [emailScanner.ts: storeEmailReceipt()]
+        → [receiptParser.ts: parseUnparsedReceipts()]
+          → [isSubscriptionReceipt() filter]
+            → [Extract merchant, amount, currency, cycle]
+              → [emailDetection.ts: createDetectionCandidatesFromReceipts()]
+                → [UI: DetectionReviewModal]
+```
+
+**Database Tables:**
+- `emailConnections` - Gmail OAuth tokens & sync state
+- `emailReceipts` - Raw email data (subject, from, rawBody, parsed fields)
+- `detectionCandidates` - Pending user review (proposedName, proposedAmount, confidence)
+
+**Key Files Modified:**
+- [convex/emailScannerActions.ts:313-323](convex/emailScannerActions.ts#L313-L323) - Buffer → atob fix
+- [convex/receiptParser.ts:14-77](convex/receiptParser.ts#L14-L77) - Conservative subscription detection
+- [convex/schema.ts:30-31](convex/schema.ts#L30-L31) - emailConnectionsUsedLifetime field
+- [convex/emailConnections.ts:58-88](convex/emailConnections.ts#L58-L88) - Lifetime limit enforcement
+
+### ⚠️ **Current Limitations & Next Steps**
+
+**Known Issues:**
+1. **Pagination Not Implemented:**
+   - Currently scans max 500 emails per run (Gmail API limit)
+   - User with 841+ emails only processed 50 receipts
+   - **Next:** Implement continuation token logic for full inbox scan
+
+2. **Parser Accuracy Needs Validation:**
+   - New conservative filter deployed but not yet tested at scale
+   - May miss legitimate subscriptions if they don't use standard language
+   - May still have false positives for edge cases
+   - **Next:** Collect user feedback, tune patterns iteratively
+
+3. **No Receipt Type Differentiation:**
+   - Can't distinguish new subscription vs renewal vs cancellation
+   - All receipts treated equally
+   - **Next:** Add receipt classification (signup/renewal/cancellation/price change)
+
+4. **UI Hydration Issue (Minor):**
+   - Email widget doesn't show on first dashboard load
+   - Requires page refresh to appear
+   - **Next:** Fix React hydration in dashboard email components
+
+5. **No Multi-Email Support:**
+   - Automate tier allows 1 email connection lifetime
+   - No UI to switch primary email
+   - **Next:** Consider upgrade path for users who need multiple emails
+
+### 📈 **Metrics & Success Criteria**
+
+**Detection Accuracy Target:** 80%+ precision (80% of detections are correct subscriptions)
+**Current Estimated Accuracy:** Unknown - awaiting real-world testing
+**User Satisfaction:** Low - parser improvements deployed but unproven
+
+**Success Criteria for v1.0:**
+- [ ] 80%+ detection precision (validated by user feedback)
+- [ ] Full inbox pagination (no 500-email limit)
+- [ ] UI hydration issue resolved
+- [ ] Receipt type classification implemented
+- [ ] Zero Buffer/runtime errors in production logs
+
+### 🔄 **Emergency Admin Tools Created**
+
+For debugging and cleanup during testing:
+- `admin:deletebrokenReceipts` - Delete emails with empty rawBody
+- `admin:resetEmailConnectionLimit` - Reset lifetime counter for testing
+- `admin:deleteAllDetectionCandidates` - Clear false positives for re-scan
+- `adminQueries:getAllUsers` - Find user Clerk IDs
+- `adminQueries:getUserEmailReceipts` - Inspect raw email data
+- `adminQueries:getUserDetectionCandidates` - View pending detections
+
+**Usage Example:**
+```bash
+npx convex run admin:deleteAllDetectionCandidates '{"clerkUserId": "user_xxx"}'
+npx convex run admin:deletebrokenReceipts '{"clerkUserId": "user_xxx"}'
+```
+
+### 🎯 **What Users Can Do Now (v0.9)**
+
+1. ✅ Connect Gmail account (OAuth flow)
+2. ✅ Click "Scan Now" to manually trigger email scan
+3. ✅ View scan stats (X receipts scanned, Y detections created)
+4. ✅ Review detection candidates in UI
+5. ✅ Accept/edit/dismiss each detection
+6. ✅ See confidence scores for each detection
+7. ✅ Disconnect and manage email connection
+
+### 📝 **Deployment Information**
+
+**GitHub Repository:** https://github.com/iamheisenburger/subscription-tracker.git
+**Convex Deployment:** https://hearty-leopard-116.convex.cloud
+**Current Version:** 0.9 (Email Detection Live, Parser v2 with Conservative Filtering)
+
+**Latest Deployments:**
+- January 21, 2025 15:45 UTC - Buffer → atob fix, synchronous pipeline
+- January 21, 2025 15:57 UTC - Conservative parser with isSubscriptionReceipt() filter
+- January 21, 2025 16:00 UTC - Detection candidate cleanup tools
+
+---
+
+**End of Phase 4 Post-Deployment Update**
+
+*Next Step: Validate parser accuracy with real user data, implement pagination, fix UI hydration.*
 

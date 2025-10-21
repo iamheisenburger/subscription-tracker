@@ -8,6 +8,75 @@ import { mutation, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 /**
+ * Check if email is actually a subscription receipt/renewal
+ * Filters out one-time purchases, marketing emails, trial signups
+ */
+function isSubscriptionReceipt(text: string, subject: string): boolean {
+  // REQUIRED: Must have subscription-specific keywords
+  const subscriptionKeywords = [
+    /subscription/i,
+    /recurring/i,
+    /renewal/i,
+    /renew/i,
+    /next\s+(?:charge|payment|billing)/i,
+    /auto[\s-]?renew/i,
+    /billing\s+cycle/i,
+    /monthly\s+(?:charge|payment)/i,
+    /annual\s+(?:charge|payment)/i,
+  ];
+
+  const hasSubscriptionKeyword = subscriptionKeywords.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  if (!hasSubscriptionKeyword) {
+    return false;
+  }
+
+  // EXCLUDE: Marketing emails, trials, signups, confirmations of new services
+  const excludePatterns = [
+    /start\s+(?:your\s+)?(?:free\s+)?trial/i,
+    /free\s+trial/i,
+    /trial\s+period/i,
+    /welcome\s+to/i,
+    /getting\s+started/i,
+    /confirm\s+(?:your\s+)?(?:email|account)/i,
+    /verify\s+(?:your\s+)?(?:email|account)/i,
+    /new\s+account/i,
+    /account\s+created/i,
+    /sign[\s-]?up\s+confirmation/i,
+    /promotional/i,
+    /marketing/i,
+    /newsletter/i,
+  ];
+
+  const isExcluded = excludePatterns.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  if (isExcluded) {
+    return false;
+  }
+
+  // REQUIRE: Must have receipt/invoice indicators
+  const receiptKeywords = [
+    /receipt/i,
+    /invoice/i,
+    /payment\s+confirmation/i,
+    /payment\s+received/i,
+    /charge\s+confirmation/i,
+    /thank\s+you\s+for\s+your\s+payment/i,
+    /billing\s+statement/i,
+  ];
+
+  const hasReceiptKeyword = receiptKeywords.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  return hasReceiptKeyword;
+}
+
+/**
  * Parse receipt data - core logic extracted for reuse
  */
 function parseReceiptData(receipt: {
@@ -17,6 +86,22 @@ function parseReceiptData(receipt: {
 }) {
   // Combine subject and body for parsing
   const text = `${receipt.subject}\n${receipt.rawBody || ""}`.toLowerCase();
+
+  // CRITICAL: First check if this is actually a subscription receipt
+  // This prevents false positives from one-time purchases, marketing emails, etc.
+  const isSubscription = isSubscriptionReceipt(text, receipt.subject.toLowerCase());
+
+  if (!isSubscription) {
+    console.log(`⏭️  Skipping non-subscription email: ${receipt.subject.substring(0, 50)}...`);
+    return {
+      merchantName: null,
+      amount: null,
+      currency: "USD",
+      billingCycle: null,
+      nextChargeDate: null,
+      confidence: 0,
+    };
+  }
 
   // Extract merchant name
   const merchantResult = extractMerchant(text, receipt.from, receipt.subject);

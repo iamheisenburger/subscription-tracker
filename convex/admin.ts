@@ -86,3 +86,41 @@ export const resetEmailConnectionLimit = mutation({
     };
   },
 });
+
+/**
+ * Delete all detection candidates for a user
+ * Use this to clear out false positives and re-scan with improved parser
+ */
+export const deleteAllDetectionCandidates = mutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const candidates = await ctx.db
+      .query("detectionCandidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    console.log(`🗑️  Found ${candidates.length} detection candidates to delete`);
+
+    for (const candidate of candidates) {
+      await ctx.db.delete(candidate._id);
+    }
+
+    console.log(`✅ Deleted ${candidates.length} detection candidates`);
+
+    return {
+      deleted: candidates.length,
+      message: "All detection candidates deleted successfully",
+    };
+  },
+});

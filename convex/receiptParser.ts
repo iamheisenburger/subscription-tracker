@@ -93,7 +93,7 @@ export const parseReceipt = internalMutation({
 /**
  * Parse all unparsed receipts for a user
  */
-export const parseUnparsedReceipts = mutation({
+export const parseUnparsedReceipts = internalMutation({
   args: {
     clerkUserId: v.string(),
   },

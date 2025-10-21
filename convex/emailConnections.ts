@@ -55,19 +55,17 @@ export const createGmailConnection = mutation({
       return { connectionId: existing._id, updated: true };
     }
 
-    // Check connection limit before creating new connection
-    const existingConnections = await ctx.db
-      .query("emailConnections")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+    // Check LIFETIME connection limit to prevent exploitation
+    // Users cannot game the system by disconnecting/reconnecting different emails
+    const lifetimeConnections = user.emailConnectionsUsedLifetime || 0;
 
     // Tier-based limit check
     const userTier = user.tier || "free_user";
     const connectionLimit = userTier === "automate_1" ? 1 : 0;
 
-    if (existingConnections.length >= connectionLimit) {
+    if (lifetimeConnections >= connectionLimit) {
       throw new Error(
-        `Connection limit reached. Your ${userTier} tier allows ${connectionLimit} email connection${connectionLimit !== 1 ? 's' : ''}.`
+        `Email connection limit reached. Your ${userTier} tier allows ${connectionLimit} unique email connection${connectionLimit !== 1 ? 's' : ''} (lifetime). You've already connected ${lifetimeConnections} email${lifetimeConnections !== 1 ? 's' : ''}. Disconnecting does not reset this limit.`
       );
     }
 
@@ -82,6 +80,11 @@ export const createGmailConnection = mutation({
       status: "active",
       createdAt: now,
       updatedAt: now,
+    });
+
+    // Increment lifetime connection counter (NEVER decrements - prevents exploitation)
+    await ctx.db.patch(user._id, {
+      emailConnectionsUsedLifetime: lifetimeConnections + 1,
     });
 
     return { connectionId, updated: false };

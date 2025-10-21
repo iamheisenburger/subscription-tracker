@@ -27,6 +27,8 @@ export default defineSchema({
     pushEnabled: v.optional(v.boolean()), // User's push notification preference
     // Bank integration fields
     connectionsUsed: v.optional(v.number()), // Number of bank connections currently active
+    // Email integration fields - Prevent exploitation
+    emailConnectionsUsedLifetime: v.optional(v.number()), // Total unique emails EVER connected (never decrements)
     orgId: v.optional(v.id("organizations")), // For Family/Teams tier
     role: v.optional(v.union(v.literal("owner"), v.literal("member"))), // Role within organization
     createdAt: v.number(),

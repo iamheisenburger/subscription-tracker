@@ -66,14 +66,16 @@ export const scanGmailForReceipts = internalAction({
       if (connection.syncCursor) {
         searchQuery = `${searchQuery} after:${connection.syncCursor}`;
       } else {
-        // First scan: get emails from last 30 days
-        const thirtyDaysAgo = Math.floor((now - 30 * 24 * 60 * 60 * 1000) / 1000);
-        searchQuery = `${searchQuery} after:${thirtyDaysAgo}`;
+        // First scan: get emails from last 2 YEARS to catch all historical subscriptions
+        // This ensures we find all active and past subscriptions, not just recent ones
+        const twoYearsAgo = Math.floor((now - 2 * 365 * 24 * 60 * 60 * 1000) / 1000);
+        searchQuery = `${searchQuery} after:${twoYearsAgo}`;
       }
 
       // Fetch messages from Gmail API
+      // Use maxResults=500 (Gmail's maximum) to scan more emails per run
       const messagesResponse = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(searchQuery)}&maxResults=100`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(searchQuery)}&maxResults=500`,
         {
           headers: {
             Authorization: `Bearer ${connection.accessToken}`,
@@ -348,6 +350,25 @@ export const triggerUserEmailScan = action({
         });
         results.push(result);
       }
+    }
+
+    // IMMEDIATELY parse receipts and create detection candidates
+    // Don't wait for hourly cron jobs - user expects instant results
+    console.log("📋 Parsing receipts immediately after scan...");
+    await ctx.runMutation(internal.receiptParser.parseUnparsedReceipts, {
+      clerkUserId: args.clerkUserId,
+    });
+
+    console.log("🎯 Creating detection candidates immediately after parsing...");
+    // Get user ID for detection creation
+    const user = await ctx.runMutation(internal.emailScanner.getUserByClerkId, {
+      clerkUserId: args.clerkUserId,
+    });
+
+    if (user) {
+      await ctx.runMutation(internal.emailDetection.createDetectionCandidatesFromReceipts, {
+        userId: user._id,
+      });
     }
 
     return {

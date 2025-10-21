@@ -483,6 +483,21 @@ export const getUserConnectionsInternal = internalMutation({
 });
 
 /**
+ * Get user by Clerk ID (for actions)
+ */
+export const getUserByClerkId = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+  },
+});
+
+/**
  * Update connection status (for actions)
  */
 export const updateConnectionStatus = internalMutation({

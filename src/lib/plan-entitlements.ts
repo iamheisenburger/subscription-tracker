@@ -212,6 +212,43 @@ export function canAddBankConnection(
 }
 
 /**
+ * Check if user can add another email connection
+ * Email connections use the same limit as bank connections (connectionsIncluded)
+ */
+export function canAddEmailConnection(
+  tier: UserTier,
+  currentEmailConnections: number
+): { allowed: boolean; requiresUpgrade: boolean; maxConnections: number } {
+  const entitlement = getPlanEntitlement(tier);
+
+  // Email parsing requires canParseEmails feature
+  if (!entitlement.canParseEmails) {
+    return {
+      allowed: false,
+      requiresUpgrade: true,
+      maxConnections: 0,
+    };
+  }
+
+  // Use same connection limit as bank connections
+  const maxConnections = entitlement.connectionsIncluded;
+
+  if (currentEmailConnections < maxConnections) {
+    return {
+      allowed: true,
+      requiresUpgrade: false,
+      maxConnections,
+    };
+  }
+
+  return {
+    allowed: false,
+    requiresUpgrade: false, // Already on correct tier, just hit limit
+    maxConnections,
+  };
+}
+
+/**
  * Calculate overage cost for additional connections
  */
 export function calculateConnectionOverage(

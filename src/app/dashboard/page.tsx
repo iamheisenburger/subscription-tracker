@@ -11,6 +11,7 @@ import { ConnectedEmailsWidget } from "@/components/dashboard/automate/connected
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
+import { GmailConnectionToast } from "@/components/dashboard/gmail-connection-toast";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -37,6 +38,9 @@ export default async function DashboardPage() {
 
       {/* Auto Tier Sync - Silent reconciliation */}
       <AutoTierSync />
+
+      {/* Gmail Connection Success Toast */}
+      <GmailConnectionToast />
 
       {/* Renewal Confirmation System */}
       <RenewalConfirmationSystem />

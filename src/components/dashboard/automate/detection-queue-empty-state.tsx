@@ -4,25 +4,62 @@
  * Detection Queue Empty State Component
  * Educational placeholder shown when no detections are pending
  * Explains what auto-detection does and when users will see results
+ * UPDATED: Shows connected email and last scan time
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Clock, CheckCircle2 } from "lucide-react";
+import { Sparkles, Clock, CheckCircle2, Mail } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
+import { formatDistanceToNow } from "date-fns";
 
 export function DetectionQueueEmptyState() {
+  const { user } = useUser();
+
+  // Get email connection info
+  const connections = useQuery(
+    api.emailConnections.getUserConnections,
+    user?.id ? { clerkUserId: user.id } : "skip"
+  );
+
+  const scanStats = useQuery(
+    api.emailScanner.getUserScanStats,
+    user?.id ? { clerkUserId: user.id } : "skip"
+  );
+
+  const activeConnection = connections?.[0]; // Get first (primary) connection
+  const lastScanText = scanStats?.lastScanAt
+    ? formatDistanceToNow(scanStats.lastScanAt, { addSuffix: true })
+    : "Never scanned";
   return (
     <Card className="border-dashed">
       <CardHeader>
-        <div className="flex items-center space-x-2">
-          <div className="rounded-full bg-primary/10 p-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="rounded-full bg-primary/10 p-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-sans">Auto-Detection Active</CardTitle>
+              <CardDescription className="text-xs font-sans">
+                {activeConnection ? (
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="h-3 w-3" />
+                    {activeConnection.email}
+                  </span>
+                ) : (
+                  "Monitoring your email for recurring subscriptions"
+                )}
+              </CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-base font-sans">Auto-Detection Active</CardTitle>
-            <CardDescription className="text-xs font-sans">
-              Monitoring your email for recurring subscriptions
-            </CardDescription>
-          </div>
+          {activeConnection && (
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground font-sans">Last scan</p>
+              <p className="text-xs font-medium font-sans">{lastScanText}</p>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -50,7 +87,15 @@ export function DetectionQueueEmptyState() {
           <div className="mt-4 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground font-sans">
             <p className="flex items-center gap-2">
               <Sparkles className="h-3 w-3" />
-              No pending detections right now. New charges are analyzed automatically.
+              {activeConnection ? (
+                <>
+                  {(scanStats?.totalReceipts ?? 0) > 0
+                    ? `No pending detections right now. We've scanned ${scanStats?.totalReceipts} ${scanStats?.totalReceipts === 1 ? 'receipt' : 'receipts'} so far.`
+                    : "No pending detections right now. New charges are analyzed automatically."}
+                </>
+              ) : (
+                "Connect your email to start automatic subscription detection."
+              )}
             </p>
           </div>
         </div>

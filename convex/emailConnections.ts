@@ -55,6 +55,22 @@ export const createGmailConnection = mutation({
       return { connectionId: existing._id, updated: true };
     }
 
+    // Check connection limit before creating new connection
+    const existingConnections = await ctx.db
+      .query("emailConnections")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    // Tier-based limit check
+    const userTier = user.tier || "free_user";
+    const connectionLimit = userTier === "automate_1" ? 1 : 0;
+
+    if (existingConnections.length >= connectionLimit) {
+      throw new Error(
+        `Connection limit reached. Your ${userTier} tier allows ${connectionLimit} email connection${connectionLimit !== 1 ? 's' : ''}.`
+      );
+    }
+
     // Create new connection
     const connectionId = await ctx.db.insert("emailConnections", {
       userId: user._id,

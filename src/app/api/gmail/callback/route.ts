@@ -93,9 +93,9 @@ export async function GET(request: NextRequest) {
         expiresIn: expires_in,
       });
 
-      // Success! Redirect to settings with success message
+      // Success! Redirect to dashboard with success message
       return NextResponse.redirect(
-        new URL("/dashboard/settings?gmail_connected=true", request.url)
+        new URL("/dashboard?gmail_connected=true", request.url)
       );
     } catch (convexError) {
       console.error("Failed to store Gmail connection:", convexError);

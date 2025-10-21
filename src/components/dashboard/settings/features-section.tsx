@@ -23,7 +23,7 @@ interface FeatureItem {
 }
 
 export function FeaturesSection() {
-  const { tier } = useUserTier();
+  const { tier, isLoading: isTierLoading } = useUserTier();
   const { user } = useUser();
 
   // Check if user has email connected
@@ -34,6 +34,23 @@ export function FeaturesSection() {
 
   const isAutomate = tier === "automate_1";
   const hasEmailConnected = connections && connections.length > 0;
+
+  // Show loading state while tier data is being fetched
+  if (isTierLoading || connections === undefined) {
+    return (
+      <div className="p-6 border rounded-lg bg-card">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold font-sans">Features & Capabilities</h2>
+          <p className="text-sm text-muted-foreground font-sans mt-1">Loading...</p>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Define all features with their status
   const features: FeatureItem[] = [

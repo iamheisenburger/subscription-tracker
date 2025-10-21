@@ -9,17 +9,20 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
+import { useUserTier } from "@/hooks/use-user-tier";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Mail, Trash2, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Mail, Trash2, RefreshCw, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 
 export function EmailConnectionSettings() {
   const { user } = useUser();
+  const { tier } = useUserTier();
   const searchParams = useSearchParams();
 
   const connections = useQuery(
@@ -28,6 +31,13 @@ export function EmailConnectionSettings() {
   );
 
   const disconnectEmail = useMutation(api.emailConnections.disconnectEmail);
+
+  // Tier-based limits
+  const isAutomate = tier === "automate_1";
+  const maxConnections = isAutomate ? 1 : 0;
+  const currentConnections = connections?.length || 0;
+  const canAddConnection = currentConnections < maxConnections;
+  const requiresUpgrade = !isAutomate;
 
   // Handle OAuth callback messages
   useEffect(() => {
@@ -185,6 +195,18 @@ export function EmailConnectionSettings() {
                   <Trash2 className="h-4 w-4 mr-2" />
                   Disconnect
                 </Button>
+              ) : requiresUpgrade ? (
+                <Link href="/dashboard/upgrade">
+                  <Button variant="outline" className="font-sans">
+                    <Lock className="h-4 w-4 mr-2" />
+                    Upgrade to Connect
+                  </Button>
+                </Link>
+              ) : !canAddConnection ? (
+                <Button disabled className="font-sans">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Limit Reached (1/1)
+                </Button>
               ) : (
                 <Button onClick={handleConnectGmail} className="font-sans">
                   <Mail className="h-4 w-4 mr-2" />
@@ -194,6 +216,23 @@ export function EmailConnectionSettings() {
             </div>
           </div>
         </div>
+
+        {/* Connection Limit Info */}
+        {isAutomate && (
+          <div className="bg-muted/30 border rounded-lg p-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground font-sans">Email connections:</span>
+              <span className="font-medium font-sans">
+                {currentConnections} / {maxConnections} used
+              </span>
+            </div>
+            {currentConnections >= maxConnections && (
+              <p className="text-xs text-muted-foreground font-sans mt-2">
+                Your Automate tier includes {maxConnections} email connection. Disconnect your current email to connect a different one.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Outlook Coming Soon */}
         <div className="border rounded-lg p-4 opacity-60">

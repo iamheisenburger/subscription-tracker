@@ -126,25 +126,36 @@ export const parseUnparsedReceipts = internalMutation({
       throw new Error("User not found");
     }
 
-    // Get unparsed receipts
-    const unparsedReceipts = await ctx.db
+    // Get unparsed receipts OR receipts marked as parsed but missing actual data
+    // This handles cases where receipts were marked "parsed" by the broken async system
+    // but don't actually have merchantName/amount extracted
+    const allReceipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .filter((q) => q.eq(q.field("parsed"), false))
-      .take(100); // Process 100 at a time (increased from 50)
+      .take(200); // Get more receipts to filter
 
-    if (unparsedReceipts.length === 0) {
-      console.log("📋 No unparsed receipts found");
-      return { message: "No unparsed receipts found", count: 0, parsed: 0 };
+    const receiptsToProcess = allReceipts.filter(
+      (receipt) =>
+        // Either not parsed yet
+        !receipt.parsed ||
+        // Or marked as parsed but missing critical data (broken parse)
+        (!receipt.merchantName && !receipt.amount)
+    ).slice(0, 100); // Process max 100 at a time
+
+    if (receiptsToProcess.length === 0) {
+      console.log("📋 No receipts need parsing (all receipts have valid data)");
+      return { message: "No receipts need parsing", count: 0, parsed: 0 };
     }
 
-    console.log(`📋 Parsing ${unparsedReceipts.length} receipts synchronously...`);
+    console.log(`📋 Found ${receiptsToProcess.length} receipts to parse (${allReceipts.filter(r => !r.parsed).length} unparsed, ${allReceipts.filter(r => r.parsed && !r.merchantName && !r.amount).length} incomplete)`);
+
+    console.log(`📋 Parsing ${receiptsToProcess.length} receipts synchronously...`);
 
     let successCount = 0;
     let failCount = 0;
 
     // Parse each receipt SYNCHRONOUSLY (not scheduled)
-    for (const receipt of unparsedReceipts) {
+    for (const receipt of receiptsToProcess) {
       try {
         const parsed = parseReceiptData(receipt);
 
@@ -179,8 +190,8 @@ export const parseUnparsedReceipts = internalMutation({
     console.log(`📋 Parsing complete: ${successCount} successful, ${failCount} failed/low-confidence`);
 
     return {
-      message: `Parsed ${unparsedReceipts.length} receipts: ${successCount} successful`,
-      count: unparsedReceipts.length,
+      message: `Parsed ${receiptsToProcess.length} receipts: ${successCount} successful`,
+      count: receiptsToProcess.length,
       parsed: successCount,
       failed: failCount,
     };

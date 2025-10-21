@@ -436,7 +436,13 @@ function decodeBase64(encoded: string): string {
   try {
     // Gmail uses URL-safe base64 (- and _ instead of + and /)
     const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    return Buffer.from(base64, "base64").toString("utf-8");
+    // Add padding if needed
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+    const paddedBase64 = base64 + padding;
+    // Use atob (Convex-compatible, no Buffer needed)
+    const decoded = atob(paddedBase64);
+    // Convert to UTF-8 (handle special characters)
+    return decodeURIComponent(escape(decoded));
   } catch (error) {
     console.error("Error decoding base64:", error);
     return "";

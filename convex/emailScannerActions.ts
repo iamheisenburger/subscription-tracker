@@ -311,8 +311,11 @@ function decodeBase64(base64url: string): string {
   const paddedBase64 = base64 + padding;
 
   try {
-    // Decode from base64
-    return Buffer.from(paddedBase64, "base64").toString("utf-8");
+    // Decode from base64 using atob (Convex-compatible, no Buffer needed)
+    // atob is a web standard API available in Convex runtime
+    const decoded = atob(paddedBase64);
+    // Convert to UTF-8 (handle special characters)
+    return decodeURIComponent(escape(decoded));
   } catch (error) {
     console.error("Error decoding base64:", error);
     return "";

@@ -152,23 +152,12 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
       }
 
       // ============================================================================
-      // SMART RENEWAL PREDICTION - Analyze receipt patterns for this merchant
+      // SIMPLE RENEWAL PREDICTION - Use single receipt data (no pattern analysis)
+      // FIX: Pattern analysis was causing byte limit errors with large receipt histories
       // ============================================================================
 
-      // Get ALL receipts for this merchant to analyze patterns
-      const merchantReceipts = await ctx.db
-        .query("emailReceipts")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("merchantName"), receipt.merchantName!),
-            q.eq(q.field("parsed"), true)
-          )
-        )
-        .collect();
-
-      // Analyze receipt patterns to predict billing cycle and next renewal
-      const prediction = analyzeReceiptPatterns(merchantReceipts, receipt.billingCycle);
+      // Create simple prediction from single receipt data
+      const prediction = createSimplePrediction(receipt);
 
       // Create new detection candidate with smart predictions
       const candidateId = await ctx.db.insert("detectionCandidates", {
@@ -450,12 +439,45 @@ export const runFullEmailDetectionPipeline = mutation({
 });
 
 // ============================================================================
-// SMART RENEWAL PREDICTION - Pattern Analysis Functions
+// RENEWAL PREDICTION FUNCTIONS
 // ============================================================================
+
+/**
+ * Create simple prediction from single receipt data (no pattern analysis)
+ * FIX: Avoids byte limit errors by not querying receipt history
+ */
+function createSimplePrediction(receipt: any): {
+  cadence: "weekly" | "monthly" | "yearly";
+  nextRenewal: number;
+  confidence: number;
+  reason: string;
+} {
+  // Validate and normalize cadence
+  const cadence = validateCadence(receipt.billingCycle);
+
+  // Calculate next renewal date
+  const daysToAdd = cadence === "weekly" ? 7 : cadence === "monthly" ? 30 : 365;
+  const nextRenewal = receipt.nextChargeDate ||
+                     receipt.receivedAt + daysToAdd * 24 * 60 * 60 * 1000;
+
+  // Use parsing confidence as base, but cap at 0.75 for single receipt
+  const confidence = Math.min(0.75, receipt.parsingConfidence || 0.6);
+
+  // Build reason
+  const reason = `Single ${cadence} receipt detected from ${receipt.merchantName}`;
+
+  return {
+    cadence,
+    nextRenewal,
+    confidence,
+    reason,
+  };
+}
 
 /**
  * Analyze receipt patterns to predict billing cycle and next renewal
  * Adapted from bank transaction detection logic
+ * NOTE: Currently DISABLED to avoid byte limit errors - kept for future use
  */
 function analyzeReceiptPatterns(
   receipts: any[],

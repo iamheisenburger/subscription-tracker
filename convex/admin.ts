@@ -124,3 +124,41 @@ export const deleteAllDetectionCandidates = mutation({
     };
   },
 });
+
+/**
+ * Delete all email receipts for a user
+ * Use this to clear out receipts and start fresh scan
+ */
+export const deleteAllEmailReceipts = mutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const receipts = await ctx.db
+      .query("emailReceipts")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    console.log(`🗑️  Found ${receipts.length} email receipts to delete`);
+
+    for (const receipt of receipts) {
+      await ctx.db.delete(receipt._id);
+    }
+
+    console.log(`✅ Deleted ${receipts.length} email receipts`);
+
+    return {
+      deleted: receipts.length,
+      message: `All ${receipts.length} email receipts deleted successfully`,
+    };
+  },
+});

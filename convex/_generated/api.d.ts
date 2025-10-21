@@ -23,6 +23,7 @@ import type * as cron from "../cron.js";
 import type * as crons from "../crons.js";
 import type * as dailyBankSync from "../dailyBankSync.js";
 import type * as detection from "../detection.js";
+import type * as emailConnectionAdmin from "../emailConnectionAdmin.js";
 import type * as emailConnections from "../emailConnections.js";
 import type * as emailCronJobs from "../emailCronJobs.js";
 import type * as emailDetection from "../emailDetection.js";
@@ -58,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   dailyBankSync: typeof dailyBankSync;
   detection: typeof detection;
+  emailConnectionAdmin: typeof emailConnectionAdmin;
   emailConnections: typeof emailConnections;
   emailCronJobs: typeof emailCronJobs;
   emailDetection: typeof emailDetection;

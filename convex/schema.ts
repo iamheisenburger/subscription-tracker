@@ -455,6 +455,17 @@ export default defineSchema({
     detectionCandidateId: v.optional(v.id("detectionCandidates")), // If created candidate
     parsed: v.boolean(), // Whether we successfully parsed subscription info
     parsingConfidence: v.optional(v.number()), // 0-1 confidence in parsing
+    // Receipt type classification (Phase 2)
+    receiptType: v.optional(v.union(
+      v.literal("new_subscription"),   // Welcome email, first payment
+      v.literal("renewal"),             // Recurring charge, subscription renewed
+      v.literal("cancellation"),        // Subscription cancelled, final payment
+      v.literal("price_change"),        // Price increase notification
+      v.literal("trial_started"),       // Free trial started
+      v.literal("trial_ending"),        // Trial ending soon
+      v.literal("payment_failed"),      // Payment method issue
+      v.literal("unknown")              // Could not classify
+    )),
     rawBody: v.optional(v.string()), // Store for debugging/reprocessing
     createdAt: v.number(),
   })

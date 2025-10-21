@@ -50,10 +50,45 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         .first();
 
       if (existingSubscription) {
-        // Subscription already exists - link receipt and skip candidate creation
+        // Subscription already exists - link receipt and handle based on receipt type
         await ctx.db.patch(receipt._id, {
           subscriptionId: existingSubscription._id,
         });
+
+        // HANDLE CANCELLATION RECEIPTS
+        if (receipt.receiptType === "cancellation") {
+          console.log(`🔴 Cancellation detected for ${receipt.merchantName} - marking subscription as inactive`);
+
+          await ctx.db.patch(existingSubscription._id, {
+            isActive: false,
+            updatedAt: now,
+          });
+
+          // Add to notification history
+          await ctx.db.insert("notificationHistory", {
+            userId: args.userId,
+            type: "subscription_cancelled",
+            title: `Subscription Cancelled: ${receipt.merchantName}`,
+            message: `Your ${receipt.merchantName} subscription has been cancelled`,
+            read: false,
+            metadata: {
+              subscriptionId: existingSubscription._id,
+              cancelledAt: receipt.receivedAt,
+            },
+            createdAt: now,
+          });
+
+          continue;
+        }
+
+        // HANDLE RENEWAL RECEIPTS
+        if (receipt.receiptType === "renewal") {
+          // Update last charge date
+          await ctx.db.patch(existingSubscription._id, {
+            lastChargeAt: receipt.receivedAt,
+            updatedAt: now,
+          });
+        }
 
         // If this is a price change, track it
         if (existingSubscription.cost !== receipt.amount) {
@@ -98,6 +133,21 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
           });
         }
 
+        continue;
+      }
+
+      // ============================================================================
+      // SKIP CANDIDATE CREATION for non-active receipts
+      // ============================================================================
+
+      // Don't create candidates for cancellation, trial started, or trial ending receipts
+      if (
+        receipt.receiptType === "cancellation" ||
+        receipt.receiptType === "trial_started" ||
+        receipt.receiptType === "trial_ending" ||
+        receipt.receiptType === "payment_failed"
+      ) {
+        console.log(`⏭️  Skipping candidate creation for ${receipt.receiptType} receipt: ${receipt.merchantName}`);
         continue;
       }
 

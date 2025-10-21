@@ -99,9 +99,13 @@ function parseReceiptData(receipt: {
       currency: "USD",
       billingCycle: null,
       nextChargeDate: null,
+      receiptType: null,
       confidence: 0,
     };
   }
+
+  // Classify receipt type (renewal, cancellation, etc.)
+  const receiptType = classifyReceiptType(text, receipt.subject);
 
   // Extract merchant name
   const merchantResult = extractMerchant(text, receipt.from, receipt.subject);
@@ -131,6 +135,7 @@ function parseReceiptData(receipt: {
     currency: amountResult.currency,
     billingCycle,
     nextChargeDate,
+    receiptType,
     confidence,
   };
 }
@@ -164,6 +169,7 @@ export const parseReceipt = internalMutation({
           currency: parsed.currency,
           billingCycle: parsed.billingCycle || undefined,
           nextChargeDate: parsed.nextChargeDate || undefined,
+          receiptType: parsed.receiptType || undefined,
           parsed: true,
           parsingConfidence: parsed.confidence,
         });
@@ -252,6 +258,7 @@ export const parseUnparsedReceipts = internalMutation({
             currency: parsed.currency,
             billingCycle: parsed.billingCycle || undefined,
             nextChargeDate: parsed.nextChargeDate || undefined,
+            receiptType: parsed.receiptType || undefined,
             parsed: true,
             parsingConfidence: parsed.confidence,
           });
@@ -533,4 +540,140 @@ function calculateConfidence(data: {
   }
 
   return Math.min(score, 1.0);
+}
+
+// ============================================================================
+// RECEIPT TYPE CLASSIFICATION (Phase 2)
+// ============================================================================
+
+/**
+ * Classify receipt type based on email content
+ * Determines if this is a renewal, cancellation, new subscription, etc.
+ */
+function classifyReceiptType(
+  text: string,
+  subject: string
+): "new_subscription" | "renewal" | "cancellation" | "price_change" | "trial_started" | "trial_ending" | "payment_failed" | "unknown" {
+  const lowerText = text.toLowerCase();
+  const lowerSubject = subject.toLowerCase();
+
+  // 1. CANCELLATION - Highest priority (most important to detect)
+  const cancellationPatterns = [
+    /subscription\s+(?:has\s+been\s+)?cancel(?:led|lation)/i,
+    /(?:we've|we have)\s+cancel(?:led|ed)\s+your\s+subscription/i,
+    /your\s+subscription\s+(?:will\s+)?end/i,
+    /subscription\s+(?:has\s+)?ended/i,
+    /final\s+(?:payment|charge|bill)/i,
+    /(?:will\s+)?no\s+longer\s+be\s+charged/i,
+    /(?:you\s+)?won't\s+be\s+charged/i,
+    /membership\s+(?:has\s+been\s+)?cancel(?:led|lation)/i,
+    /cancel(?:led|lation)\s+confirmation/i,
+    /we're\s+sorry\s+to\s+see\s+you\s+go/i,
+    /subscription\s+termination/i,
+  ];
+
+  for (const pattern of cancellationPatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "cancellation";
+    }
+  }
+
+  // 2. PAYMENT FAILED
+  const paymentFailedPatterns = [
+    /payment\s+(?:method\s+)?(?:failed|declined|unsuccessful)/i,
+    /unable\s+to\s+(?:process\s+)?payment/i,
+    /payment\s+(?:could\s+)?not\s+(?:be\s+)?processed/i,
+    /update\s+(?:your\s+)?payment\s+(?:method|information)/i,
+    /billing\s+(?:problem|issue|error)/i,
+    /action\s+required.+payment/i,
+  ];
+
+  for (const pattern of paymentFailedPatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "payment_failed";
+    }
+  }
+
+  // 3. TRIAL STARTED
+  const trialStartedPatterns = [
+    /(?:free\s+)?trial\s+(?:has\s+)?started/i,
+    /welcome\s+to\s+(?:your\s+)?(?:free\s+)?trial/i,
+    /(?:you've|you\s+have)\s+started\s+(?:a\s+)?(?:free\s+)?trial/i,
+    /trial\s+period\s+(?:has\s+)?begun/i,
+    /enjoy\s+your\s+(?:free\s+)?trial/i,
+  ];
+
+  for (const pattern of trialStartedPatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "trial_started";
+    }
+  }
+
+  // 4. TRIAL ENDING
+  const trialEndingPatterns = [
+    /(?:free\s+)?trial\s+(?:is\s+)?ending/i,
+    /(?:free\s+)?trial\s+(?:will\s+)?end/i,
+    /(?:free\s+)?trial\s+expires?/i,
+    /trial\s+period\s+(?:is\s+)?(?:almost\s+)?over/i,
+    /(?:you'll|you\s+will)\s+be\s+charged.+trial/i,
+  ];
+
+  for (const pattern of trialEndingPatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "trial_ending";
+    }
+  }
+
+  // 5. PRICE CHANGE
+  const priceChangePatterns = [
+    /price\s+(?:increase|change|update)/i,
+    /new\s+(?:pricing|price|rate)/i,
+    /(?:your\s+)?subscription\s+(?:price|cost)\s+(?:is\s+)?changing/i,
+    /rate\s+change/i,
+    /pricing\s+update/i,
+  ];
+
+  for (const pattern of priceChangePatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "price_change";
+    }
+  }
+
+  // 6. NEW SUBSCRIPTION
+  const newSubscriptionPatterns = [
+    /welcome\s+to/i,
+    /thank\s+you\s+for\s+(?:subscribing|joining)/i,
+    /(?:you've|you\s+have)\s+subscribed/i,
+    /subscription\s+(?:has\s+been\s+)?(?:activated|confirmed)/i,
+    /getting\s+started/i,
+    /first\s+(?:payment|charge)/i,
+    /membership\s+(?:has\s+been\s+)?activated/i,
+  ];
+
+  for (const pattern of newSubscriptionPatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "new_subscription";
+    }
+  }
+
+  // 7. RENEWAL (Default for subscription receipts)
+  const renewalPatterns = [
+    /subscription\s+(?:has\s+been\s+)?renewed/i,
+    /renewal\s+(?:confirmation|receipt)/i,
+    /recurring\s+(?:payment|charge)/i,
+    /(?:monthly|annual|yearly)\s+(?:payment|charge)/i,
+    /payment\s+(?:confirmation|received)/i,
+    /thank\s+you\s+for\s+your\s+payment/i,
+    /receipt\s+for\s+(?:your\s+)?subscription/i,
+    /billing\s+confirmation/i,
+  ];
+
+  for (const pattern of renewalPatterns) {
+    if (pattern.test(lowerText) || pattern.test(lowerSubject)) {
+      return "renewal";
+    }
+  }
+
+  // Default: unknown (couldn't classify, but passed subscription detection)
+  return "unknown";
 }

@@ -355,9 +355,10 @@ export const triggerUserEmailScan = action({
     // IMMEDIATELY parse receipts and create detection candidates
     // Don't wait for hourly cron jobs - user expects instant results
     console.log("📋 Parsing receipts immediately after scan...");
-    await ctx.runMutation(internal.receiptParser.parseUnparsedReceipts, {
+    const parseResult = await ctx.runMutation(internal.receiptParser.parseUnparsedReceipts, {
       clerkUserId: args.clerkUserId,
     });
+    console.log(`📋 Parse result: ${parseResult.parsed} receipts successfully parsed out of ${parseResult.count} total`);
 
     console.log("🎯 Creating detection candidates immediately after parsing...");
     // Get user ID for detection creation
@@ -365,11 +366,16 @@ export const triggerUserEmailScan = action({
       clerkUserId: args.clerkUserId,
     });
 
+    let detectionsCreated = 0;
     if (user) {
-      await ctx.runMutation(internal.emailDetection.createDetectionCandidatesFromReceipts, {
+      const detectionResult = await ctx.runMutation(internal.emailDetection.createDetectionCandidatesFromReceipts, {
         userId: user._id,
       });
+      detectionsCreated = detectionResult.created || 0;
+      console.log(`🎯 Detection result: ${detectionsCreated} new candidates created`);
     }
+
+    console.log(`✨ Scan complete: ${parseResult.parsed || 0} parsed, ${detectionsCreated} detections created`);
 
     return {
       success: true,

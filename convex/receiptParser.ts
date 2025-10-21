@@ -8,6 +8,49 @@ import { mutation, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 /**
+ * Parse receipt data - core logic extracted for reuse
+ */
+function parseReceiptData(receipt: {
+  subject: string;
+  rawBody?: string | null;
+  from: string;
+}) {
+  // Combine subject and body for parsing
+  const text = `${receipt.subject}\n${receipt.rawBody || ""}`.toLowerCase();
+
+  // Extract merchant name
+  const merchantResult = extractMerchant(text, receipt.from, receipt.subject);
+
+  // Extract amount and currency
+  const amountResult = extractAmount(text);
+
+  // Extract billing cycle
+  const billingCycle = extractBillingCycle(text);
+
+  // Extract next charge date
+  const nextChargeDate = extractNextChargeDate(text);
+
+  // Calculate confidence score
+  const confidence = calculateConfidence({
+    hasMerchant: !!merchantResult.name,
+    hasAmount: !!amountResult.amount,
+    hasCurrency: !!amountResult.currency,
+    hasBillingCycle: !!billingCycle,
+    hasNextChargeDate: !!nextChargeDate,
+    merchantConfidence: merchantResult.confidence,
+  });
+
+  return {
+    merchantName: merchantResult.name,
+    amount: amountResult.amount,
+    currency: amountResult.currency,
+    billingCycle,
+    nextChargeDate,
+    confidence,
+  };
+}
+
+/**
  * Parse a single email receipt
  * Extracts merchant name, amount, currency, billing cycle
  */
@@ -25,54 +68,29 @@ export const parseReceipt = internalMutation({
       return { success: true, message: "Already parsed" };
     }
 
-    const now = Date.now();
-
     try {
-      // Combine subject and body for parsing
-      const text = `${receipt.subject}\n${receipt.rawBody || ""}`.toLowerCase();
-
-      // Extract merchant name
-      const merchantResult = extractMerchant(text, receipt.from, receipt.subject);
-
-      // Extract amount and currency
-      const amountResult = extractAmount(text);
-
-      // Extract billing cycle
-      const billingCycle = extractBillingCycle(text);
-
-      // Extract next charge date
-      const nextChargeDate = extractNextChargeDate(text);
-
-      // Calculate confidence score
-      const confidence = calculateConfidence({
-        hasMerchant: !!merchantResult.name,
-        hasAmount: !!amountResult.amount,
-        hasCurrency: !!amountResult.currency,
-        hasBillingCycle: !!billingCycle,
-        hasNextChargeDate: !!nextChargeDate,
-        merchantConfidence: merchantResult.confidence,
-      });
+      const parsed = parseReceiptData(receipt);
 
       // Only save if we have at least merchant + amount
-      if (merchantResult.name && amountResult.amount) {
+      if (parsed.merchantName && parsed.amount) {
         await ctx.db.patch(receipt._id, {
-          merchantName: merchantResult.name,
-          amount: amountResult.amount,
-          currency: amountResult.currency,
-          billingCycle: billingCycle || undefined,
-          nextChargeDate: nextChargeDate || undefined,
+          merchantName: parsed.merchantName,
+          amount: parsed.amount,
+          currency: parsed.currency,
+          billingCycle: parsed.billingCycle || undefined,
+          nextChargeDate: parsed.nextChargeDate || undefined,
           parsed: true,
-          parsingConfidence: confidence,
+          parsingConfidence: parsed.confidence,
         });
 
-        console.log(`Parsed receipt: ${merchantResult.name} - ${amountResult.amount} ${amountResult.currency}`);
+        console.log(`✅ Parsed receipt: ${parsed.merchantName} - ${parsed.amount} ${parsed.currency}`);
 
         return {
           success: true,
-          merchant: merchantResult.name,
-          amount: amountResult.amount,
-          currency: amountResult.currency,
-          confidence,
+          merchant: parsed.merchantName,
+          amount: parsed.amount,
+          currency: parsed.currency,
+          confidence: parsed.confidence,
         };
       } else {
         // Mark as parsed but low confidence (won't create detection)
@@ -84,7 +102,7 @@ export const parseReceipt = internalMutation({
         return { success: false, error: "Insufficient data extracted" };
       }
     } catch (error) {
-      console.error("Error parsing receipt:", error);
+      console.error("❌ Error parsing receipt:", error);
       return { success: false, error: "Parse failed" };
     }
   },
@@ -92,6 +110,7 @@ export const parseReceipt = internalMutation({
 
 /**
  * Parse all unparsed receipts for a user
+ * SYNCHRONOUSLY parses receipts so they're immediately ready for detection
  */
 export const parseUnparsedReceipts = internalMutation({
   args: {
@@ -112,22 +131,58 @@ export const parseUnparsedReceipts = internalMutation({
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .filter((q) => q.eq(q.field("parsed"), false))
-      .take(50); // Process 50 at a time
+      .take(100); // Process 100 at a time (increased from 50)
 
     if (unparsedReceipts.length === 0) {
-      return { message: "No unparsed receipts found", count: 0 };
+      console.log("📋 No unparsed receipts found");
+      return { message: "No unparsed receipts found", count: 0, parsed: 0 };
     }
 
-    // Schedule parsing for each receipt
+    console.log(`📋 Parsing ${unparsedReceipts.length} receipts synchronously...`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // Parse each receipt SYNCHRONOUSLY (not scheduled)
     for (const receipt of unparsedReceipts) {
-      await ctx.scheduler.runAfter(0, internal.receiptParser.parseReceipt, {
-        receiptId: receipt._id,
-      });
+      try {
+        const parsed = parseReceiptData(receipt);
+
+        // Only save if we have at least merchant + amount
+        if (parsed.merchantName && parsed.amount) {
+          await ctx.db.patch(receipt._id, {
+            merchantName: parsed.merchantName,
+            amount: parsed.amount,
+            currency: parsed.currency,
+            billingCycle: parsed.billingCycle || undefined,
+            nextChargeDate: parsed.nextChargeDate || undefined,
+            parsed: true,
+            parsingConfidence: parsed.confidence,
+          });
+
+          console.log(`  ✅ ${parsed.merchantName}: ${parsed.amount} ${parsed.currency} (${Math.round(parsed.confidence * 100)}% confidence)`);
+          successCount++;
+        } else {
+          // Mark as parsed but low confidence (won't create detection)
+          await ctx.db.patch(receipt._id, {
+            parsed: true,
+            parsingConfidence: 0.1,
+          });
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`  ❌ Error parsing receipt ${receipt._id}:`, error);
+        failCount++;
+      }
     }
+
+    console.log(`📋 Parsing complete: ${successCount} successful, ${failCount} failed/low-confidence`);
 
     return {
-      message: `Scheduled parsing for ${unparsedReceipts.length} receipts`,
+      message: `Parsed ${unparsedReceipts.length} receipts: ${successCount} successful`,
       count: unparsedReceipts.length,
+      parsed: successCount,
+      failed: failCount,
     };
   },
 });

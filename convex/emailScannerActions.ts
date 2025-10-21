@@ -17,10 +17,10 @@ export const scanGmailForReceipts = internalAction({
   args: {
     connectionId: v.id("emailConnections"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; receiptsFound?: number; totalProcessed?: number; scanComplete?: boolean; hasMorePages?: boolean; totalScanned?: number; totalReceipts?: number; error?: string }> => {
     try {
       // Get connection data from database via mutation
-      const connection = await ctx.runMutation(internal.emailScanner.getConnectionById, {
+      const connection: any = await ctx.runMutation(internal.emailScanner.getConnectionById, {
         connectionId: args.connectionId,
       });
 
@@ -59,29 +59,42 @@ export const scanGmailForReceipts = internalAction({
         connection.tokenExpiresAt = refreshResult.tokenExpiresAt!;
       }
 
+      // ============================================================================
+      // PHASE 3: PAGINATION SUPPORT - Scan entire inbox, not just 500 emails
+      // ============================================================================
+
       // Build Gmail API search query
       let searchQuery = "from:(noreply OR billing OR receipt OR invoice OR payment OR subscription)";
 
-      // If we have a sync cursor, only get emails after that timestamp
-      if (connection.syncCursor) {
+      // Determine scan mode: incremental (after last sync) or full inbox (with pagination)
+      const isIncrementalScan = connection.syncCursor && connection.scanStatus === "complete";
+
+      if (isIncrementalScan) {
+        // Incremental scan: only get new emails since last sync
         searchQuery = `${searchQuery} after:${connection.syncCursor}`;
+        console.log(`📧 Incremental scan: fetching emails after ${connection.syncCursor}`);
       } else {
-        // First scan: get emails from last 2 YEARS to catch all historical subscriptions
-        // This ensures we find all active and past subscriptions, not just recent ones
+        // Full inbox scan: get all emails from last 2 years (with pagination)
         const twoYearsAgo = Math.floor((now - 2 * 365 * 24 * 60 * 60 * 1000) / 1000);
         searchQuery = `${searchQuery} after:${twoYearsAgo}`;
+        console.log(`📧 Full inbox scan: fetching emails from last 2 years`);
+      }
+
+      // Build Gmail API URL with pagination support
+      let gmailApiUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(searchQuery)}&maxResults=500`;
+
+      // If we have a pageToken, continue from where we left off
+      if (connection.pageToken && !isIncrementalScan) {
+        gmailApiUrl += `&pageToken=${connection.pageToken}`;
+        console.log(`📄 Continuing scan from page token (${connection.totalEmailsScanned || 0} emails scanned so far)`);
       }
 
       // Fetch messages from Gmail API
-      // Use maxResults=500 (Gmail's maximum) to scan more emails per run
-      const messagesResponse = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(searchQuery)}&maxResults=500`,
-        {
-          headers: {
-            Authorization: `Bearer ${connection.accessToken}`,
-          },
-        }
-      );
+      const messagesResponse = await fetch(gmailApiUrl, {
+        headers: {
+          Authorization: `Bearer ${connection.accessToken}`,
+        },
+      });
 
       if (!messagesResponse.ok) {
         const errorText = await messagesResponse.text();
@@ -102,13 +115,21 @@ export const scanGmailForReceipts = internalAction({
 
       const messagesData = await messagesResponse.json();
       const messages = messagesData.messages || [];
+      const nextPageToken = messagesData.nextPageToken; // Gmail API pagination token
 
       console.log(`Found ${messages.length} potential receipt emails for ${connection.email}`);
+      if (nextPageToken) {
+        console.log(`📄 More emails available (nextPageToken exists)`);
+      } else {
+        console.log(`✅ No more pages - this is the last batch`);
+      }
 
       if (messages.length === 0) {
-        // Update last synced time even if no new messages
-        await ctx.runMutation(internal.emailScanner.updateConnectionLastSync, {
+        // No messages in this batch - mark scan as complete
+        await ctx.runMutation(internal.emailScanner.updateScanProgress, {
           connectionId: connection._id,
+          scanStatus: "complete",
+          pageToken: undefined, // Clear pageToken
           syncCursor: String(Math.floor(now / 1000)),
         });
 
@@ -116,6 +137,7 @@ export const scanGmailForReceipts = internalAction({
           success: true,
           receiptsFound: 0,
           totalProcessed: 0,
+          scanComplete: true,
         };
       }
 
@@ -203,19 +225,60 @@ export const scanGmailForReceipts = internalAction({
         }
       }
 
-      // Update connection with last sync time
-      await ctx.runMutation(internal.emailScanner.updateConnectionLastSync, {
-        connectionId: connection._id,
-        syncCursor: String(Math.floor(now / 1000)),
-      });
+      // ============================================================================
+      // UPDATE PAGINATION STATE - Save progress for next batch
+      // ============================================================================
 
-      console.log(`Gmail scan complete for ${connection.email}: ${newReceiptsCount} new receipts`);
+      const currentTotalScanned: number = (connection.totalEmailsScanned || 0) + processedCount;
+      const currentTotalReceipts: number = (connection.totalReceiptsFound || 0) + newReceiptsCount;
 
-      return {
-        success: true,
-        receiptsFound: newReceiptsCount,
-        totalProcessed: processedCount,
-      };
+      if (nextPageToken) {
+        // More pages to scan - save pageToken and mark as scanning
+        await ctx.runMutation(internal.emailScanner.updateScanProgress, {
+          connectionId: connection._id,
+          scanStatus: "scanning",
+          pageToken: nextPageToken,
+          totalEmailsScanned: currentTotalScanned,
+          totalReceiptsFound: currentTotalReceipts,
+          syncCursor: undefined, // Don't update sync cursor until scan complete
+        });
+
+        console.log(`📄 Batch complete: ${newReceiptsCount} receipts found. Total progress: ${currentTotalScanned} emails scanned, ${currentTotalReceipts} receipts found`);
+        console.log(`📄 More pages available - run scan again to continue`);
+
+        return {
+          success: true,
+          receiptsFound: newReceiptsCount,
+          totalProcessed: processedCount,
+          scanComplete: false,
+          hasMorePages: true,
+          totalScanned: currentTotalScanned,
+          totalReceipts: currentTotalReceipts,
+        };
+      } else {
+        // No more pages - scan complete!
+        await ctx.runMutation(internal.emailScanner.updateScanProgress, {
+          connectionId: connection._id,
+          scanStatus: "complete",
+          pageToken: undefined, // Clear pageToken
+          totalEmailsScanned: currentTotalScanned,
+          totalReceiptsFound: currentTotalReceipts,
+          syncCursor: String(Math.floor(now / 1000)), // Set sync cursor for incremental scans
+        });
+
+        console.log(`✅ Full inbox scan COMPLETE for ${connection.email}`);
+        console.log(`📊 Final stats: ${currentTotalScanned} emails scanned, ${currentTotalReceipts} receipts found`);
+
+        return {
+          success: true,
+          receiptsFound: newReceiptsCount,
+          totalProcessed: processedCount,
+          scanComplete: true,
+          hasMorePages: false,
+          totalScanned: currentTotalScanned,
+          totalReceipts: currentTotalReceipts,
+        };
+      }
     } catch (error) {
       console.error("Error scanning Gmail:", error);
 

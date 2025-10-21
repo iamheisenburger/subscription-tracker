@@ -570,6 +570,54 @@ export const updateConnectionLastSync = internalMutation({
 });
 
 /**
+ * Update scan progress (Phase 3: Pagination support)
+ */
+export const updateScanProgress = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    scanStatus: v.union(
+      v.literal("not_started"),
+      v.literal("scanning"),
+      v.literal("paused"),
+      v.literal("complete")
+    ),
+    pageToken: v.optional(v.string()),
+    totalEmailsScanned: v.optional(v.number()),
+    totalReceiptsFound: v.optional(v.number()),
+    syncCursor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const updateData: any = {
+      scanStatus: args.scanStatus,
+      updatedAt: Date.now(),
+    };
+
+    // Only update pageToken if provided (undefined means clear it)
+    if (args.pageToken !== undefined) {
+      updateData.pageToken = args.pageToken;
+    }
+
+    // Update progress counters if provided
+    if (args.totalEmailsScanned !== undefined) {
+      updateData.totalEmailsScanned = args.totalEmailsScanned;
+    }
+    if (args.totalReceiptsFound !== undefined) {
+      updateData.totalReceiptsFound = args.totalReceiptsFound;
+    }
+
+    // Update sync cursor if provided (for incremental scans)
+    if (args.syncCursor !== undefined) {
+      updateData.syncCursor = args.syncCursor;
+      updateData.lastSyncedAt = Date.now();
+    }
+
+    await ctx.db.patch(args.connectionId, updateData);
+
+    return { success: true };
+  },
+});
+
+/**
  * Store email receipt (for actions)
  */
 export const storeEmailReceipt = internalMutation({

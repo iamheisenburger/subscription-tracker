@@ -426,7 +426,17 @@ export default defineSchema({
       v.literal("requires_reauth")
     ),
     lastSyncedAt: v.optional(v.number()), // Last time we scanned emails
-    syncCursor: v.optional(v.string()), // Pagination cursor for email queries
+    syncCursor: v.optional(v.string()), // Timestamp for incremental scans
+    // Full inbox scan pagination (Phase 3)
+    scanStatus: v.optional(v.union(
+      v.literal("not_started"),  // Never scanned before
+      v.literal("scanning"),      // Currently scanning full inbox
+      v.literal("paused"),        // Scan paused (will resume)
+      v.literal("complete")       // Full scan complete
+    )),
+    pageToken: v.optional(v.string()), // Gmail API nextPageToken for pagination
+    totalEmailsScanned: v.optional(v.number()), // Progress tracking
+    totalReceiptsFound: v.optional(v.number()), // Progress tracking
     errorCode: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
     createdAt: v.number(),

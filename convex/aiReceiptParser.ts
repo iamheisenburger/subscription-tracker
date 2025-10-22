@@ -202,39 +202,60 @@ async function analyzeReceiptWithClaudeAPI(
   const currentDate = new Date();
   const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-  const prompt = `Analyze this email receipt and determine if it's a recurring subscription or a one-time purchase.
+  const prompt = `You are analyzing an email receipt. Your task is to determine if this represents a RECURRING SUBSCRIPTION or a ONE-TIME PURCHASE.
 
 CONTEXT:
-- Current Date: ${formattedDate}
-- Focus: Identify ALL recurring subscriptions, even if receipt is old
+Current Date: ${formattedDate}
 
-Email Subject: ${subject}
-Email From: ${from}
-Email Body (first 2000 chars): ${body.substring(0, 2000)}
+EMAIL CONTENT:
+Subject: ${subject}
+From: ${from}
+Body: ${body.substring(0, 2000)}
 
-Instructions:
-1. Determine if this is a RECURRING SUBSCRIPTION (monthly/yearly charges) or ONE-TIME PURCHASE
-2. Look for subscription indicators:
-   - Words: "subscription", "recurring", "renewal", "auto-renew", "membership", "plan"
-   - Recurring services: ChatGPT, Spotify, Netflix, Perplexity, Telegram, Adobe, Microsoft, etc.
-   - Monthly/yearly billing language
-3. EXCLUDE one-time purchases ONLY: product orders, physical goods, shipping, app purchases (non-subscription)
-4. Extract: merchant name, amount, currency, billing frequency, next billing date (if available)
-5. Date handling:
-   - If you find a "next billing date", include it in the response
-   - If next billing date is before ${formattedDate}, set confidence to 60-70% (may be cancelled, but user will review)
-   - If no billing date found, still mark as subscription if other indicators present
+TASK:
+Analyze the email and determine if it represents a recurring subscription service (monthly/yearly/weekly charges that automatically renew).
 
-IMPORTANT: Be INCLUSIVE, not restrictive. If it looks like a subscription service (recurring payment), mark it as subscription even if you're not 100% certain. User will review and confirm.
+WHAT IS A SUBSCRIPTION:
+- Recurring payments that automatically renew (monthly, yearly, weekly, etc.)
+- Services with words like: "subscription", "recurring", "renewal", "auto-renew", "membership", "plan", "billing cycle"
+- Digital services, streaming platforms, SaaS tools, cloud services, memberships
+- Any service that charges repeatedly at regular intervals
+
+WHAT IS NOT A SUBSCRIPTION:
+- One-time product purchases
+- Physical goods orders
+- Shipping fees
+- Single app/game purchases (unless they mention recurring charges)
+- Restaurant/food delivery orders
+- Travel bookings
+
+EXTRACT THE FOLLOWING:
+1. Merchant/Service name
+2. Charge amount
+3. Currency (USD, GBP, EUR, INR, etc.)
+4. Billing frequency (monthly, yearly, weekly, etc.)
+5. Next billing date (if mentioned in the email)
+
+DATE VALIDATION:
+- If you find a "next billing date" or "renewal date", include it
+- If the next billing date is BEFORE ${formattedDate}, this subscription may be cancelled, so lower confidence to 60-70%
+- If no date found but other subscription indicators exist, still mark as subscription
+
+CONFIDENCE SCORING:
+- High confidence (80-95%): Clear subscription language, recurring billing mentioned
+- Medium confidence (60-79%): Likely subscription but some ambiguity
+- Low confidence (50-59%): Possible subscription but uncertain
+
+BE INCLUSIVE: If it looks like a recurring payment service, mark it as subscription. The user will review all detections.
 
 Respond ONLY with valid JSON (no markdown, no explanation):
 {
   "isSubscription": true or false,
   "merchant": "Company Name" or null,
   "amount": 9.99 or null,
-  "currency": "USD" or "GBP" or null,
-  "frequency": "monthly" or "yearly" or null,
-  "nextBillingDate": "2025-11-15" or null (YYYY-MM-DD format),
+  "currency": "USD" or null,
+  "frequency": "monthly" or null,
+  "nextBillingDate": "2025-11-15" or null,
   "confidence": 85,
   "reasoning": "Brief explanation"
 }`;

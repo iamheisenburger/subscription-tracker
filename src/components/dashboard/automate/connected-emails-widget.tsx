@@ -198,8 +198,8 @@ export function ConnectedEmailsWidget() {
           </div>
         </div>
 
-        {/* AI Processing Progress */}
-        {gmailConnection.aiProcessingStatus === "processing" && (
+        {/* AI Processing Progress - Temporarily commented out until types regenerate */}
+        {/* {gmailConnection.aiProcessingStatus === "processing" && (
           <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
@@ -218,7 +218,7 @@ export function ConnectedEmailsWidget() {
               />
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Error message if present */}
         {gmailConnection.errorMessage && (

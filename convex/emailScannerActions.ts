@@ -16,6 +16,7 @@ import { Id } from "./_generated/dataModel";
 export const scanGmailForReceipts = internalAction({
   args: {
     connectionId: v.id("emailConnections"),
+    forceFullScan: v.optional(v.boolean()), // Force full inbox scan (ignore incremental mode)
   },
   handler: async (ctx, args): Promise<{ success: boolean; receiptsFound?: number; totalProcessed?: number; scanComplete?: boolean; hasMorePages?: boolean; totalScanned?: number; totalReceipts?: number; error?: string }> => {
     try {
@@ -60,24 +61,31 @@ export const scanGmailForReceipts = internalAction({
       }
 
       // ============================================================================
-      // PHASE 3: PAGINATION SUPPORT - Scan entire inbox, not just 500 emails
+      // USE GMAIL'S BUILT-IN CATEGORIZATION
       // ============================================================================
+      // Gmail automatically categorizes purchase/subscription emails using their ML
+      // This is WAY better than scanning 10,000+ emails with keyword search
+      // category:purchases = ~500 emails (what you see in Gmail UI)
+      // vs keyword search = 10,000+ emails (insane and slow)
 
-      // Build Gmail API search query
-      let searchQuery = "from:(noreply OR billing OR receipt OR invoice OR payment OR subscription)";
+      // Build Gmail API search query using Gmail's categories
+      let searchQuery = "(category:purchases OR label:subscriptions)";
 
       // Determine scan mode: incremental (after last sync) or full inbox (with pagination)
-      const isIncrementalScan = connection.syncCursor && connection.scanStatus === "complete";
+      // IMPORTANT: Manual "Scan Now" button clicks should ALWAYS do full scans (forceFullScan = true)
+      // Only automated background syncs should do incremental scans
+      const isIncrementalScan = !args.forceFullScan && connection.syncCursor && connection.scanStatus === "complete";
 
       if (isIncrementalScan) {
-        // Incremental scan: only get new emails since last sync
+        // Incremental scan: only get new emails since last sync (AUTOMATED SYNCS ONLY)
         searchQuery = `${searchQuery} after:${connection.syncCursor}`;
         console.log(`📧 Incremental scan: fetching emails after ${connection.syncCursor}`);
       } else {
-        // Full inbox scan: get all emails from last 2 years (with pagination)
-        const twoYearsAgo = Math.floor((now - 2 * 365 * 24 * 60 * 60 * 1000) / 1000);
-        searchQuery = `${searchQuery} after:${twoYearsAgo}`;
-        console.log(`📧 Full inbox scan: fetching emails from last 2 years`);
+        // Full inbox scan: get all purchase/subscription emails from last 3 years
+        // Extended to 3 years to catch older subscriptions that are still active
+        const threeYearsAgo = Math.floor((now - 3 * 365 * 24 * 60 * 60 * 1000) / 1000);
+        searchQuery = `${searchQuery} after:${threeYearsAgo}`;
+        console.log(`📧 Full inbox scan: fetching purchase/subscription emails from last 3 years using Gmail categories${args.forceFullScan ? " (FORCED by user)" : ""}`);
       }
 
       // Build Gmail API URL with pagination support
@@ -116,8 +124,10 @@ export const scanGmailForReceipts = internalAction({
       const messagesData = await messagesResponse.json();
       const messages = messagesData.messages || [];
       const nextPageToken = messagesData.nextPageToken; // Gmail API pagination token
+      const resultSizeEstimate = messagesData.resultSizeEstimate; // Total matching emails estimate
 
       console.log(`Found ${messages.length} potential receipt emails for ${connection.email}`);
+      console.log(`📊 Gmail API estimates ${resultSizeEstimate} total matching emails`);
       if (nextPageToken) {
         console.log(`📄 More emails available (nextPageToken exists)`);
       } else {
@@ -214,11 +224,8 @@ export const scanGmailForReceipts = internalAction({
           newReceiptsCount++;
           processedCount++;
 
-          // Avoid rate limits - process max 50 per scan
-          if (processedCount >= 50) {
-            console.log("Reached batch limit, will continue in next scan");
-            break;
-          }
+          // Gmail API returns max 50 messages per page - process all of them
+          // The while loop in triggerUserEmailScan will continue to next page
         } catch (messageError) {
           console.error(`Error processing message ${message.id}:`, messageError);
           // Continue with next message
@@ -398,55 +405,118 @@ export const triggerUserEmailScan = action({
     scannedConnections?: number;
     results?: any[];
   }> => {
-    // Get user's email connections via mutation
-    const connections: any[] = await ctx.runMutation(internal.emailScanner.getUserConnectionsInternal, {
-      clerkUserId: args.clerkUserId,
-    });
+    try {
+      console.log(`🚀 triggerUserEmailScan called for clerkUserId: ${args.clerkUserId}`);
 
-    if (!connections || connections.length === 0) {
-      return { success: false, error: "No email connections found" };
-    }
+      // Get user's email connections via query
+      const connections: any[] = await ctx.runQuery(internal.emailScanner.getUserConnectionsInternal, {
+        clerkUserId: args.clerkUserId,
+      });
 
-    // Trigger scan for each active connection
-    const results: any[] = [];
-    for (const connection of connections) {
-      if (connection.status === "active") {
-        const result: any = await ctx.runAction(internal.emailScannerActions.scanGmailForReceipts, {
-          connectionId: connection._id,
-        });
-        results.push(result);
+      console.log(`📧 Found ${connections?.length || 0} email connections`);
+      connections?.forEach((c, i) => {
+        console.log(`  Connection ${i + 1}: ${c.email} - Status: ${c.status}`);
+      });
+
+      if (!connections || connections.length === 0) {
+        console.log(`❌ No connections found for clerkUserId: ${args.clerkUserId}`);
+        return { success: false, error: "No email connections found. Please connect Gmail first." };
       }
-    }
 
-    // IMMEDIATELY parse receipts and create detection candidates
-    // Don't wait for hourly cron jobs - user expects instant results
-    console.log("📋 Parsing receipts immediately after scan...");
-    const parseResult = await ctx.runMutation(internal.receiptParser.parseUnparsedReceipts, {
-      clerkUserId: args.clerkUserId,
-    });
-    console.log(`📋 Parse result: ${parseResult.parsed} receipts successfully parsed out of ${parseResult.count} total`);
+      // Check if any connections need reauth
+      const needsReauth = connections.some(c => c.status === "requires_reauth");
+      if (needsReauth) {
+        console.log(`❌ Connections need reauth`);
+        return { success: false, error: "Gmail connection expired. Please reconnect your email." };
+      }
 
-    console.log("🎯 Creating detection candidates immediately after parsing...");
-    // Get user ID for detection creation
-    const user = await ctx.runMutation(internal.emailScanner.getUserByClerkId, {
-      clerkUserId: args.clerkUserId,
-    });
+      // Trigger scan for each active connection - LOOP until all emails scanned
+      const results: any[] = [];
+      for (const connection of connections) {
+        console.log(`🔍 Checking connection: ${connection.email}, status: ${connection.status}`);
+        if (connection.status === "active") {
+          console.log(`🔄 Starting full scan for ${connection.email}...`);
 
-    let detectionsCreated = 0;
-    if (user) {
+          let hasMorePages = true;
+          let totalScanned = 0;
+          let batchCount = 0;
+
+          // Keep scanning until all pages are processed
+          while (hasMorePages && batchCount < 20) { // Safety limit: max 20 batches (50*20 = 1000 emails)
+            batchCount++;
+            console.log(`  📄 Batch ${batchCount}...`);
+
+            const result: any = await ctx.runAction(internal.emailScannerActions.scanGmailForReceipts, {
+              connectionId: connection._id,
+              forceFullScan: batchCount === 1, // Only first batch is "full scan", rest continue from cursor
+            });
+
+            if (!result.success) {
+              console.error(`❌ Scan failed for ${connection.email}:`, result.error);
+              return { success: false, error: result.error || "Scan failed. Please try again." };
+            }
+
+            totalScanned += result.totalProcessed || 0;
+            hasMorePages = result.hasMorePages || false;
+            results.push(result);
+
+            // If scan is complete, break
+            if (result.scanComplete) {
+              console.log(`✅ Scan complete for ${connection.email}: ${totalScanned} emails processed`);
+              break;
+            }
+          }
+
+          if (batchCount >= 20) {
+            console.log(`⚠️ Hit batch limit - processed ${totalScanned} emails. More may remain.`);
+          }
+        }
+      }
+
+      // IMMEDIATELY parse receipts with AI-first approach and create detection candidates
+      // Don't wait for hourly cron jobs - user expects instant results
+      console.log("🤖 Parsing receipts with AI-first parser...");
+
+      // Get first active connection for progress tracking
+      const firstConnection = connections.find((c) => c.status === "active");
+
+      const parseResult = await ctx.runAction(internal.receiptParser.parseUnparsedReceiptsWithAI, {
+        clerkUserId: args.clerkUserId,
+        connectionId: firstConnection?._id, // For real-time progress tracking
+      });
+      console.log(`🤖 Parse result: ${parseResult.parsed} subscriptions detected out of ${parseResult.count} receipts (AI-powered detection)`);
+
+      console.log("🎯 Creating detection candidates immediately after parsing...");
+      // Get user ID for detection creation
+      const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
+        clerkUserId: args.clerkUserId,
+      });
+
+      if (!user) {
+        console.error("❌ User not found after scan - user record may be missing");
+        return { success: false, error: "User record not found. Please refresh the page." };
+      }
+
+      let detectionsCreated = 0;
       const detectionResult = await ctx.runMutation(internal.emailDetection.createDetectionCandidatesFromReceipts, {
         userId: user._id,
       });
       detectionsCreated = detectionResult.created || 0;
       console.log(`🎯 Detection result: ${detectionsCreated} new candidates created`);
+
+      console.log(`✨ Scan complete: ${parseResult.parsed || 0} parsed, ${detectionsCreated} detections created`);
+
+      return {
+        success: true,
+        scannedConnections: results.length,
+        results,
+      };
+    } catch (error) {
+      console.error("❌ Email scan failed:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Scan failed. Please try again."
+      };
     }
-
-    console.log(`✨ Scan complete: ${parseResult.parsed || 0} parsed, ${detectionsCreated} detections created`);
-
-    return {
-      success: true,
-      scannedConnections: results.length,
-      results,
-    };
   },
 });

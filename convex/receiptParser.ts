@@ -1,38 +1,19 @@
 /**
  * Receipt Parser Service
  * Parses email receipts to extract subscription information
+ * Uses AI-first approach with regex fallback for maximum accuracy
  */
 
 import { v } from "convex/values";
-import { mutation, internalMutation } from "./_generated/server";
+import { mutation, internalMutation, action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 /**
  * Check if email is actually a subscription receipt/renewal
+ * ULTRA-STRICT: Only accepts emails with explicit subscription language
  * Filters out one-time purchases, marketing emails, trial signups
  */
 function isSubscriptionReceipt(text: string, subject: string): boolean {
-  // REQUIRED: Must have subscription-specific keywords
-  const subscriptionKeywords = [
-    /subscription/i,
-    /recurring/i,
-    /renewal/i,
-    /renew/i,
-    /next\s+(?:charge|payment|billing)/i,
-    /auto[\s-]?renew/i,
-    /billing\s+cycle/i,
-    /monthly\s+(?:charge|payment)/i,
-    /annual\s+(?:charge|payment)/i,
-  ];
-
-  const hasSubscriptionKeyword = subscriptionKeywords.some((pattern) =>
-    pattern.test(text) || pattern.test(subject)
-  );
-
-  if (!hasSubscriptionKeyword) {
-    return false;
-  }
-
   // EXCLUDE: Marketing emails, trials, signups, confirmations of new services
   const excludePatterns = [
     /start\s+(?:your\s+)?(?:free\s+)?trial/i,
@@ -58,22 +39,48 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     return false;
   }
 
-  // REQUIRE: Must have receipt/invoice indicators
-  const receiptKeywords = [
-    /receipt/i,
-    /invoice/i,
-    /payment\s+confirmation/i,
-    /payment\s+received/i,
-    /charge\s+confirmation/i,
-    /thank\s+you\s+for\s+your\s+payment/i,
-    /billing\s+statement/i,
+  // EXCLUDE: One-time purchase indicators (even if they have "receipt")
+  const oneTimePurchaseIndicators = [
+    /\bone[\s-]?time\b/i,
+    /\bsingle\s+payment/i,
+    /\bthank\s+you\s+for\s+your\s+order/i,
+    /\border\s+confirmation/i,
+    /\bpurchase\s+confirmation/i,
+    /\byour\s+order\s+#/i,
+    /\bhas\s+been\s+shipped/i,
+    /\bdelivery\s+confirmation/i,
   ];
 
-  const hasReceiptKeyword = receiptKeywords.some((pattern) =>
+  const isOneTimePurchase = oneTimePurchaseIndicators.some((pattern) =>
     pattern.test(text) || pattern.test(subject)
   );
 
-  return hasReceiptKeyword;
+  if (isOneTimePurchase) {
+    return false; // Explicit one-time purchase - reject
+  }
+
+  // REQUIRED: Must have one of these subscription-specific keywords
+  const subscriptionKeywords = [
+    /\bsubscription\b/i,
+    /\brecurring\b/i,
+    /\bmembership\b/i,
+    /\bauto[\s-]?renew/i,
+    /\brenew(al|ing|ed|s)\b/i,
+    /\bbilling\s+cycle/i,
+    /\bmonthly\s+(subscription|membership|plan|billing)/i,
+    /\byearly\s+(subscription|membership|plan|billing)/i,
+    /\bannual\s+(subscription|membership|plan|billing)/i,
+    /\bnext\s+(payment|charge|billing)\s+date/i,
+    /\bupcoming\s+(payment|charge|renewal)/i,
+    /\bsubscription\s+confirmation/i,
+  ];
+
+  const hasSubscriptionKeyword = subscriptionKeywords.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  // ONLY accept if has explicit subscription keyword
+  return hasSubscriptionKeyword;
 }
 
 /**
@@ -87,10 +94,8 @@ function parseReceiptData(receipt: {
   // Combine subject and body for parsing
   const text = `${receipt.subject}\n${receipt.rawBody || ""}`.toLowerCase();
 
-  // CRITICAL: First check if this is actually a subscription receipt
-  // This prevents false positives from one-time purchases, marketing emails, etc.
+  // Filter out non-subscription emails (one-time purchases, trials, marketing)
   const isSubscription = isSubscriptionReceipt(text, receipt.subject.toLowerCase());
-
   if (!isSubscription) {
     console.log(`⏭️  Skipping non-subscription email: ${receipt.subject.substring(0, 50)}...`);
     return {
@@ -103,6 +108,8 @@ function parseReceiptData(receipt: {
       confidence: 0,
     };
   }
+
+  console.log(`📋 Processing receipt: ${receipt.subject.substring(0, 50)}...`);
 
   // Classify receipt type (renewal, cancellation, etc.)
   const receiptType = classifyReceiptType(text, receipt.subject);
@@ -141,7 +148,40 @@ function parseReceiptData(receipt: {
 }
 
 /**
- * Parse a single email receipt
+ * Parse receipt using regex-only (used as fallback when AI fails)
+ * Returns parsed data without saving to database
+ */
+export const parseReceiptWithRegex = internalMutation({
+  args: {
+    receiptId: v.id("emailReceipts"),
+  },
+  handler: async (ctx, args) => {
+    const receipt = await ctx.db.get(args.receiptId);
+    if (!receipt) {
+      return {
+        merchantName: null,
+        amount: null,
+        currency: "USD",
+        billingCycle: null,
+        confidence: 0,
+      };
+    }
+
+    // Use existing regex-based parser
+    const parsed = parseReceiptData(receipt);
+
+    return {
+      merchantName: parsed.merchantName,
+      amount: parsed.amount,
+      currency: parsed.currency,
+      billingCycle: parsed.billingCycle,
+      confidence: parsed.confidence,
+    };
+  },
+});
+
+/**
+ * Parse a single email receipt (LEGACY - kept for backward compatibility)
  * Extracts merchant name, amount, currency, billing cycle
  */
 export const parseReceipt = internalMutation({
@@ -223,7 +263,7 @@ export const parseUnparsedReceipts = internalMutation({
     const allReceipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .take(200); // Get more receipts to filter
+      .take(500); // Get all receipts to parse
 
     const receiptsToProcess = allReceipts.filter(
       (receipt) =>
@@ -231,7 +271,7 @@ export const parseUnparsedReceipts = internalMutation({
         !receipt.parsed ||
         // Or marked as parsed but missing critical data (broken parse)
         (!receipt.merchantName && !receipt.amount)
-    ).slice(0, 100); // Process max 100 at a time
+    ).slice(0, 100); // Process 100 receipts at a time
 
     if (receiptsToProcess.length === 0) {
       console.log("📋 No receipts need parsing (all receipts have valid data)");
@@ -287,6 +327,133 @@ export const parseUnparsedReceipts = internalMutation({
       parsed: successCount,
       failed: failCount,
     };
+  },
+});
+
+/**
+ * AI-FIRST PARSER: Main entry point using Claude API
+ * This is the new recommended approach for parsing receipts
+ */
+export const parseUnparsedReceiptsWithAI = internalAction({
+  args: {
+    clerkUserId: v.string(),
+    connectionId: v.optional(v.id("emailConnections")), // For real-time progress tracking
+  },
+  handler: async (ctx, args): Promise<{ message?: string; count: number; parsed: number; failed?: number }> => {
+    // Get unparsed receipts via mutation
+    const receiptsData: any = await ctx.runMutation(internal.receiptParser.getUnparsedReceipts, {
+      clerkUserId: args.clerkUserId,
+    });
+
+    if (receiptsData.receipts.length === 0) {
+      console.log("📋 No receipts need parsing");
+      return { message: "No receipts need parsing", count: 0, parsed: 0 };
+    }
+
+    console.log(`🤖 AI Parser: Analyzing ${receiptsData.receipts.length} receipts...`);
+
+    // Call AI parser with all receipts + connectionId for progress tracking
+    const aiResults: any = await ctx.runAction(internal.aiReceiptParser.parseReceiptsWithAI, {
+      receipts: receiptsData.receipts,
+      connectionId: args.connectionId,
+    });
+
+    // Save results to database
+    await ctx.runMutation(internal.receiptParser.saveParsingResults, {
+      results: aiResults.results,
+    });
+
+    const successCount: number = aiResults.results.filter((r: any) => r.merchantName && r.amount).length;
+
+    console.log(`✅ Parsing complete: ${successCount}/${receiptsData.receipts.length} subscriptions detected`);
+
+    return {
+      count: receiptsData.receipts.length,
+      parsed: successCount,
+      failed: receiptsData.receipts.length - successCount,
+    };
+  },
+});
+
+/**
+ * Helper: Get unparsed receipts for AI analysis
+ */
+export const getUnparsedReceipts = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const allReceipts = await ctx.db
+      .query("emailReceipts")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .take(500);
+
+    const receiptsToProcess = allReceipts.filter(
+      (receipt) =>
+        !receipt.parsed ||
+        (!receipt.merchantName && !receipt.amount)
+    ).slice(0, 100);
+
+    return {
+      receipts: receiptsToProcess.map(r => ({
+        _id: r._id,
+        subject: r.subject,
+        rawBody: r.rawBody,
+        from: r.from,
+      })),
+    };
+  },
+});
+
+/**
+ * Helper: Save AI parsing results to database
+ */
+export const saveParsingResults = internalMutation({
+  args: {
+    results: v.array(
+      v.object({
+        receiptId: v.string(),
+        merchantName: v.union(v.string(), v.null()),
+        amount: v.union(v.number(), v.null()),
+        currency: v.string(),
+        billingCycle: v.union(v.string(), v.null()),
+        confidence: v.number(),
+        method: v.union(v.literal("ai"), v.literal("regex_fallback"), v.literal("filtered")),
+        reasoning: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    for (const result of args.results) {
+      if (result.merchantName && result.amount) {
+        await ctx.db.patch(result.receiptId as any, {
+          merchantName: result.merchantName,
+          amount: result.amount,
+          currency: result.currency,
+          billingCycle: result.billingCycle || undefined,
+          parsed: true,
+          parsingConfidence: result.confidence,
+          parsingMethod: result.method, // Track if AI or regex was used
+        });
+
+        console.log(`  ✅ [${result.method.toUpperCase()}] ${result.merchantName}: ${result.amount} ${result.currency}`);
+      } else {
+        await ctx.db.patch(result.receiptId as any, {
+          parsed: true,
+          parsingConfidence: 0.1,
+          parsingMethod: result.method,
+        });
+      }
+    }
   },
 });
 

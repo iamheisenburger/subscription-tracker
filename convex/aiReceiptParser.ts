@@ -1,0 +1,309 @@
+/**
+ * AI-Powered Receipt Parser
+ * Uses Claude API for intelligent subscription detection with regex fallback
+ */
+
+import { internalAction } from "./_generated/server";
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+
+/**
+ * Parse receipts using AI-first approach with regex fallback
+ * This is the main entry point for intelligent parsing
+ */
+export const parseReceiptsWithAI = internalAction({
+  args: {
+    receipts: v.array(
+      v.object({
+        _id: v.id("emailReceipts"),
+        subject: v.string(),
+        rawBody: v.optional(v.union(v.string(), v.null())),
+        from: v.string(),
+      })
+    ),
+    connectionId: v.optional(v.id("emailConnections")), // For progress tracking
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const results: Array<{
+      receiptId: string;
+      merchantName: string | null;
+      amount: number | null;
+      currency: string;
+      billingCycle: string | null;
+      confidence: number;
+      method: "ai" | "regex_fallback" | "filtered";
+      reasoning?: string;
+    }> = [];
+
+    console.log(`🤖 AI Parser: Analyzing ${args.receipts.length} receipts...`);
+
+    // Initialize progress tracking
+    if (args.connectionId) {
+      await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+        connectionId: args.connectionId,
+        status: "processing",
+        processed: 0,
+        total: args.receipts.length,
+      });
+    }
+
+    for (const receipt of args.receipts) {
+      // Rate limiting: 10 requests/second (Anthropic limit)
+      if (results.length > 0 && results.length % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      try {
+        // Try AI analysis first if API key available
+        if (apiKey) {
+          const aiResult = await analyzeReceiptWithClaudeAPI(
+            apiKey,
+            receipt.subject,
+            receipt.rawBody || "",
+            receipt.from
+          );
+
+          if (aiResult.success && aiResult.confidence >= 50) {
+            // Validate nextBillingDate if present - but DON'T filter out completely
+            let adjustedConfidence = aiResult.confidence;
+            let statusNote = "";
+
+            if (aiResult.nextBillingDate) {
+              const nextBillingDate = new Date(aiResult.nextBillingDate);
+              const currentDate = new Date();
+
+              // If next billing date is in the past, lower confidence but still show to user
+              if (nextBillingDate < currentDate) {
+                adjustedConfidence = Math.min(adjustedConfidence, 65); // Cap at 65% for old dates
+                statusNote = ` (past billing date: ${aiResult.nextBillingDate})`;
+                console.log(`  ⚠️  PAST BILLING DATE: ${aiResult.merchant} - ${aiResult.nextBillingDate} - Lowered confidence to ${adjustedConfidence}%`);
+              }
+            }
+
+            // Always include AI results (let user decide if cancelled)
+            console.log(`  🤖 AI: ${aiResult.merchant || "Unknown"} - ${aiResult.amount} ${aiResult.currency} (${adjustedConfidence}% confidence)${statusNote}`);
+
+            results.push({
+              receiptId: receipt._id,
+              merchantName: aiResult.merchant,
+              amount: aiResult.amount,
+              currency: aiResult.currency || "USD",
+              billingCycle: aiResult.frequency === "monthly" ? "monthly" : aiResult.frequency === "yearly" ? "yearly" : null,
+              confidence: adjustedConfidence / 100, // Convert to 0-1 scale
+              method: "ai",
+              reasoning: aiResult.reasoning,
+            });
+            continue; // Skip regex fallback
+          } else if (!aiResult.success) {
+            console.log(`  ⚠️  AI failed for: ${receipt.subject.substring(0, 40)}... - Falling back to regex`);
+          } else {
+            console.log(`  ⚠️  Low AI confidence (${aiResult.confidence}%) for: ${receipt.subject.substring(0, 40)}... - Falling back to regex`);
+          }
+        }
+
+        // Fallback: Use regex-based parsing
+        const regexResult = await ctx.runMutation(internal.receiptParser.parseReceiptWithRegex, {
+          receiptId: receipt._id,
+        });
+
+        if (regexResult.merchantName && regexResult.amount) {
+          console.log(`  📋 Regex: ${regexResult.merchantName} - ${regexResult.amount} ${regexResult.currency}`);
+          results.push({
+            receiptId: receipt._id,
+            merchantName: regexResult.merchantName,
+            amount: regexResult.amount,
+            currency: regexResult.currency,
+            billingCycle: regexResult.billingCycle,
+            confidence: regexResult.confidence,
+            method: "regex_fallback",
+          });
+        } else {
+          // Filtered out as non-subscription
+          console.log(`  ⏭️  Filtered: ${receipt.subject.substring(0, 40)}...`);
+          results.push({
+            receiptId: receipt._id,
+            merchantName: null,
+            amount: null,
+            currency: "USD",
+            billingCycle: null,
+            confidence: 0,
+            method: "filtered",
+          });
+        }
+      } catch (error) {
+        console.error(`  ❌ Error parsing receipt ${receipt._id}:`, error);
+        // Mark as failed - will retry later
+        results.push({
+          receiptId: receipt._id,
+          merchantName: null,
+          amount: null,
+          currency: "USD",
+          billingCycle: null,
+          confidence: 0,
+          method: "filtered",
+        });
+      }
+
+      // Update progress every 5 receipts
+      if (args.connectionId && results.length % 5 === 0) {
+        await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+          connectionId: args.connectionId,
+          status: "processing",
+          processed: results.length,
+          total: args.receipts.length,
+        });
+      }
+    }
+
+    // Final progress update
+    if (args.connectionId) {
+      await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+        connectionId: args.connectionId,
+        status: "complete",
+        processed: results.length,
+        total: args.receipts.length,
+      });
+    }
+
+    const aiCount = results.filter(r => r.method === "ai").length;
+    const regexCount = results.filter(r => r.method === "regex_fallback").length;
+    const filteredCount = results.filter(r => r.method === "filtered").length;
+
+    console.log(`🎯 AI Parser Summary:`);
+    console.log(`   AI Success: ${aiCount}/${args.receipts.length}`);
+    console.log(`   Regex Fallback: ${regexCount}/${args.receipts.length}`);
+    console.log(`   Filtered Out: ${filteredCount}/${args.receipts.length}`);
+
+    return { results };
+  },
+});
+
+/**
+ * Call Claude API to analyze a single receipt
+ * Returns structured data or error
+ */
+async function analyzeReceiptWithClaudeAPI(
+  apiKey: string,
+  subject: string,
+  body: string,
+  from: string
+): Promise<{
+  success: boolean;
+  merchant: string | null;
+  amount: number | null;
+  currency: string | null;
+  frequency: string | null;
+  confidence: number;
+  reasoning?: string;
+  nextBillingDate?: string | null;
+}> {
+  // Get current date for context
+  const currentDate = new Date();
+  const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  const prompt = `Analyze this email receipt and determine if it's a recurring subscription or a one-time purchase.
+
+CONTEXT:
+- Current Date: ${formattedDate}
+- Focus: Identify ALL recurring subscriptions, even if receipt is old
+
+Email Subject: ${subject}
+Email From: ${from}
+Email Body (first 2000 chars): ${body.substring(0, 2000)}
+
+Instructions:
+1. Determine if this is a RECURRING SUBSCRIPTION (monthly/yearly charges) or ONE-TIME PURCHASE
+2. Look for subscription indicators:
+   - Words: "subscription", "recurring", "renewal", "auto-renew", "membership", "plan"
+   - Recurring services: ChatGPT, Spotify, Netflix, Perplexity, Telegram, Adobe, Microsoft, etc.
+   - Monthly/yearly billing language
+3. EXCLUDE one-time purchases ONLY: product orders, physical goods, shipping, app purchases (non-subscription)
+4. Extract: merchant name, amount, currency, billing frequency, next billing date (if available)
+5. Date handling:
+   - If you find a "next billing date", include it in the response
+   - If next billing date is before ${formattedDate}, set confidence to 60-70% (may be cancelled, but user will review)
+   - If no billing date found, still mark as subscription if other indicators present
+
+IMPORTANT: Be INCLUSIVE, not restrictive. If it looks like a subscription service (recurring payment), mark it as subscription even if you're not 100% certain. User will review and confirm.
+
+Respond ONLY with valid JSON (no markdown, no explanation):
+{
+  "isSubscription": true or false,
+  "merchant": "Company Name" or null,
+  "amount": 9.99 or null,
+  "currency": "USD" or "GBP" or null,
+  "frequency": "monthly" or "yearly" or null,
+  "nextBillingDate": "2025-11-15" or null (YYYY-MM-DD format),
+  "confidence": 85,
+  "reasoning": "Brief explanation"
+}`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Claude API error:", response.status, errorText);
+      return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
+    }
+
+    const data = await response.json();
+    const aiResponse = data.content[0].text;
+
+    // Extract JSON from response (handle markdown code blocks if present)
+    let jsonText = aiResponse;
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[0];
+    }
+
+    const analysis = JSON.parse(jsonText);
+
+    // Only return success if AI confirms it's a subscription
+    if (!analysis.isSubscription) {
+      return {
+        success: true,
+        merchant: null,
+        amount: null,
+        currency: null,
+        frequency: null,
+        confidence: analysis.confidence || 0,
+        reasoning: analysis.reasoning,
+        nextBillingDate: null,
+      };
+    }
+
+    return {
+      success: true,
+      merchant: analysis.merchant,
+      amount: analysis.amount,
+      currency: analysis.currency || "USD",
+      frequency: analysis.frequency,
+      confidence: analysis.confidence || 50,
+      reasoning: analysis.reasoning,
+      nextBillingDate: analysis.nextBillingDate || null,
+    };
+  } catch (error) {
+    console.error("❌ Claude API call failed:", error);
+    return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
+  }
+}

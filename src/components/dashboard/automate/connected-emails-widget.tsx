@@ -198,6 +198,28 @@ export function ConnectedEmailsWidget() {
           </div>
         </div>
 
+        {/* AI Processing Progress */}
+        {gmailConnection.aiProcessingStatus === "processing" && (
+          <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
+                Analyzing receipts with AI...
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                {gmailConnection.aiProcessedCount || 0} / {gmailConnection.aiTotalCount || 0}
+              </p>
+            </div>
+            <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
+              <div
+                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(100, ((gmailConnection.aiProcessedCount || 0) / (gmailConnection.aiTotalCount || 1)) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Error message if present */}
         {gmailConnection.errorMessage && (
           <div className="mt-3 p-3 border border-orange-200 rounded-lg bg-orange-50 dark:bg-orange-950/20">

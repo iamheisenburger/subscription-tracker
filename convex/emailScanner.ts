@@ -4,7 +4,7 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 
@@ -469,29 +469,40 @@ export const getConnectionById = internalMutation({
 /**
  * Get user's connections (internal query for actions)
  */
-export const getUserConnectionsInternal = internalMutation({
+export const getUserConnectionsInternal = internalQuery({
   args: {
     clerkUserId: v.string(),
   },
   handler: async (ctx, args) => {
+    console.log(`🔍 getUserConnectionsInternal called with clerkUserId: ${args.clerkUserId}`);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
       .first();
 
-    if (!user) return [];
+    if (!user) {
+      console.log(`❌ No user found for clerkId: ${args.clerkUserId}`);
+      return [];
+    }
 
-    return await ctx.db
+    console.log(`✅ Found user: ${user.email} (internal ID: ${user._id})`);
+
+    const connections = await ctx.db
       .query("emailConnections")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
+
+    console.log(`📧 Found ${connections.length} connections for user ${user.email}`);
+
+    return connections;
   },
 });
 
 /**
  * Get user by Clerk ID (for actions)
  */
-export const getUserByClerkId = internalMutation({
+export const getUserByClerkId = internalQuery({
   args: {
     clerkUserId: v.string(),
   },
@@ -657,5 +668,25 @@ export const storeEmailReceipt = internalMutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Update AI processing progress for real-time UI updates
+ */
+export const updateAIProgress = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    status: v.union(v.literal("not_started"), v.literal("processing"), v.literal("complete")),
+    processed: v.number(),
+    total: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      aiProcessingStatus: args.status,
+      aiProcessedCount: args.processed,
+      aiTotalCount: args.total,
+      updatedAt: Date.now(),
+    });
   },
 });

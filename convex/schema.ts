@@ -437,6 +437,14 @@ export default defineSchema({
     pageToken: v.optional(v.string()), // Gmail API nextPageToken for pagination
     totalEmailsScanned: v.optional(v.number()), // Progress tracking
     totalReceiptsFound: v.optional(v.number()), // Progress tracking
+    // AI processing progress (for real-time UI updates)
+    aiProcessingStatus: v.optional(v.union(
+      v.literal("not_started"),
+      v.literal("processing"),
+      v.literal("complete")
+    )),
+    aiProcessedCount: v.optional(v.number()), // How many receipts analyzed
+    aiTotalCount: v.optional(v.number()), // Total receipts to analyze
     errorCode: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
     createdAt: v.number(),
@@ -465,6 +473,11 @@ export default defineSchema({
     detectionCandidateId: v.optional(v.id("detectionCandidates")), // If created candidate
     parsed: v.boolean(), // Whether we successfully parsed subscription info
     parsingConfidence: v.optional(v.number()), // 0-1 confidence in parsing
+    parsingMethod: v.optional(v.union(
+      v.literal("ai"),              // Parsed by Claude AI
+      v.literal("regex_fallback"),  // AI failed, used regex fallback
+      v.literal("filtered")         // Filtered out as non-subscription
+    )),
     // Receipt type classification (Phase 2)
     receiptType: v.optional(v.union(
       v.literal("new_subscription"),   // Welcome email, first payment

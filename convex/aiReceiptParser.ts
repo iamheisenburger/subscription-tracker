@@ -48,10 +48,30 @@ export const parseReceiptsWithAI = internalAction({
       });
     }
 
+    // Set initial progress
+    if (args.connectionId) {
+      await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+        connectionId: args.connectionId,
+        status: "processing",
+        processed: 0,
+        total: args.receipts.length,
+      });
+    }
+
     for (const receipt of args.receipts) {
       // Rate limiting: 10 requests/second (Anthropic limit)
       if (results.length > 0 && results.length % 10 === 0) {
         await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Update progress every 10 receipts
+        if (args.connectionId) {
+          await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+            connectionId: args.connectionId,
+            status: "processing",
+            processed: results.length,
+            total: args.receipts.length,
+          });
+        }
       }
 
       try {
@@ -64,25 +84,30 @@ export const parseReceiptsWithAI = internalAction({
             receipt.from
           );
 
-          if (aiResult.success && aiResult.confidence >= 50) {
-            // Validate nextBillingDate if present - but DON'T filter out completely
-            let adjustedConfidence = aiResult.confidence;
-            let statusNote = "";
-
+          if (aiResult.success && aiResult.confidence >= 40) {
+            // HARD FILTER: If next billing date is in the past, COMPLETELY SKIP this subscription
             if (aiResult.nextBillingDate) {
               const nextBillingDate = new Date(aiResult.nextBillingDate);
               const currentDate = new Date();
 
-              // If next billing date is in the past, lower confidence but still show to user
               if (nextBillingDate < currentDate) {
-                adjustedConfidence = Math.min(adjustedConfidence, 65); // Cap at 65% for old dates
-                statusNote = ` (past billing date: ${aiResult.nextBillingDate})`;
-                console.log(`  ⚠️  PAST BILLING DATE: ${aiResult.merchant} - ${aiResult.nextBillingDate} - Lowered confidence to ${adjustedConfidence}%`);
+                console.log(`  🚫 FILTERED (past date): ${aiResult.merchant} - Next billing ${aiResult.nextBillingDate} is before today - CANCELLED SUBSCRIPTION`);
+                results.push({
+                  receiptId: receipt._id,
+                  merchantName: null,
+                  amount: null,
+                  currency: "USD",
+                  billingCycle: null,
+                  confidence: 0,
+                  method: "filtered",
+                  reasoning: `Subscription cancelled - next billing date (${aiResult.nextBillingDate}) is in the past`,
+                });
+                continue; // Skip this subscription completely
               }
             }
 
-            // Always include AI results (let user decide if cancelled)
-            console.log(`  🤖 AI: ${aiResult.merchant || "Unknown"} - ${aiResult.amount} ${aiResult.currency} (${adjustedConfidence}% confidence)${statusNote}`);
+            // Valid subscription - include it
+            console.log(`  🤖 AI: ${aiResult.merchant || "Unknown"} - ${aiResult.amount} ${aiResult.currency} (${aiResult.confidence}% confidence)`);
 
             results.push({
               receiptId: receipt._id,
@@ -90,7 +115,7 @@ export const parseReceiptsWithAI = internalAction({
               amount: aiResult.amount,
               currency: aiResult.currency || "USD",
               billingCycle: aiResult.frequency === "monthly" ? "monthly" : aiResult.frequency === "yearly" ? "yearly" : null,
-              confidence: adjustedConfidence / 100, // Convert to 0-1 scale
+              confidence: aiResult.confidence / 100, // Convert to 0-1 scale
               method: "ai",
               reasoning: aiResult.reasoning,
             });

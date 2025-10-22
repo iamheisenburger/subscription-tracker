@@ -395,13 +395,13 @@ export const getUnparsedReceipts = internalMutation({
     const allReceipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .take(500);
+      .collect(); // Get ALL receipts, no limit
 
     const receiptsToProcess = allReceipts.filter(
       (receipt) =>
         !receipt.parsed ||
         (!receipt.merchantName && !receipt.amount)
-    ).slice(0, 100);
+    ); // Process ALL unparsed receipts, no 100 limit
 
     return {
       receipts: receiptsToProcess.map(r => ({

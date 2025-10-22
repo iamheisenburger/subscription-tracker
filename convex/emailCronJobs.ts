@@ -100,17 +100,17 @@ export const createDetectionCandidates = internalMutation({
       return { message: "No receipts needing detection" };
     }
 
-    // Group by user and schedule detection
+    // Group by user and schedule pattern-based detection
     const userIds = new Set(receiptsNeedingDetection.map((r) => r.userId));
 
     for (const userId of userIds) {
-      await ctx.scheduler.runAfter(0, internal.emailDetection.createDetectionCandidatesFromReceipts, {
+      await ctx.scheduler.runAfter(0, internal.patternDetection.runPatternBasedDetection, {
         userId,
       });
     }
 
     return {
-      message: `Scheduled detection for ${userIds.size} user(s)`,
+      message: `Scheduled pattern-based detection for ${userIds.size} user(s)`,
       userCount: userIds.size,
       receiptCount: receiptsNeedingDetection.length,
     };

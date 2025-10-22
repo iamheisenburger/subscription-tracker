@@ -38,6 +38,7 @@ import type * as insights from "../insights.js";
 import type * as institutions from "../institutions.js";
 import type * as merchants from "../merchants.js";
 import type * as notifications from "../notifications.js";
+import type * as patternDetection from "../patternDetection.js";
 import type * as push from "../push.js";
 import type * as receiptParser from "../receiptParser.js";
 import type * as subscription_renewal from "../subscription_renewal.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   institutions: typeof institutions;
   merchants: typeof merchants;
   notifications: typeof notifications;
+  patternDetection: typeof patternDetection;
   push: typeof push;
   receiptParser: typeof receiptParser;
   subscription_renewal: typeof subscription_renewal;

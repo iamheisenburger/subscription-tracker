@@ -68,8 +68,9 @@ export const scanGmailForReceipts = internalAction({
       // category:purchases = ~500 emails (what you see in Gmail UI)
       // vs keyword search = 10,000+ emails (insane and slow)
 
-      // Build Gmail API search query using Gmail's categories
-      let searchQuery = "(category:purchases OR label:subscriptions)";
+      // Build Gmail API search query - BROADENED to catch subscriptions Gmail doesn't categorize
+      // Use both category-based AND keyword-based search to catch ChatGPT, Perplexity, etc.
+      let searchQuery = "(category:purchases OR label:subscriptions OR subject:(subscription OR recurring OR billing OR renewal OR invoice OR receipt OR payment))";
 
       // Determine scan mode: incremental (after last sync) or full inbox (with pagination)
       // IMPORTANT: Manual "Scan Now" button clicks should ALWAYS do full scans (forceFullScan = true)
@@ -81,11 +82,11 @@ export const scanGmailForReceipts = internalAction({
         searchQuery = `${searchQuery} after:${connection.syncCursor}`;
         console.log(`📧 Incremental scan: fetching emails after ${connection.syncCursor}`);
       } else {
-        // Full inbox scan: get all purchase/subscription emails from last 3 years
-        // Extended to 3 years to catch older subscriptions that are still active
-        const threeYearsAgo = Math.floor((now - 3 * 365 * 24 * 60 * 60 * 1000) / 1000);
-        searchQuery = `${searchQuery} after:${threeYearsAgo}`;
-        console.log(`📧 Full inbox scan: fetching purchase/subscription emails from last 3 years using Gmail categories${args.forceFullScan ? " (FORCED by user)" : ""}`);
+        // Full inbox scan: get all subscription emails from last 5 years (not 3)
+        // Extended to 5 years to catch older Spotify receipts and ensure we don't miss active subs
+        const fiveYearsAgo = Math.floor((now - 5 * 365 * 24 * 60 * 60 * 1000) / 1000);
+        searchQuery = `${searchQuery} after:${fiveYearsAgo}`;
+        console.log(`📧 Full inbox scan: fetching subscription emails from last 5 years (category + keywords)${args.forceFullScan ? " (FORCED by user)" : ""}`);
       }
 
       // Build Gmail API URL with pagination support
@@ -486,7 +487,7 @@ export const triggerUserEmailScan = action({
       });
       console.log(`🤖 Parse result: ${parseResult.parsed} subscriptions detected out of ${parseResult.count} receipts (AI-powered detection)`);
 
-      console.log("🎯 Creating detection candidates immediately after parsing...");
+      console.log("🎯 Using pattern-based detection to identify active subscriptions...");
       // Get user ID for detection creation
       const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
         clerkUserId: args.clerkUserId,
@@ -497,12 +498,13 @@ export const triggerUserEmailScan = action({
         return { success: false, error: "User record not found. Please refresh the page." };
       }
 
+      // Run pattern-based detection (analyzes ALL receipts for patterns and creates candidates)
       let detectionsCreated = 0;
-      const detectionResult = await ctx.runMutation(internal.emailDetection.createDetectionCandidatesFromReceipts, {
+      const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
         userId: user._id,
       });
       detectionsCreated = detectionResult.created || 0;
-      console.log(`🎯 Detection result: ${detectionsCreated} new candidates created`);
+      console.log(`🎯 Pattern-based detection result: ${detectionsCreated} new candidates created (${detectionResult.updated} updated, ${detectionResult.skipped} already tracked)`);
 
       console.log(`✨ Scan complete: ${parseResult.parsed || 0} parsed, ${detectionsCreated} detections created`);
 

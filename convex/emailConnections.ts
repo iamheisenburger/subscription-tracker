@@ -18,6 +18,8 @@ export const createGmailConnection = mutation({
     expiresIn: v.number(), // Seconds until token expires
   },
   handler: async (ctx, args) => {
+    console.log(`📧 createGmailConnection called for clerkUserId: ${args.clerkUserId}, email: ${args.email}`);
+
     // Find user by Clerk ID
     const user = await ctx.db
       .query("users")
@@ -27,6 +29,8 @@ export const createGmailConnection = mutation({
     if (!user) {
       throw new Error("User not found");
     }
+
+    console.log(`👤 User found: ${user.email}, tier: ${user.tier}, emailConnectionsUsedLifetime: ${user.emailConnectionsUsedLifetime || 0}`);
 
     const now = Date.now();
     const tokenExpiresAt = now + args.expiresIn * 1000;
@@ -40,6 +44,7 @@ export const createGmailConnection = mutation({
       .first();
 
     if (existing) {
+      console.log(`🔄 Updating existing connection for ${args.email}`);
       // Update existing connection
       await ctx.db.patch(existing._id, {
         email: args.email,
@@ -55,17 +60,23 @@ export const createGmailConnection = mutation({
       return { connectionId: existing._id, updated: true };
     }
 
+    console.log(`✨ No existing connection found, checking limits...`);
+
     // Check LIFETIME connection limit to prevent exploitation
     // Users cannot game the system by disconnecting/reconnecting different emails
     const lifetimeConnections = user.emailConnectionsUsedLifetime || 0;
 
     // Tier-based limit check
     const userTier = user.tier || "free_user";
-    const connectionLimit = userTier === "automate_1" ? 1 : 0;
+    // TEMPORARILY DISABLED FOR TESTING - Allow unlimited connections
+    const connectionLimit = userTier === "automate_1" ? 999 : 0;
+
+    console.log(`🔍 Limit check: lifetimeConnections=${lifetimeConnections}, tier=${userTier}, limit=${connectionLimit} (TESTING MODE - limits disabled)`);
 
     if (lifetimeConnections >= connectionLimit) {
+      console.error(`❌ LIMIT EXCEEDED: ${lifetimeConnections} >= ${connectionLimit}`);
       throw new Error(
-        `Email connection limit reached. Your ${userTier} tier allows ${connectionLimit} unique email connection${connectionLimit !== 1 ? 's' : ''} (lifetime). You've already connected ${lifetimeConnections} email${lifetimeConnections !== 1 ? 's' : ''}. Disconnecting does not reset this limit.`
+        `Email connection limit reached. Your ${userTier} tier allows ${connectionLimit} unique email connections (lifetime). You've already connected ${lifetimeConnections} email${lifetimeConnections !== 1 ? 's' : ''}. Disconnecting does not reset this limit.`
       );
     }
 

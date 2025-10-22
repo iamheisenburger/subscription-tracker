@@ -38,17 +38,14 @@ export const parseReceiptsWithAI = internalAction({
 
     console.log(`🤖 AI Parser: Analyzing ${args.receipts.length} receipts...`);
 
-    // Initialize progress tracking
-    if (args.connectionId) {
-      await ctx.runMutation(internal.emailScanner.updateAIProgress, {
-        connectionId: args.connectionId,
-        status: "processing",
-        processed: 0,
-        total: args.receipts.length,
-      });
+    // Validate connectionId for progress tracking
+    if (!args.connectionId) {
+      console.warn(`⚠️  No connectionId provided - progress tracking disabled`);
+    } else {
+      console.log(`🔗 Using connectionId for progress: ${args.connectionId}`);
     }
 
-    // Set initial progress
+    // Initialize progress tracking (single call)
     if (args.connectionId) {
       await ctx.runMutation(internal.emailScanner.updateAIProgress, {
         connectionId: args.connectionId,
@@ -62,16 +59,6 @@ export const parseReceiptsWithAI = internalAction({
       // Rate limiting: 10 requests/second (Anthropic limit)
       if (results.length > 0 && results.length % 10 === 0) {
         await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Update progress every 10 receipts
-        if (args.connectionId) {
-          await ctx.runMutation(internal.emailScanner.updateAIProgress, {
-            connectionId: args.connectionId,
-            status: "processing",
-            processed: results.length,
-            total: args.receipts.length,
-          });
-        }
       }
 
       try {
@@ -170,8 +157,9 @@ export const parseReceiptsWithAI = internalAction({
         });
       }
 
-      // Update progress every 5 receipts
+      // Update progress every 5 receipts for real-time UI feedback
       if (args.connectionId && results.length % 5 === 0) {
+        console.log(`🔄 Progress update: ${results.length}/${args.receipts.length} receipts analyzed`);
         await ctx.runMutation(internal.emailScanner.updateAIProgress, {
           connectionId: args.connectionId,
           status: "processing",
@@ -183,6 +171,7 @@ export const parseReceiptsWithAI = internalAction({
 
     // Final progress update
     if (args.connectionId) {
+      console.log(`✅ Final progress: ${results.length}/${args.receipts.length} receipts analyzed - COMPLETE`);
       await ctx.runMutation(internal.emailScanner.updateAIProgress, {
         connectionId: args.connectionId,
         status: "complete",

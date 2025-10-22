@@ -199,26 +199,62 @@ export function ConnectedEmailsWidget() {
         </div>
 
         {/* AI Processing Progress */}
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {"aiProcessingStatus" in gmailConnection && (gmailConnection as any).aiProcessingStatus === "processing" && (
-          <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
-                Analyzing receipts with AI...
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {((gmailConnection as any).aiProcessedCount || 0)} / {((gmailConnection as any).aiTotalCount || 0)}
-              </p>
+        {(() => {
+          // Debug logging for progress UI
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const connection = gmailConnection as any;
+          const hasProcessingStatus = connection?.aiProcessingStatus === "processing";
+          const hasProgressData = (connection?.aiProcessedCount || 0) > 0 && (connection?.aiTotalCount || 0) > 0;
+          const shouldShowProgress = hasProcessingStatus || hasProgressData;
+
+          console.log('🎨 Progress UI Debug:', {
+            hasConnection: !!gmailConnection,
+            aiProcessingStatus: connection?.aiProcessingStatus,
+            aiProcessedCount: connection?.aiProcessedCount,
+            aiTotalCount: connection?.aiTotalCount,
+            hasProcessingStatus,
+            hasProgressData,
+            shouldShowProgress,
+          });
+
+          if (!shouldShowProgress) {
+            return null;
+          }
+
+          return (
+            <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
+                  Analyzing receipts with AI...
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                  {connection?.aiProcessedCount || 0} / {connection?.aiTotalCount || 0}
+                </p>
+              </div>
+              <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
+                <div
+                  className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, ((connection?.aiProcessedCount || 0) / (connection?.aiTotalCount || 1)) * 100)}%`,
+                  }}
+                />
+              </div>
             </div>
-            <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
-              <div
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
-                style={{
-                  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                  width: `${Math.min(100, (((gmailConnection as any).aiProcessedCount || 0) / ((gmailConnection as any).aiTotalCount || 1)) * 100)}%`,
-                }}
-              />
+          );
+        })()}
+
+        {/* Detection Alert - Show when there are pending detections */}
+        {detectionStats && detectionStats.pending > 0 && (
+          <div className="mt-3 p-3 border border-green-200 rounded-lg bg-green-50 dark:bg-green-950/20">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-xs font-medium text-green-700 dark:text-green-300 font-sans mb-1">
+                  🎉 {detectionStats.pending} subscription{detectionStats.pending > 1 ? 's' : ''} detected!
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 font-sans">
+                  Review and confirm these subscriptions below to start tracking them.
+                </p>
+              </div>
             </div>
           </div>
         )}

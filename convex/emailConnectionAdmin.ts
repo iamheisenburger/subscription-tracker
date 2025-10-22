@@ -104,3 +104,37 @@ export const resetScanProgress = mutation({
     };
   },
 });
+
+/**
+ * Reset lifetime email connection limit (TESTING ONLY)
+ * This allows re-testing Gmail connections during development
+ */
+export const resetLifetimeLimit = mutation({
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) {
+      throw new Error(`User not found with clerkId: ${args.clerkId}`);
+    }
+
+    const previousLimit = user.emailConnectionsUsedLifetime || 0;
+
+    await ctx.db.patch(user._id, {
+      emailConnectionsUsedLifetime: 0,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      message: `Reset lifetime limit for ${args.clerkId} (was ${previousLimit}, now 0)`,
+      previousLimit,
+      currentLimit: 0,
+    };
+  },
+});

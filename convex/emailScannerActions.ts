@@ -394,6 +394,97 @@ function decodeBase64(base64url: string): string {
 }
 
 /**
+ * Process next batch of receipts (internal - called by scheduler for auto-batching)
+ * This skips Gmail scanning and only processes already-downloaded receipts
+ */
+export const processNextBatch = internalAction({
+  args: {
+    clerkUserId: v.string(),
+    batchNumber: v.number(),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    error?: string;
+    hasMoreBatches?: boolean;
+  }> => {
+    try {
+      console.log(`🔄 Auto-batching: Processing batch ${args.batchNumber} for user ${args.clerkUserId}`);
+
+      // Get first active connection for progress tracking
+      const connections: any[] = await ctx.runQuery(internal.emailScanner.getUserConnectionsInternal, {
+        clerkUserId: args.clerkUserId,
+      });
+
+      const firstConnection = connections.find((c) => c.status === "active");
+
+      // Parse next batch of receipts
+      console.log(`🤖 Parsing receipts (batch ${args.batchNumber})...`);
+      const parseResult = await ctx.runAction(internal.receiptParser.parseUnparsedReceiptsWithAI, {
+        clerkUserId: args.clerkUserId,
+        connectionId: firstConnection?._id,
+      });
+
+      console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parseResult.parsed} subscriptions detected`);
+
+      // Run pattern-based detection
+      console.log(`🎯 Running pattern detection (batch ${args.batchNumber})...`);
+      const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
+        clerkUserId: args.clerkUserId,
+      });
+
+      if (!user) {
+        console.error("❌ User not found during batch processing");
+        return { success: false, error: "User not found" };
+      }
+
+      const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
+        userId: user._id,
+      });
+
+      console.log(`🎯 Detection result (batch ${args.batchNumber}): ${detectionResult.created} new candidates`);
+
+      // Check if more batches needed
+      const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
+        clerkUserId: args.clerkUserId,
+      });
+
+      const hasMoreBatches = remainingResult.count > 0;
+
+      if (hasMoreBatches) {
+        console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
+
+        // Schedule next batch (with safety limit of 10 total batches)
+        if (args.batchNumber < 10) {
+          await ctx.scheduler.runAfter(
+            0, // Run immediately
+            internal.emailScannerActions.processNextBatch,
+            {
+              clerkUserId: args.clerkUserId,
+              batchNumber: args.batchNumber + 1,
+            }
+          );
+        } else {
+          console.warn(`⚠️  Reached batch limit (10 batches) - stopping auto-batching`);
+        }
+      } else {
+        console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);
+      }
+
+      return {
+        success: true,
+        hasMoreBatches,
+      };
+    } catch (error) {
+      console.error(`❌ Batch ${args.batchNumber} processing failed:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Batch processing failed"
+      };
+    }
+  },
+});
+
+/**
  * User-triggered email scan (manual scan button)
  */
 export const triggerUserEmailScan = action({
@@ -505,6 +596,27 @@ export const triggerUserEmailScan = action({
       });
       detectionsCreated = detectionResult.created || 0;
       console.log(`🎯 Pattern-based detection result: ${detectionsCreated} new candidates created (${detectionResult.updated} updated, ${detectionResult.skipped} already tracked)`);
+
+      // AUTO-BATCHING: Check if more receipts need processing
+      const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
+        clerkUserId: args.clerkUserId,
+      });
+
+      if (remainingResult.count > 0) {
+        console.log(`🔄 AUTO-BATCHING: ${remainingResult.count} receipts remain - scheduling batch 2`);
+
+        // Schedule next batch immediately
+        await ctx.scheduler.runAfter(
+          0, // Run immediately
+          internal.emailScannerActions.processNextBatch,
+          {
+            clerkUserId: args.clerkUserId,
+            batchNumber: 2, // This is batch 2 (batch 1 just completed)
+          }
+        );
+      } else {
+        console.log(`✅ All receipts processed in single batch - no auto-batching needed`);
+      }
 
       console.log(`✨ Scan complete: ${parseResult.parsed || 0} parsed, ${detectionsCreated} detections created`);
 

@@ -682,11 +682,17 @@ export const updateAIProgress = internalMutation({
     total: v.number(),
   },
   handler: async (ctx, args) => {
+    console.log(`📊 updateAIProgress called: ${args.processed}/${args.total}`);
+    console.log(`   ConnectionId: ${args.connectionId}`);
+    console.log(`   Status: ${args.status}`);
+
     await ctx.db.patch(args.connectionId, {
       aiProcessingStatus: args.status,
       aiProcessedCount: args.processed,
       aiTotalCount: args.total,
       updatedAt: Date.now(),
     });
+
+    console.log(`✅ Progress updated in database`);
   },
 });

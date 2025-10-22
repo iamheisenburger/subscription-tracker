@@ -24,14 +24,27 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         q.and(
           q.eq(q.field("parsed"), true),
           q.eq(q.field("detectionCandidateId"), undefined),
-          q.gte(q.field("parsingConfidence"), 0.6) // Only high confidence
+          q.gte(q.field("parsingConfidence"), 0.4), // Lowered from 0.6 to 0.4
+          q.neq(q.field("merchantName"), null) // Must have merchant name (excludes filtered)
         )
       )
-      .take(50);
+      .take(50); // Process 50 at a time
 
     if (parsedReceipts.length === 0) {
       return { created: 0, message: "No new parsed receipts to process" };
     }
+
+    // OPTIMIZATION: Load ALL user subscriptions ONCE instead of querying in loop
+    // This reduces 50+ queries to just 1 query (critical for free plan limits)
+    const allUserSubscriptions = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Build in-memory lookup map for O(1) lookups
+    const subscriptionsByName = new Map(
+      allUserSubscriptions.map(sub => [sub.name.toLowerCase(), sub])
+    );
 
     const now = Date.now();
     let createdCount = 0;
@@ -42,12 +55,8 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         continue;
       }
 
-      // Check if subscription already exists for this merchant
-      const existingSubscription = await ctx.db
-        .query("subscriptions")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .filter((q) => q.eq(q.field("name"), receipt.merchantName!))
-        .first();
+      // Check if subscription already exists (in-memory lookup - NO database query!)
+      const existingSubscription = subscriptionsByName.get(receipt.merchantName.toLowerCase());
 
       if (existingSubscription) {
         // Subscription already exists - link receipt and handle based on receipt type

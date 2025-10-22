@@ -376,6 +376,43 @@ export const parseUnparsedReceiptsWithAI = internalAction({
 });
 
 /**
+ * Count unparsed receipts for a user (for auto-batching)
+ */
+export const countUnparsedReceipts = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (!user) {
+      return { count: 0, totalReceipts: 0 };
+    }
+
+    const allReceipts = await ctx.db
+      .query("emailReceipts")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const unparsedCount = allReceipts.filter(
+      (receipt) =>
+        !receipt.parsed ||
+        (!receipt.merchantName && !receipt.amount)
+    ).length;
+
+    console.log(`📊 Unparsed receipts: ${unparsedCount}/${allReceipts.length} total`);
+
+    return {
+      count: unparsedCount,
+      totalReceipts: allReceipts.length,
+    };
+  },
+});
+
+/**
  * Helper: Get unparsed receipts for AI analysis
  */
 export const getUnparsedReceipts = internalMutation({

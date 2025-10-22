@@ -61,8 +61,6 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
     }> = [];
 
     const currentTime = Date.now();
-    const threeMonthsAgo = currentTime - 90 * 24 * 60 * 60 * 1000;
-    const sixMonthsAgo = currentTime - 180 * 24 * 60 * 60 * 1000;
 
     for (const [merchantName, merchantReceipts] of merchantGroups) {
       // Sort receipts by date (most recent first)
@@ -70,60 +68,90 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
       const latestReceipt = sortedReceipts[0];
       const latestReceiptDate = latestReceipt.receivedAt;
 
-      // RULE 1: Recent receipts (last 3 months) = ACTIVE SUBSCRIPTION
-      if (latestReceiptDate >= threeMonthsAgo) {
-        console.log(`  ✅ ACTIVE (recent): ${merchantName} - Last receipt ${new Date(latestReceiptDate).toLocaleDateString()}`);
+      // CRITICAL: Infer billing cycle FIRST to apply appropriate time thresholds
+      const inferredCycle = inferBillingCycle(sortedReceipts);
+      const detectedCycle = latestReceipt.billingCycle;
+
+      const billingCycle = detectedCycle === "yearly" || inferredCycle === "yearly"
+        ? "yearly"
+        : detectedCycle === "weekly" || inferredCycle === "weekly"
+        ? "weekly"
+        : detectedCycle || inferredCycle || "monthly";
+
+      // Apply cycle-specific time thresholds
+      let recentThreshold: number;
+      let cancelledThreshold: number;
+      let middleZoneConfidence: number;
+
+      if (billingCycle === "yearly") {
+        recentThreshold = currentTime - 15 * 30 * 24 * 60 * 60 * 1000; // 15 months
+        cancelledThreshold = currentTime - 18 * 30 * 24 * 60 * 60 * 1000; // 18 months
+        middleZoneConfidence = 0.85;
+      } else if (billingCycle === "weekly") {
+        recentThreshold = currentTime - 30 * 24 * 60 * 60 * 1000; // 1 month
+        cancelledThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 3 months
+        middleZoneConfidence = 0.70;
+      } else {
+        recentThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 3 months
+        cancelledThreshold = currentTime - 180 * 24 * 60 * 60 * 1000; // 6 months
+        middleZoneConfidence = 0.75;
+      }
+
+      // RULE 1: Recent receipts based on billing cycle = ACTIVE
+      if (latestReceiptDate >= recentThreshold) {
+        const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
+        console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
 
         activeSubscriptions.push({
           merchantName,
           amount: latestReceipt.amount!,
           currency: latestReceipt.currency || "USD",
-          billingCycle: latestReceipt.billingCycle || inferBillingCycle(sortedReceipts),
+          billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
-          confidence: 0.95, // Very high confidence for recent receipts
+          confidence: 0.95,
           patternType: "recent",
           receiptIds: sortedReceipts.map(r => r._id),
         });
         continue;
       }
 
-      // RULE 2: Old receipts (>6 months) = CANCELLED SUBSCRIPTION
-      if (latestReceiptDate < sixMonthsAgo) {
-        console.log(`  ❌ CANCELLED (old): ${merchantName} - Last receipt ${new Date(latestReceiptDate).toLocaleDateString()}`);
-        continue; // Skip - subscription is cancelled
+      // RULE 2: Old receipts based on billing cycle = CANCELLED
+      if (latestReceiptDate < cancelledThreshold) {
+        const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
+        console.log(`  ❌ CANCELLED (old): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
+        continue;
       }
 
-      // RULE 3: Middle zone (3-6 months) - Check for recurring pattern
-      // If there's a clear recurring pattern (multiple receipts with regular intervals), it's likely still active
+      // RULE 3: Middle zone - Check for recurring pattern
       const hasRecurringPattern = detectRecurringPattern(sortedReceipts);
+      const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
 
       if (hasRecurringPattern) {
-        console.log(`  ✅ ACTIVE (recurring pattern): ${merchantName} - ${sortedReceipts.length} receipts with regular intervals`);
+        console.log(`  ✅ ACTIVE (pattern): ${merchantName} - ${sortedReceipts.length} receipts, ${daysAgo} days ago (${billingCycle})`);
 
         activeSubscriptions.push({
           merchantName,
           amount: latestReceipt.amount!,
           currency: latestReceipt.currency || "USD",
-          billingCycle: latestReceipt.billingCycle || inferBillingCycle(sortedReceipts),
+          billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
-          confidence: 0.80, // High confidence for recurring patterns
+          confidence: middleZoneConfidence,
           patternType: "recurring",
           receiptIds: sortedReceipts.map(r => r._id),
         });
       } else {
-        // No recurring pattern and in middle zone - likely cancelled but show with lower confidence
-        console.log(`  ⚠️  UNCERTAIN: ${merchantName} - Last receipt ${new Date(latestReceiptDate).toLocaleDateString()}, no clear pattern`);
+        console.log(`  ⚠️  UNCERTAIN: ${merchantName} - ${daysAgo} days ago, no pattern (${billingCycle})`);
 
         activeSubscriptions.push({
           merchantName,
           amount: latestReceipt.amount!,
           currency: latestReceipt.currency || "USD",
-          billingCycle: latestReceipt.billingCycle || null,
+          billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
-          confidence: 0.60, // Lower confidence - might be cancelled
+          confidence: 0.60,
           patternType: "high_confidence_recent",
           receiptIds: sortedReceipts.map(r => r._id),
         });
@@ -353,22 +381,58 @@ export const runPatternBasedDetection = internalMutation({
     }> = [];
 
     const currentTime = Date.now();
-    const threeMonthsAgo = currentTime - 90 * 24 * 60 * 60 * 1000;
-    const sixMonthsAgo = currentTime - 180 * 24 * 60 * 60 * 1000;
 
     for (const [merchantName, merchantReceipts] of merchantGroups) {
       const sortedReceipts = merchantReceipts.sort((a, b) => b.receivedAt - a.receivedAt);
       const latestReceipt = sortedReceipts[0];
       const latestReceiptDate = latestReceipt.receivedAt;
 
-      // RULE 1: Recent receipts (last 3 months) = ACTIVE SUBSCRIPTION
-      if (latestReceiptDate >= threeMonthsAgo) {
-        console.log(`  ✅ ACTIVE (recent): ${merchantName} - Last receipt ${new Date(latestReceiptDate).toLocaleDateString()}`);
+      // CRITICAL: Infer billing cycle FIRST to apply appropriate time thresholds
+      // Annual subscriptions need different thresholds than monthly
+      const inferredCycle = inferBillingCycle(sortedReceipts);
+      const detectedCycle = latestReceipt.billingCycle; // From AI parsing
+
+      // Use most permissive cycle (if either AI or pattern suggests yearly, treat as yearly)
+      const billingCycle = detectedCycle === "yearly" || inferredCycle === "yearly"
+        ? "yearly"
+        : detectedCycle === "weekly" || inferredCycle === "weekly"
+        ? "weekly"
+        : detectedCycle || inferredCycle || "monthly";
+
+      // Apply cycle-specific time thresholds
+      let recentThreshold: number;
+      let cancelledThreshold: number;
+      let middleZoneConfidence: number;
+
+      if (billingCycle === "yearly") {
+        // Annual subscriptions: much longer thresholds
+        recentThreshold = currentTime - 15 * 30 * 24 * 60 * 60 * 1000; // 15 months
+        cancelledThreshold = currentTime - 18 * 30 * 24 * 60 * 60 * 1000; // 18 months
+        middleZoneConfidence = 0.85; // Higher confidence for annual in middle zone
+        console.log(`  📅 ${merchantName}: Detected as YEARLY subscription`);
+      } else if (billingCycle === "weekly") {
+        // Weekly subscriptions: shorter thresholds
+        recentThreshold = currentTime - 30 * 24 * 60 * 60 * 1000; // 1 month
+        cancelledThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 3 months
+        middleZoneConfidence = 0.70;
+        console.log(`  📅 ${merchantName}: Detected as WEEKLY subscription`);
+      } else {
+        // Monthly or unknown: default thresholds
+        recentThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 3 months
+        cancelledThreshold = currentTime - 180 * 24 * 60 * 60 * 1000; // 6 months
+        middleZoneConfidence = 0.75;
+        console.log(`  📅 ${merchantName}: Detected as MONTHLY subscription`);
+      }
+
+      // RULE 1: Recent receipts based on billing cycle = ACTIVE SUBSCRIPTION
+      if (latestReceiptDate >= recentThreshold) {
+        const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
+        console.log(`  ✅ ACTIVE (recent): ${merchantName} - Last receipt ${daysAgo} days ago (${billingCycle} cycle)`);
         activeSubscriptions.push({
           merchantName,
           amount: latestReceipt.amount!,
           currency: latestReceipt.currency || "USD",
-          billingCycle: latestReceipt.billingCycle || inferBillingCycle(sortedReceipts),
+          billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
           confidence: 0.95,
@@ -378,35 +442,37 @@ export const runPatternBasedDetection = internalMutation({
         continue;
       }
 
-      // RULE 2: Old receipts (>6 months) = CANCELLED SUBSCRIPTION
-      if (latestReceiptDate < sixMonthsAgo) {
-        console.log(`  ❌ CANCELLED (old): ${merchantName} - Last receipt ${new Date(latestReceiptDate).toLocaleDateString()}`);
+      // RULE 2: Old receipts based on billing cycle = CANCELLED SUBSCRIPTION
+      if (latestReceiptDate < cancelledThreshold) {
+        const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
+        console.log(`  ❌ CANCELLED (old): ${merchantName} - Last receipt ${daysAgo} days ago (expected ${billingCycle} cycle)`);
         continue;
       }
 
-      // RULE 3: Middle zone (3-6 months) - Check for recurring pattern
+      // RULE 3: Middle zone - Check for recurring pattern
       const hasRecurringPattern = detectRecurringPattern(sortedReceipts);
+      const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
 
       if (hasRecurringPattern) {
-        console.log(`  ✅ ACTIVE (recurring pattern): ${merchantName} - ${sortedReceipts.length} receipts with regular intervals`);
+        console.log(`  ✅ ACTIVE (recurring pattern): ${merchantName} - ${sortedReceipts.length} receipts, last ${daysAgo} days ago (${billingCycle} cycle)`);
         activeSubscriptions.push({
           merchantName,
           amount: latestReceipt.amount!,
           currency: latestReceipt.currency || "USD",
-          billingCycle: latestReceipt.billingCycle || inferBillingCycle(sortedReceipts),
+          billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
-          confidence: 0.80,
+          confidence: middleZoneConfidence,
           patternType: "recurring",
           receiptIds: sortedReceipts.map(r => r._id),
         });
       } else {
-        console.log(`  ⚠️  UNCERTAIN: ${merchantName} - Last receipt ${new Date(latestReceiptDate).toLocaleDateString()}, no clear pattern`);
+        console.log(`  ⚠️  UNCERTAIN: ${merchantName} - Last receipt ${daysAgo} days ago, no clear pattern (${billingCycle} cycle)`);
         activeSubscriptions.push({
           merchantName,
           amount: latestReceipt.amount!,
           currency: latestReceipt.currency || "USD",
-          billingCycle: latestReceipt.billingCycle || null,
+          billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
           confidence: 0.60,

@@ -401,7 +401,7 @@ export const getUnparsedReceipts = internalMutation({
       (receipt) =>
         !receipt.parsed ||
         (!receipt.merchantName && !receipt.amount)
-    ); // Process ALL unparsed receipts, no 100 limit
+    ).slice(0, 150); // Process 150 at a time to avoid 10min timeout (150 receipts * 2s = ~5min buffer)
 
     return {
       receipts: receiptsToProcess.map(r => ({

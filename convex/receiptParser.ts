@@ -147,10 +147,13 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     pattern.test(text) || pattern.test(subject)
   );
 
-  // Accept if:
+  // RELAXED FILTER: Accept if:
   // 1. Has explicit subscription keyword, OR
-  // 2. Is from a known service AND has receipt/payment keyword
-  return hasSubscriptionKeyword || (isKnownService && hasReceiptKeyword);
+  // 2. Is from a known service (even without receipt keyword - let AI decide)
+  //
+  // This ensures ChatGPT, Spotify, Perplexity, etc. always make it to AI analysis
+  // The AI will determine if it's actually a subscription or not
+  return hasSubscriptionKeyword || isKnownService;
 }
 
 /**

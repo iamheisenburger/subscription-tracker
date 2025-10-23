@@ -72,26 +72,9 @@ export const parseReceiptsWithAI = internalAction({
           );
 
           if (aiResult.success && aiResult.confidence >= 40) {
-            // HARD FILTER: If next billing date is in the past, COMPLETELY SKIP this subscription
-            if (aiResult.nextBillingDate) {
-              const nextBillingDate = new Date(aiResult.nextBillingDate);
-              const currentDate = new Date();
-
-              if (nextBillingDate < currentDate) {
-                console.log(`  🚫 FILTERED (past date): ${aiResult.merchant} - Next billing ${aiResult.nextBillingDate} is before today - CANCELLED SUBSCRIPTION`);
-                results.push({
-                  receiptId: receipt._id,
-                  merchantName: null,
-                  amount: null,
-                  currency: "USD",
-                  billingCycle: null,
-                  confidence: 0,
-                  method: "filtered",
-                  reasoning: `Subscription cancelled - next billing date (${aiResult.nextBillingDate}) is in the past`,
-                });
-                continue; // Skip this subscription completely
-              }
-            }
+            // FIX: Don't filter based on past dates - many receipts don't have future dates
+            // They're just payment confirmations for the current month (e.g., "Charged $20 for October")
+            // Let the user review all detections and manually confirm/dismiss
 
             // Valid subscription - include it
             console.log(`  🤖 AI: ${aiResult.merchant || "Unknown"} - ${aiResult.amount} ${aiResult.currency} (${aiResult.confidence}% confidence)`);

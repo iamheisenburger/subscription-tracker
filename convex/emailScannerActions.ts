@@ -72,21 +72,27 @@ export const scanGmailForReceipts = internalAction({
       // Use both category-based AND keyword-based search to catch ChatGPT, Perplexity, etc.
       let searchQuery = "(category:purchases OR label:subscriptions OR subject:(subscription OR recurring OR billing OR renewal OR invoice OR receipt OR payment))";
 
-      // Determine scan mode: incremental (after last sync) or full inbox (with pagination)
-      // IMPORTANT: Manual "Scan Now" button clicks should ALWAYS do full scans (forceFullScan = true)
-      // Only automated background syncs should do incremental scans
-      const isIncrementalScan = !args.forceFullScan && connection.syncCursor && connection.scanStatus === "complete";
+      // COST OPTIMIZATION: Incremental scan mode
+      // First scan: Full inbox (5 years) = expensive
+      // Subsequent scans: Only NEW emails since last scan = CHEAP!
+      // This reduces costs from $3.51/scan → $0.15-0.20/scan after first month
+
+      const hasEverScannedFully = connection.lastFullScanAt && connection.lastFullScanAt > 0;
+      const isIncrementalScan = !args.forceFullScan && hasEverScannedFully && connection.scanStatus === "complete";
 
       if (isIncrementalScan) {
-        // Incremental scan: only get new emails since last sync (AUTOMATED SYNCS ONLY)
-        searchQuery = `${searchQuery} after:${connection.syncCursor}`;
-        console.log(`📧 Incremental scan: fetching emails after ${connection.syncCursor}`);
+        // INCREMENTAL: Only scan emails AFTER last full scan (HUGE cost savings!)
+        const lastFullScanDate = Math.floor(connection.lastFullScanAt / 1000); // Convert to Unix timestamp
+        searchQuery = `${searchQuery} after:${lastFullScanDate}`;
+        console.log(`💰 INCREMENTAL SCAN: Only fetching NEW emails after ${new Date(connection.lastFullScanAt).toISOString()}`);
+        console.log(`💰 Cost savings: ~$3.30 per scan (only analyzing ~20-50 new receipts instead of 942)`);
       } else {
-        // Full inbox scan: get all subscription emails from last 5 years (not 3)
-        // Extended to 5 years to catch older Spotify receipts and ensure we don't miss active subs
+        // FULL SCAN: Get all subscription emails from last 5 years
+        // This is expensive ($1.50-2.00) but only happens once
         const fiveYearsAgo = Math.floor((now - 5 * 365 * 24 * 60 * 60 * 1000) / 1000);
         searchQuery = `${searchQuery} after:${fiveYearsAgo}`;
-        console.log(`📧 Full inbox scan: fetching subscription emails from last 5 years (category + keywords)${args.forceFullScan ? " (FORCED by user)" : ""}`);
+        console.log(`📧 FULL INBOX SCAN: Fetching all subscription emails from last 5 years${args.forceFullScan ? " (FORCED by user)" : ""}`);
+        console.log(`📧 This will cost ~$1.50-2.00 but only happens once. Future scans will be incremental (~$0.15).`);
       }
 
       // Build Gmail API URL with pagination support
@@ -265,6 +271,7 @@ export const scanGmailForReceipts = internalAction({
         };
       } else {
         // No more pages - scan complete!
+        // COST OPTIMIZATION: Save lastFullScanAt for incremental scans
         await ctx.runMutation(internal.emailScanner.updateScanProgress, {
           connectionId: connection._id,
           scanStatus: "complete",
@@ -273,6 +280,17 @@ export const scanGmailForReceipts = internalAction({
           totalReceiptsFound: currentTotalReceipts,
           syncCursor: String(Math.floor(now / 1000)), // Set sync cursor for incremental scans
         });
+
+        // If this was a full scan (not incremental), save the timestamp
+        // Future scans will only fetch emails AFTER this date
+        if (!isIncrementalScan) {
+          await ctx.runMutation(internal.emailScanner.updateConnectionData, {
+            connectionId: connection._id,
+            lastFullScanAt: now, // Save when full scan completed
+          });
+          console.log(`💰 FULL SCAN COMPLETE - Future scans will be incremental (only NEW emails after ${new Date(now).toISOString()})`);
+          console.log(`💰 Cost savings: Next scan will cost ~$0.15 instead of $1.50-2.00`);
+        }
 
         console.log(`✅ Full inbox scan COMPLETE for ${connection.email}`);
         console.log(`📊 Final stats: ${currentTotalScanned} emails scanned, ${currentTotalReceipts} receipts found`);

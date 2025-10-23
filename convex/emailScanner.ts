@@ -581,6 +581,36 @@ export const updateConnectionLastSync = internalMutation({
 });
 
 /**
+ * Update connection data (for incremental scan tracking, etc.)
+ * COST OPTIMIZATION: Save lastFullScanAt for incremental mode
+ */
+export const updateConnectionData = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    lastFullScanAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const updateData: any = {
+      updatedAt: Date.now(),
+    };
+
+    if (args.lastFullScanAt !== undefined) {
+      updateData.lastFullScanAt = args.lastFullScanAt;
+    }
+
+    await ctx.db.patch(args.connectionId, updateData);
+
+    console.log(`📝 Updated connection data for ${args.connectionId}`);
+    if (args.lastFullScanAt) {
+      console.log(`   lastFullScanAt: ${new Date(args.lastFullScanAt).toISOString()}`);
+      console.log(`   💰 Future scans will be incremental (only NEW emails after this date)`);
+    }
+
+    return { success: true };
+  },
+});
+
+/**
  * Update scan progress (Phase 3: Pagination support)
  */
 export const updateScanProgress = internalMutation({

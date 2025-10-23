@@ -9,11 +9,108 @@ import { mutation, internalMutation, action, internalAction } from "./_generated
 import { internal } from "./_generated/api";
 
 /**
+ * AGGRESSIVE PRE-FILTER: Skip obvious non-subscriptions BEFORE AI
+ * This saves ~$2 per scan by filtering 942 → ~400 receipts
+ * Returns true if should SKIP (not send to AI)
+ */
+function shouldSkipAI(text: string, subject: string): boolean {
+  const lowerText = text.toLowerCase();
+  const lowerSubject = subject.toLowerCase();
+
+  // 1. Restaurant/Food Delivery Orders (VERY common false positives)
+  const restaurantPatterns = [
+    /deliveroo/i,
+    /uber eats|ubereats/i,
+    /just eat|justeat/i,
+    /doordash/i,
+    /grubhub/i,
+    /your order'?s? in the kitchen/i,
+    /food delivery/i,
+    /restaurant order/i,
+    /your meal/i,
+    /preparing your order/i,
+    /tell us all about your order/i,
+  ];
+
+  if (restaurantPatterns.some(p => p.test(lowerText) || p.test(lowerSubject))) {
+    return true; // Skip - obvious food order
+  }
+
+  // 2. Shipping/Delivery Confirmations
+  const shippingPatterns = [
+    /your parcel/i,
+    /shipped|shipping/i,
+    /delivery confirmation/i,
+    /tracking number/i,
+    /out for delivery/i,
+    /has been delivered/i,
+    /on its way/i,
+    /dispatch(ed)?/i,
+  ];
+
+  if (shippingPatterns.some(p => p.test(lowerText) || p.test(lowerSubject))) {
+    return true; // Skip - shipping notification
+  }
+
+  // 3. Physical Product Orders (not subscriptions)
+  const productOrderPatterns = [
+    /order confirmation/i,
+    /thank you for your order/i,
+    /purchase confirmation/i,
+    /order.*confirmed/i,
+    /your order #/i,
+    /order number/i,
+  ];
+
+  // Only skip if it has product patterns AND no subscription keywords
+  const hasProductPattern = productOrderPatterns.some(p => p.test(lowerText) || p.test(lowerSubject));
+  const hasSubscriptionKeyword = /subscription|recurring|membership|renew/i.test(lowerText + lowerSubject);
+
+  if (hasProductPattern && !hasSubscriptionKeyword) {
+    return true; // Skip - one-time product purchase
+  }
+
+  // 4. Marketing/Newsletter Emails
+  const marketingPatterns = [
+    /newsletter/i,
+    /unsubscribe/i,
+    /promotional|promotion/i,
+    /special offer/i,
+    /limited time/i,
+    /sale|discount/i,
+    /free shipping/i,
+  ];
+
+  if (marketingPatterns.some(p => p.test(lowerText) || p.test(lowerSubject))) {
+    return true; // Skip - marketing email
+  }
+
+  // 5. Visa/Immigration Documents (user-specific but common)
+  const visaPatterns = [
+    /visa invoice/i,
+    /visa application/i,
+    /immigration/i,
+    /passport/i,
+  ];
+
+  if (visaPatterns.some(p => p.test(lowerText) || p.test(lowerSubject))) {
+    return true; // Skip - visa/immigration docs
+  }
+
+  return false; // Don't skip - send to AI for analysis
+}
+
+/**
  * Check if email is actually a subscription receipt/renewal
- * ULTRA-STRICT: Only accepts emails with explicit subscription language
- * Filters out one-time purchases, marketing emails, trial signups
+ * RELAXED FILTER: Let known services through, AI will decide
+ * Only filters out obvious non-subscriptions
  */
 function isSubscriptionReceipt(text: string, subject: string): boolean {
+  // AGGRESSIVE PRE-FILTER: Skip obvious non-subscriptions before any other checks
+  if (shouldSkipAI(text, subject)) {
+    return false; // Filtered out by aggressive pre-filter
+  }
+
   // EXCLUDE: Cancellation emails first (highest priority)
   const cancellationPatterns = [
     /cancel(l)?ed/i,

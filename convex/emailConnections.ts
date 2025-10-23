@@ -131,6 +131,10 @@ export const getUserConnections = query({
       lastSyncedAt: conn.lastSyncedAt,
       errorMessage: conn.errorMessage,
       createdAt: conn.createdAt,
+      // AI Progress fields for frontend display
+      aiProcessingStatus: conn.aiProcessingStatus,
+      aiProcessedCount: conn.aiProcessedCount,
+      aiTotalCount: conn.aiTotalCount,
     }));
   },
 });

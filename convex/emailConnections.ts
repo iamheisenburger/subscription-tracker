@@ -149,6 +149,8 @@ export const getUserConnections = query({
       overallProgress: conn.overallProgress,
       overallTotal: conn.overallTotal,
       estimatedTimeRemaining: conn.estimatedTimeRemaining,
+      // COST OPTIMIZATION: Incremental scan tracking
+      lastFullScanAt: conn.lastFullScanAt,
       // Error tracking
       errorCode: conn.errorCode,
       updatedAt: conn.updatedAt,

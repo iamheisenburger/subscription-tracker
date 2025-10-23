@@ -198,28 +198,31 @@ export function ConnectedEmailsWidget() {
           </div>
         </div>
 
-        {/* AI Processing Progress */}
+        {/* AI Processing Progress - Shows cumulative progress across all batches */}
         {(() => {
-          // Debug logging for progress UI
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const connection = gmailConnection as any;
-          const hasProcessingStatus = connection?.aiProcessingStatus === "processing";
-          const hasProgressData = (connection?.aiProcessedCount || 0) > 0 && (connection?.aiTotalCount || 0) > 0;
-          const shouldShowProgress = hasProcessingStatus || hasProgressData;
+          const parsed = scanStats?.parsedReceipts || 0;
+          const total = scanStats?.totalReceipts || 0;
+          const unparsed = scanStats?.unparsedReceipts || 0;
+
+          // Show progress bar if:
+          // 1. There are unparsed receipts (scan is still running), OR
+          // 2. Parsed count is increasing (active processing)
+          const isProcessing = unparsed > 0 && total > 0;
 
           console.log('🎨 Progress UI Debug:', {
-            hasConnection: !!gmailConnection,
-            aiProcessingStatus: connection?.aiProcessingStatus,
-            aiProcessedCount: connection?.aiProcessedCount,
-            aiTotalCount: connection?.aiTotalCount,
-            hasProcessingStatus,
-            hasProgressData,
-            shouldShowProgress,
+            parsed,
+            total,
+            unparsed,
+            isProcessing,
+            scanStats,
           });
 
-          if (!shouldShowProgress) {
+          if (!isProcessing) {
             return null;
           }
+
+          // Calculate progress percentage
+          const progressPercent = Math.min(100, (parsed / total) * 100);
 
           return (
             <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
@@ -228,17 +231,20 @@ export function ConnectedEmailsWidget() {
                   Analyzing receipts with AI...
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                  {connection?.aiProcessedCount || 0} / {connection?.aiTotalCount || 0}
+                  {parsed} / {total} receipts
                 </p>
               </div>
               <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
                 <div
                   className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
                   style={{
-                    width: `${Math.min(100, ((connection?.aiProcessedCount || 0) / (connection?.aiTotalCount || 1)) * 100)}%`,
+                    width: `${progressPercent}%`,
                   }}
                 />
               </div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-sans mt-1">
+                {unparsed} remaining
+              </p>
             </div>
           );
         })()}

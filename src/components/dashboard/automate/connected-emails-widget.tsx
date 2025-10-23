@@ -305,7 +305,7 @@ export function ConnectedEmailsWidget() {
               </div>
               <div className="flex items-center justify-between mt-1">
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                  {displayRemaining > 0 ? `${displayRemaining} remaining` : 'Processing...'}
+                  {displayProcessed > 0 ? `${displayProcessed} processed` : 'Starting...'}
                 </p>
                 {gmailConnection?.estimatedTimeRemaining && gmailConnection.estimatedTimeRemaining > 0 && (
                   <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">

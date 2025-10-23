@@ -14,6 +14,29 @@ import { internal } from "./_generated/api";
  * Filters out one-time purchases, marketing emails, trial signups
  */
 function isSubscriptionReceipt(text: string, subject: string): boolean {
+  // EXCLUDE: Cancellation emails first (highest priority)
+  const cancellationPatterns = [
+    /cancel(l)?ed/i,
+    /cancel(l)?ation/i,
+    /subscription.*ended/i,
+    /subscription.*expired/i,
+    /subscription.*terminated/i,
+    /no longer.*subscribed/i,
+    /unsubscribed/i,
+    /refund/i,
+    /subscription.*inactive/i,
+    /membership.*ended/i,
+    /account.*closed/i,
+  ];
+
+  const isCancelled = cancellationPatterns.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  if (isCancelled) {
+    return false; // Skip cancelled subscriptions
+  }
+
   // EXCLUDE: Marketing emails, trials, signups, confirmations of new services
   const excludePatterns = [
     /start\s+(?:your\s+)?(?:free\s+)?trial/i,
@@ -59,7 +82,7 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     return false; // Explicit one-time purchase - reject
   }
 
-  // REQUIRED: Must have one of these subscription-specific keywords
+  // RELAXED FILTER: Look for subscription OR receipt/payment keywords
   const subscriptionKeywords = [
     /\bsubscription\b/i,
     /\brecurring\b/i,
@@ -75,12 +98,59 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     /\bsubscription\s+confirmation/i,
   ];
 
+  // ADDITIONAL: Receipt/payment indicators that might be subscriptions
+  const receiptKeywords = [
+    /\breceipt\b/i,
+    /\binvoice\b/i,
+    /\bpayment\s+(received|processed|successful|confirmed)/i,
+    /\bcharge(d)?\b/i,
+    /\bbilled?\b/i,
+    /\byour\s+payment\b/i,
+    /\bthanks\s+for\s+your\s+payment/i,
+  ];
+
+  // KNOWN SUBSCRIPTION SERVICES (that might not use "subscription" keyword)
+  const knownServices = [
+    /chatgpt/i,
+    /openai/i,
+    /anthropic/i,
+    /claude/i,
+    /perplexity/i,
+    /spotify/i,
+    /netflix/i,
+    /youtube\s+(premium|music)/i,
+    /patreon/i,
+    /surfshark/i,
+    /nordvpn/i,
+    /dropbox/i,
+    /github/i,
+    /microsoft\s+365/i,
+    /adobe/i,
+    /canva/i,
+    /notion/i,
+    /figma/i,
+    /slack/i,
+    /zoom/i,
+    /telegram/i,
+    /discord\s+nitro/i,
+  ];
+
   const hasSubscriptionKeyword = subscriptionKeywords.some((pattern) =>
     pattern.test(text) || pattern.test(subject)
   );
 
-  // ONLY accept if has explicit subscription keyword
-  return hasSubscriptionKeyword;
+  const hasReceiptKeyword = receiptKeywords.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  const isKnownService = knownServices.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  // Accept if:
+  // 1. Has explicit subscription keyword, OR
+  // 2. Is from a known service AND has receipt/payment keyword
+  return hasSubscriptionKeyword || (isKnownService && hasReceiptKeyword);
 }
 
 /**
@@ -485,6 +555,8 @@ export const saveParsingResults = internalMutation({
 
         console.log(`  ✅ [${result.method.toUpperCase()}] ${result.merchantName}: ${result.amount} ${result.currency}`);
       } else {
+        // Mark ALL results as parsed (including filtered) to prevent reprocessing
+        // But track the method so we know it was filtered
         await ctx.db.patch(result.receiptId as any, {
           parsed: true,
           parsingConfidence: 0.1,

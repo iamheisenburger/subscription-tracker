@@ -122,7 +122,7 @@ export const getUserConnections = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
-    // Don't return tokens to client
+    // Don't return tokens to client, but return ALL scan state fields
     return connections.map((conn) => ({
       _id: conn._id,
       provider: conn.provider,
@@ -131,10 +131,18 @@ export const getUserConnections = query({
       lastSyncedAt: conn.lastSyncedAt,
       errorMessage: conn.errorMessage,
       createdAt: conn.createdAt,
+      // Full scan state fields for frontend progress tracking
+      scanStatus: conn.scanStatus,
+      pageToken: conn.pageToken,
+      totalEmailsScanned: conn.totalEmailsScanned,
+      totalReceiptsFound: conn.totalReceiptsFound,
       // AI Progress fields for frontend display
       aiProcessingStatus: conn.aiProcessingStatus,
       aiProcessedCount: conn.aiProcessedCount,
       aiTotalCount: conn.aiTotalCount,
+      // Error tracking
+      errorCode: conn.errorCode,
+      updatedAt: conn.updatedAt,
     }));
   },
 });

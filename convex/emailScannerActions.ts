@@ -529,6 +529,17 @@ export const triggerUserEmailScan = action({
         if (connection.status === "active") {
           console.log(`🔄 Starting full scan for ${connection.email}...`);
 
+          // CRITICAL FIX: Set scan status to "scanning" immediately when user clicks scan
+          // This ensures the progress UI shows up right away
+          await ctx.runMutation(internal.emailScanner.updateScanProgress, {
+            connectionId: connection._id,
+            scanStatus: "scanning",
+            totalEmailsScanned: 0,
+            totalReceiptsFound: 0,
+            pageToken: undefined, // Clear any old page token to start fresh
+          });
+          console.log(`📊 Set initial scan status to "scanning" for UI visibility`);
+
           let hasMorePages = true;
           let totalScanned = 0;
           let batchCount = 0;

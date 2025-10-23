@@ -204,16 +204,28 @@ export function ConnectedEmailsWidget() {
           const total = scanStats?.totalReceipts || 0;
           const unparsed = scanStats?.unparsedReceipts || 0;
 
-          // Show progress bar if:
-          // 1. There are unparsed receipts (scan is still running), OR
-          // 2. Parsed count is increasing (active processing)
-          const isProcessing = unparsed > 0 && total > 0;
+          // FIXED: Check if scan is actually running, not unparsed count
+          // The audit revealed unparsed is always 0 during active scans
+          const isScanning = gmailConnection?.scanStatus === "scanning";
+          const isProcessingAI = gmailConnection?.aiProcessingStatus === "processing";
+          const isProcessing = isScanning || isProcessingAI;
+
+          // Use AI counts if available for more accurate progress
+          const aiProcessed = gmailConnection?.aiProcessedCount || 0;
+          const aiTotal = gmailConnection?.aiTotalCount || 0;
+          const hasAIProgress = aiTotal > 0;
 
           console.log('🎨 Progress UI Debug:', {
             parsed,
             total,
             unparsed,
             isProcessing,
+            isScanning,
+            isProcessingAI,
+            scanStatus: gmailConnection?.scanStatus,
+            aiProcessingStatus: gmailConnection?.aiProcessingStatus,
+            aiProcessed,
+            aiTotal,
             scanStats,
           });
 
@@ -221,17 +233,28 @@ export function ConnectedEmailsWidget() {
             return null;
           }
 
-          // Calculate progress percentage
-          const progressPercent = Math.min(100, (parsed / total) * 100);
+          // Calculate progress percentage - use AI counts if available, otherwise scan stats
+          const displayProcessed = hasAIProgress ? aiProcessed : parsed;
+          const displayTotal = hasAIProgress ? aiTotal : total;
+          const displayRemaining = hasAIProgress ? (aiTotal - aiProcessed) : unparsed;
+          const progressPercent = displayTotal > 0 ? Math.min(100, (displayProcessed / displayTotal) * 100) : 0;
+
+          // Determine status message based on current phase
+          let statusMessage = "Preparing to scan...";
+          if (isScanning) {
+            statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} emails scanned`;
+          } else if (isProcessingAI) {
+            statusMessage = "Analyzing receipts with AI...";
+          }
 
           return (
             <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
-                  Analyzing receipts with AI...
+                  {statusMessage}
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                  {parsed} / {total} receipts
+                  {displayProcessed} / {displayTotal} receipts
                 </p>
               </div>
               <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
@@ -243,7 +266,7 @@ export function ConnectedEmailsWidget() {
                 />
               </div>
               <p className="text-xs text-blue-600 dark:text-blue-400 font-sans mt-1">
-                {unparsed} remaining
+                {displayRemaining > 0 ? `${displayRemaining} remaining` : 'Processing...'}
               </p>
             </div>
           );

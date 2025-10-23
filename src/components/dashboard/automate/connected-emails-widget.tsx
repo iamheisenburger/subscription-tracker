@@ -52,23 +52,53 @@ export function ConnectedEmailsWidget() {
   const handleManualScan = async () => {
     if (!user?.id) return;
 
-    // FIX #3 from audit: Set realistic time expectations (30-40 minutes, not 5)
-    const confirmed = window.confirm(
-      "⏱️ Full Email Scan\n\n" +
-      "Scanning and analyzing your emails will take approximately 30-40 minutes.\n\n" +
-      "The process runs in the background - you can close this page and we'll notify you when complete.\n\n" +
-      "Continue with scan?"
-    );
+    // COST OPTIMIZATION: Check if this is first scan or incremental
+    const gmailConnection = connections?.find((c) => c.provider === "gmail");
+    const isFirstScan = !gmailConnection?.lastFullScanAt;
+
+    // Show different messaging based on scan type
+    let confirmMessage = "";
+    let toastDescription = "";
+
+    if (isFirstScan) {
+      // FIRST SCAN: Full inbox (expensive but one-time)
+      confirmMessage =
+        "📧 FIRST SCAN - Full Inbox Analysis\n\n" +
+        "⏱️ Time: ~10-15 minutes (3 API keys working in parallel)\n" +
+        "💰 Cost: ~$1.50 (one-time only)\n" +
+        "📊 Will analyze: ~400-500 receipts (pre-filtered from 900+)\n\n" +
+        "Future scans will be MUCH faster (2-3 min) and cheaper ($0.08).\n\n" +
+        "This runs in the background - you can close this page.\n\n" +
+        "Continue with first scan?";
+
+      toastDescription = "First scan started! ~10-15 min, $1.50 cost. Future scans will be WAY cheaper ($0.08). You can close this page.";
+    } else {
+      // INCREMENTAL SCAN: Only new emails (super cheap!)
+      confirmMessage =
+        "📧 INCREMENTAL SCAN - New Emails Only\n\n" +
+        "⏱️ Time: ~2-3 minutes\n" +
+        "💰 Cost: ~$0.08\n" +
+        "📊 Will analyze: Only NEW emails since your last scan\n\n" +
+        "This runs in the background - you can close this page.\n\n" +
+        "Continue with scan?";
+
+      toastDescription = "Incremental scan started! ~2-3 min, $0.08 cost. Only scanning new emails. You can close this page.";
+    }
+
+    const confirmed = window.confirm(confirmMessage);
 
     if (!confirmed) return;
 
     setIsScanning(true);
     try {
       await triggerScan({ clerkUserId: user.id });
-      toast.success("Email scan started", {
-        description: "Analyzing ~900+ receipts. This will take ~30-40 minutes. You can close this page.",
-        duration: 10000, // Show for 10 seconds
-      });
+      toast.success(
+        isFirstScan ? "First scan started! 🚀" : "Incremental scan started! ⚡",
+        {
+          description: toastDescription,
+          duration: 10000, // Show for 10 seconds
+        }
+      );
     } catch (error) {
       toast.error("Scan failed", {
         description: "Failed to start email scan. Please try again.",

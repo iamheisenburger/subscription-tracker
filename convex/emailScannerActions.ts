@@ -565,60 +565,29 @@ export const triggerUserEmailScan = action({
         }
       }
 
-      // IMMEDIATELY parse receipts with AI-first approach and create detection candidates
-      // Don't wait for hourly cron jobs - user expects instant results
-      console.log("🤖 Parsing receipts with AI-first parser...");
+      // =========================================================================
+      // EVENT-DRIVEN PROCESSING: Schedule parsing in background to avoid timeout
+      // =========================================================================
+      // Don't parse synchronously - it causes 10-minute timeouts!
+      // Instead, schedule parsing immediately and return success to user
+
+      console.log(`📧 Gmail scan complete: ${results.reduce((sum, r) => sum + (r.receiptsFound || 0), 0)} receipts found`);
 
       // Get first active connection for progress tracking
       const firstConnection = connections.find((c) => c.status === "active");
 
-      const parseResult = await ctx.runAction(internal.receiptParser.parseUnparsedReceiptsWithAI, {
-        clerkUserId: args.clerkUserId,
-        connectionId: firstConnection?._id, // For real-time progress tracking
-      });
-      console.log(`🤖 Parse result: ${parseResult.parsed} subscriptions detected out of ${parseResult.count} receipts (AI-powered detection)`);
+      // Schedule AI parsing + detection immediately (runs in background)
+      console.log(`🔄 Scheduling AI parsing in background...`);
+      await ctx.scheduler.runAfter(
+        0, // Start immediately
+        internal.emailScannerActions.processNextBatch,
+        {
+          clerkUserId: args.clerkUserId,
+          batchNumber: 1, // This is the first parsing batch
+        }
+      );
 
-      console.log("🎯 Using pattern-based detection to identify active subscriptions...");
-      // Get user ID for detection creation
-      const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
-        clerkUserId: args.clerkUserId,
-      });
-
-      if (!user) {
-        console.error("❌ User not found after scan - user record may be missing");
-        return { success: false, error: "User record not found. Please refresh the page." };
-      }
-
-      // Run pattern-based detection (analyzes ALL receipts for patterns and creates candidates)
-      let detectionsCreated = 0;
-      const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
-        userId: user._id,
-      });
-      detectionsCreated = detectionResult.created || 0;
-      console.log(`🎯 Pattern-based detection result: ${detectionsCreated} new candidates created (${detectionResult.updated} updated, ${detectionResult.skipped} already tracked)`);
-
-      // AUTO-BATCHING: Check if more receipts need processing
-      const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
-        clerkUserId: args.clerkUserId,
-      });
-
-      if (remainingResult.count > 0) {
-        console.log(`🔄 AUTO-BATCHING: ${remainingResult.count} receipts remain - scheduling batch 2`);
-
-        // Schedule next batch immediately
-        await ctx.scheduler.runAfter(
-          0, // Run immediately
-          internal.emailScannerActions.processNextBatch,
-          {
-            clerkUserId: args.clerkUserId,
-            batchNumber: 2, // This is batch 2 (batch 1 just completed)
-          }
-        );
-      } else {
-        console.log(`✅ All receipts processed in single batch - no auto-batching needed`);
-      }
-
-      console.log(`✨ Scan complete: ${parseResult.parsed || 0} parsed, ${detectionsCreated} detections created`);
+      console.log(`✅ Scan initiated! Receipts are being analyzed in the background.`);
 
       return {
         success: true,

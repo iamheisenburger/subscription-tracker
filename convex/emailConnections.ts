@@ -122,7 +122,7 @@ export const getUserConnections = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
-    // Don't return tokens to client, but return ALL scan state fields
+    // Don't return tokens to client, but return ALL scan state fields (FIX #4 from audit)
     return connections.map((conn) => ({
       _id: conn._id,
       provider: conn.provider,
@@ -140,6 +140,15 @@ export const getUserConnections = query({
       aiProcessingStatus: conn.aiProcessingStatus,
       aiProcessedCount: conn.aiProcessedCount,
       aiTotalCount: conn.aiTotalCount,
+      // CRITICAL: Explicit scan state machine fields (FIX #2 from audit)
+      scanState: conn.scanState,
+      totalBatches: conn.totalBatches,
+      currentBatch: conn.currentBatch,
+      batchProgress: conn.batchProgress,
+      batchTotal: conn.batchTotal,
+      overallProgress: conn.overallProgress,
+      overallTotal: conn.overallTotal,
+      estimatedTimeRemaining: conn.estimatedTimeRemaining,
       // Error tracking
       errorCode: conn.errorCode,
       updatedAt: conn.updatedAt,

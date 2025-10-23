@@ -52,11 +52,22 @@ export function ConnectedEmailsWidget() {
   const handleManualScan = async () => {
     if (!user?.id) return;
 
+    // FIX #3 from audit: Set realistic time expectations (30-40 minutes, not 5)
+    const confirmed = window.confirm(
+      "⏱️ Full Email Scan\n\n" +
+      "Scanning and analyzing your emails will take approximately 30-40 minutes.\n\n" +
+      "The process runs in the background - you can close this page and we'll notify you when complete.\n\n" +
+      "Continue with scan?"
+    );
+
+    if (!confirmed) return;
+
     setIsScanning(true);
     try {
       await triggerScan({ clerkUserId: user.id });
       toast.success("Email scan started", {
-        description: "We're scanning your inbox for subscription receipts...",
+        description: "Analyzing ~900+ receipts. This will take ~30-40 minutes. You can close this page.",
+        duration: 10000, // Show for 10 seconds
       });
     } catch (error) {
       toast.error("Scan failed", {
@@ -239,9 +250,36 @@ export function ConnectedEmailsWidget() {
           const displayRemaining = hasAIProgress ? (aiTotal - aiProcessed) : unparsed;
           const progressPercent = displayTotal > 0 ? Math.min(100, (displayProcessed / displayTotal) * 100) : 0;
 
-          // Determine status message based on current phase
+          // Determine status message based on scan state machine (FIX #2 from audit)
           let statusMessage = "Preparing to scan...";
-          if (isScanning) {
+
+          // Use explicit scan state machine for accurate status
+          if (gmailConnection?.scanState) {
+            switch (gmailConnection.scanState) {
+              case "scanning_gmail":
+                statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} emails scanned`;
+                break;
+              case "processing_batch_1":
+              case "processing_batch_2":
+              case "processing_batch_3":
+              case "processing_batch_4":
+              case "processing_batch_5":
+              case "processing_batch_6":
+              case "processing_batch_7":
+                const batchNum = gmailConnection.currentBatch || 1;
+                const totalBatches = gmailConnection.totalBatches || 1;
+                statusMessage = `Processing batch ${batchNum} of ${totalBatches}...`;
+                break;
+              case "complete":
+                statusMessage = "Scan complete!";
+                break;
+              default:
+                if (isProcessingAI) {
+                  statusMessage = "Analyzing receipts with AI...";
+                }
+                break;
+            }
+          } else if (isScanning) {
             statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} emails scanned`;
           } else if (isProcessingAI) {
             statusMessage = "Analyzing receipts with AI...";
@@ -265,9 +303,16 @@ export function ConnectedEmailsWidget() {
                   }}
                 />
               </div>
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-sans mt-1">
-                {displayRemaining > 0 ? `${displayRemaining} remaining` : 'Processing...'}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                  {displayRemaining > 0 ? `${displayRemaining} remaining` : 'Processing...'}
+                </p>
+                {gmailConnection?.estimatedTimeRemaining && gmailConnection.estimatedTimeRemaining > 0 && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                    ~{gmailConnection.estimatedTimeRemaining} min remaining
+                  </p>
+                )}
+              </div>
             </div>
           );
         })()}

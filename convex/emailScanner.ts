@@ -672,6 +672,54 @@ export const storeEmailReceipt = internalMutation({
 });
 
 /**
+ * Update scan state machine (FIX #2 from audit - explicit state tracking)
+ */
+export const updateScanStateMachine = internalMutation({
+  args: {
+    connectionId: v.id("emailConnections"),
+    scanState: v.union(
+      v.literal("idle"),
+      v.literal("scanning_gmail"),
+      v.literal("processing_batch_1"),
+      v.literal("processing_batch_2"),
+      v.literal("processing_batch_3"),
+      v.literal("processing_batch_4"),
+      v.literal("processing_batch_5"),
+      v.literal("processing_batch_6"),
+      v.literal("processing_batch_7"),
+      v.literal("complete"),
+      v.literal("error")
+    ),
+    totalBatches: v.optional(v.number()),
+    currentBatch: v.optional(v.number()),
+    batchProgress: v.optional(v.number()),
+    batchTotal: v.optional(v.number()),
+    overallProgress: v.optional(v.number()),
+    overallTotal: v.optional(v.number()),
+    estimatedTimeRemaining: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { connectionId, ...updates } = args;
+
+    console.log(`🎯 Scan State Update: ${updates.scanState}`);
+    if (updates.currentBatch && updates.totalBatches) {
+      console.log(`   Batch ${updates.currentBatch}/${updates.totalBatches}`);
+    }
+    if (updates.overallProgress && updates.overallTotal) {
+      console.log(`   Overall: ${updates.overallProgress}/${updates.overallTotal} receipts`);
+    }
+    if (updates.estimatedTimeRemaining) {
+      console.log(`   ETA: ${updates.estimatedTimeRemaining} minutes`);
+    }
+
+    await ctx.db.patch(connectionId, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
  * Update AI processing progress for real-time UI updates
  */
 export const updateAIProgress = internalMutation({

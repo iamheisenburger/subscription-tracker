@@ -445,6 +445,27 @@ export default defineSchema({
     )),
     aiProcessedCount: v.optional(v.number()), // How many receipts analyzed
     aiTotalCount: v.optional(v.number()), // Total receipts to analyze
+    // CRITICAL: Explicit scan state machine for proper tracking (FIX #2 from audit)
+    scanState: v.optional(v.union(
+      v.literal("idle"),
+      v.literal("scanning_gmail"),
+      v.literal("processing_batch_1"),
+      v.literal("processing_batch_2"),
+      v.literal("processing_batch_3"),
+      v.literal("processing_batch_4"),
+      v.literal("processing_batch_5"),
+      v.literal("processing_batch_6"),
+      v.literal("processing_batch_7"),
+      v.literal("complete"),
+      v.literal("error")
+    )),
+    totalBatches: v.optional(v.number()),
+    currentBatch: v.optional(v.number()),
+    batchProgress: v.optional(v.number()), // receipts processed in current batch
+    batchTotal: v.optional(v.number()),
+    overallProgress: v.optional(v.number()), // total receipts processed across all batches
+    overallTotal: v.optional(v.number()),
+    estimatedTimeRemaining: v.optional(v.number()), // minutes
     errorCode: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
     createdAt: v.number(),

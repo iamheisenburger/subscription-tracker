@@ -417,6 +417,18 @@ export const processNextBatch = internalAction({
 
       const firstConnection = connections.find((c) => c.status === "active");
 
+      // FIX #2 from audit: Update scan state machine for batch tracking
+      if (firstConnection) {
+        const batchStateName = `processing_batch_${args.batchNumber}` as any;
+        await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+          connectionId: firstConnection._id,
+          scanState: batchStateName,
+          currentBatch: args.batchNumber,
+          batchProgress: 0,
+        });
+        console.log(`📊 Updated scan state to: ${batchStateName}`);
+      }
+
       // Parse next batch of receipts
       console.log(`🤖 Parsing receipts (batch ${args.batchNumber})...`);
       const parseResult = await ctx.runAction(internal.receiptParser.parseUnparsedReceiptsWithAI, {
@@ -425,6 +437,16 @@ export const processNextBatch = internalAction({
       });
 
       console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parseResult.parsed} subscriptions detected`);
+
+      // Update overall progress after parsing
+      if (firstConnection) {
+        await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+          connectionId: firstConnection._id,
+          scanState: `processing_batch_${args.batchNumber}` as any,
+          batchProgress: parseResult.count || 0,
+          overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 150), // Approx cumulative
+        });
+      }
 
       // Run pattern-based detection
       console.log(`🎯 Running pattern detection (batch ${args.batchNumber})...`);
@@ -453,8 +475,10 @@ export const processNextBatch = internalAction({
       if (hasMoreBatches) {
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
-        // Schedule next batch (with safety limit of 10 total batches)
-        if (args.batchNumber < 10) {
+        // FIX #4 from audit: Increase batch limit to handle ALL 941 receipts
+        // 941 receipts / 150 per batch = 7 batches needed
+        // Set limit to 15 for safety margin
+        if (args.batchNumber < 15) {
           await ctx.scheduler.runAfter(
             0, // Run immediately
             internal.emailScannerActions.processNextBatch,
@@ -464,10 +488,20 @@ export const processNextBatch = internalAction({
             }
           );
         } else {
-          console.warn(`⚠️  Reached batch limit (10 batches) - stopping auto-batching`);
+          console.warn(`⚠️  Reached batch limit (15 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
         }
       } else {
         console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);
+
+        // FIX #2 from audit: Mark scan as complete in state machine
+        if (firstConnection) {
+          await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+            connectionId: firstConnection._id,
+            scanState: "complete",
+            estimatedTimeRemaining: 0,
+          });
+          console.log(`📊 Updated scan state to: complete`);
+        }
       }
 
       return {
@@ -538,7 +572,19 @@ export const triggerUserEmailScan = action({
             totalReceiptsFound: 0,
             pageToken: undefined, // Clear any old page token to start fresh
           });
-          console.log(`📊 Set initial scan status to "scanning" for UI visibility`);
+
+          // FIX #2 from audit: Set explicit scan state machine
+          await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+            connectionId: connection._id,
+            scanState: "scanning_gmail",
+            totalBatches: 0, // Will be calculated after Gmail scan
+            currentBatch: 0,
+            overallProgress: 0,
+            overallTotal: 0,
+            estimatedTimeRemaining: 40, // Initial estimate: 40 minutes for 941 receipts
+          });
+
+          console.log(`📊 Set initial scan state to "scanning_gmail" with state machine`);
 
           let hasMorePages = true;
           let totalScanned = 0;
@@ -582,10 +628,35 @@ export const triggerUserEmailScan = action({
       // Don't parse synchronously - it causes 10-minute timeouts!
       // Instead, schedule parsing immediately and return success to user
 
-      console.log(`📧 Gmail scan complete: ${results.reduce((sum, r) => sum + (r.receiptsFound || 0), 0)} receipts found`);
+      const totalReceipts = results.reduce((sum, r) => sum + (r.receiptsFound || 0), 0);
+      console.log(`📧 Gmail scan complete: ${totalReceipts} receipts found`);
 
       // Get first active connection for progress tracking
       const firstConnection = connections.find((c) => c.status === "active");
+
+      if (firstConnection) {
+        // FIX #2 from audit: Calculate batches and update state machine
+        const BATCH_SIZE = 150; // Process 150 receipts per batch (to avoid timeout)
+        const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
+        const estimatedTime = Math.ceil((totalReceipts * 2) / 60); // 2 seconds per receipt
+
+        await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+          connectionId: firstConnection._id,
+          scanState: totalReceipts > 0 ? "processing_batch_1" : "complete",
+          totalBatches,
+          currentBatch: totalReceipts > 0 ? 1 : 0,
+          batchProgress: 0,
+          batchTotal: Math.min(BATCH_SIZE, totalReceipts),
+          overallProgress: 0,
+          overallTotal: totalReceipts,
+          estimatedTimeRemaining: estimatedTime,
+        });
+
+        console.log(`📊 Scan state machine updated:`);
+        console.log(`   Total receipts: ${totalReceipts}`);
+        console.log(`   Total batches: ${totalBatches}`);
+        console.log(`   Estimated time: ${estimatedTime} minutes`);
+      }
 
       // Schedule AI parsing + detection immediately (runs in background)
       console.log(`🔄 Scheduling AI parsing in background...`);

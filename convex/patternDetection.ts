@@ -672,7 +672,7 @@ function normalizeMerchantName(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, " ") // Normalize whitespace
-    .replace(/[,.]?\s*(inc|llc|ltd|limited|corp|corporation)\.?$/i, "") // Remove legal suffixes
+    .replace(/[,.]?\s*(inc|llc|ltd|limited|corp|corporation|store)\.?$/i, "") // Remove legal suffixes
     .replace(/\s*\([^)]*\)$/, "") // Remove parenthetical info
     .trim();
 }

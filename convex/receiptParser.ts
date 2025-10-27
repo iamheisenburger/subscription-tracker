@@ -70,19 +70,20 @@ function shouldSkipAI(text: string, subject: string): boolean {
     return true; // Skip - one-time product purchase
   }
 
-  // 4. Marketing/Newsletter Emails
-  const marketingPatterns = [
+  // 4. Marketing/Newsletter Emails (SOFTENED - many subscription receipts have "unsubscribe")
+  // Only filter if it's PURELY marketing with no payment/receipt/subscription keywords
+  const pureMarketingPatterns = [
     /newsletter/i,
-    /unsubscribe/i,
     /promotional|promotion/i,
     /special offer/i,
     /limited time/i,
-    /sale|discount/i,
     /free shipping/i,
   ];
 
-  if (marketingPatterns.some(p => p.test(lowerText) || p.test(lowerSubject))) {
-    return true; // Skip - marketing email
+  const hasPaymentKeyword = /payment|receipt|invoice|charged|billed|subscription|recurring|renew/i.test(lowerText + lowerSubject);
+
+  if (pureMarketingPatterns.some(p => p.test(lowerText) || p.test(lowerSubject)) && !hasPaymentKeyword) {
+    return true; // Skip - marketing email without payment indication
   }
 
   // 5. Visa/Immigration Documents (user-specific but common)
@@ -655,13 +656,8 @@ export const saveParsingResults = internalMutation({
 
         console.log(`  ✅ [${result.method.toUpperCase()}] ${result.merchantName}: ${result.amount} ${result.currency}`);
       } else {
-        // Mark ALL results as parsed (including filtered) to prevent reprocessing
-        // But track the method so we know it was filtered
-        await ctx.db.patch(result.receiptId as any, {
-          parsed: true,
-          parsingConfidence: 0.1,
-          parsingMethod: result.method,
-        });
+        // DON'T mark filtered receipts as parsed - keep them available for retry
+        console.log(`  ⏭️ Filtered/skipped receipt - keeping unparsed for potential retry`);
       }
     }
   },

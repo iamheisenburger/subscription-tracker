@@ -76,3 +76,97 @@ export const resetEmailDetectionForUser = mutation({
     };
   },
 });
+
+// ADMIN ONLY: Reset parsed flags for receipts to allow reprocessing
+export const resetParsedFlagsForUser = mutation({
+  args: {
+    clerkUserId: v.string(),
+    resetOnlyFiltered: v.optional(v.boolean()), // If true, only reset receipts with confidence 0.1
+  },
+  handler: async (ctx, args) => {
+    console.log(`🔧 ADMIN RESET: Resetting parsed flags for user ${args.clerkUserId}`);
+
+    // Get the user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error(`User not found: ${args.clerkUserId}`);
+    }
+
+    console.log(`👤 Found user: ${user.email}, tier: ${user.tier}`);
+
+    // Get all parsed receipts
+    const receipts = await ctx.db
+      .query("emailReceipts")
+      .filter((q) => q.eq(q.field("userId"), user._id))
+      .filter((q) => q.eq(q.field("parsed"), true))
+      .collect();
+
+    console.log(`📄 Found ${receipts.length} parsed receipts`);
+
+    // Filter receipts if needed
+    const receiptsToReset = args.resetOnlyFiltered
+      ? receipts.filter(r => !r.merchantName && r.parsingConfidence === 0.1)
+      : receipts;
+
+    console.log(`🔄 Resetting ${receiptsToReset.length} receipts`);
+
+    // Reset parsed flags
+    let resetCount = 0;
+    for (const receipt of receiptsToReset) {
+      await ctx.db.patch(receipt._id, {
+        parsed: false,
+        merchantName: undefined,
+        amount: undefined,
+        currency: undefined,
+        billingCycle: undefined,
+        parsingConfidence: undefined,
+        parsingMethod: undefined,
+      });
+      resetCount++;
+    }
+
+    // Also delete detection candidates so they can be recreated
+    const candidates = await ctx.db
+      .query("detectionCandidates")
+      .filter((q) => q.eq(q.field("userId"), user._id))
+      .collect();
+
+    console.log(`🎯 Deleting ${candidates.length} detection candidates`);
+    for (const candidate of candidates) {
+      await ctx.db.delete(candidate._id);
+    }
+
+    // Update connection scan state to allow reprocessing
+    const connections = await ctx.db
+      .query("emailConnections")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    for (const conn of connections) {
+      await ctx.db.patch(conn._id, {
+        scanState: "complete", // Reset to complete so user can trigger new scan
+        currentBatch: 0,
+        batchProgress: 0,
+      });
+    }
+
+    console.log(`✅ RESET COMPLETE`);
+    console.log(`   - Reset ${resetCount} receipts`);
+    console.log(`   - Deleted ${candidates.length} detection candidates`);
+    console.log(`   - Reset ${connections.length} connection scan states`);
+
+    return {
+      success: true,
+      reset: {
+        receipts: resetCount,
+        candidates: candidates.length,
+        connections: connections.length,
+      },
+      message: `Reset ${resetCount} receipts. User can now trigger a new scan to reprocess.`,
+    };
+  },
+});

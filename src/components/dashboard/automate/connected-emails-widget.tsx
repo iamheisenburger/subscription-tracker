@@ -252,7 +252,7 @@ export function ConnectedEmailsWidget() {
           if (gmailConnection?.scanState) {
             switch (gmailConnection.scanState) {
               case "scanning_gmail":
-                statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} emails scanned`;
+                statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} receipts found`;
                 break;
               case "processing_batch_1":
               case "processing_batch_2":
@@ -261,6 +261,34 @@ export function ConnectedEmailsWidget() {
               case "processing_batch_5":
               case "processing_batch_6":
               case "processing_batch_7":
+              case "processing_batch_8":
+              case "processing_batch_9":
+              case "processing_batch_10":
+              case "processing_batch_11":
+              case "processing_batch_12":
+              case "processing_batch_13":
+              case "processing_batch_14":
+              case "processing_batch_15":
+              case "processing_batch_16":
+              case "processing_batch_17":
+              case "processing_batch_18":
+              case "processing_batch_19":
+              case "processing_batch_20":
+              case "processing_batch_21":
+              case "processing_batch_22":
+              case "processing_batch_23":
+              case "processing_batch_24":
+              case "processing_batch_25":
+              case "processing_batch_26":
+              case "processing_batch_27":
+              case "processing_batch_28":
+              case "processing_batch_29":
+              case "processing_batch_30":
+              case "processing_batch_31":
+              case "processing_batch_32":
+              case "processing_batch_33":
+              case "processing_batch_34":
+              case "processing_batch_35":
                 const batchNum = gmailConnection.currentBatch || 1;
                 const totalBatches = gmailConnection.totalBatches || 1;
                 statusMessage = `Processing batch ${batchNum} of ${totalBatches}...`;
@@ -275,7 +303,7 @@ export function ConnectedEmailsWidget() {
                 break;
             }
           } else if (isScanning) {
-            statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} emails scanned`;
+            statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} receipts found`;
           } else if (isProcessingAI) {
             statusMessage = "Analyzing receipts with AI...";
           }

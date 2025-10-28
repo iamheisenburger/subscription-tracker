@@ -446,8 +446,8 @@ export default defineSchema({
     )),
     aiProcessedCount: v.optional(v.number()), // How many receipts analyzed
     aiTotalCount: v.optional(v.number()), // Total receipts to analyze
-    // CRITICAL: Explicit scan state machine for proper tracking (FIX #2 from audit)
-    // FIXED: Added batches 8-15 to support 300+ receipt scans (150 receipts per batch)
+    // CRITICAL: Explicit scan state machine for proper tracking
+    // RATE LIMIT FIX: Extended to 35 batches to support 1000+ receipts at 30 per batch
     scanState: v.optional(v.union(
       v.literal("idle"),
       v.literal("scanning_gmail"),
@@ -466,6 +466,26 @@ export default defineSchema({
       v.literal("processing_batch_13"),
       v.literal("processing_batch_14"),
       v.literal("processing_batch_15"),
+      v.literal("processing_batch_16"),
+      v.literal("processing_batch_17"),
+      v.literal("processing_batch_18"),
+      v.literal("processing_batch_19"),
+      v.literal("processing_batch_20"),
+      v.literal("processing_batch_21"),
+      v.literal("processing_batch_22"),
+      v.literal("processing_batch_23"),
+      v.literal("processing_batch_24"),
+      v.literal("processing_batch_25"),
+      v.literal("processing_batch_26"),
+      v.literal("processing_batch_27"),
+      v.literal("processing_batch_28"),
+      v.literal("processing_batch_29"),
+      v.literal("processing_batch_30"),
+      v.literal("processing_batch_31"),
+      v.literal("processing_batch_32"),
+      v.literal("processing_batch_33"),
+      v.literal("processing_batch_34"),
+      v.literal("processing_batch_35"),
       v.literal("complete"),
       v.literal("error")
     )),

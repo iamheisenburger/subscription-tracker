@@ -92,17 +92,6 @@ export const resetAllReceiptsToParse = mutation({
       .filter((q) => q.neq(q.field("parsed"), false)) // Find receipts that are NOT already false
       .take(batchSize);
 
-    // Get total count for progress reporting
-    const allReceipts = await ctx.db
-      .query("emailReceipts")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
-
-    const totalReceipts = allReceipts.length;
-    const alreadyReset = allReceipts.filter(r => r.parsed === false).length;
-    const remaining = totalReceipts - alreadyReset;
-
-    console.log(`🔄 Progress: ${alreadyReset}/${totalReceipts} receipts reset (${remaining} remaining)`);
     console.log(`   Processing ${receiptsToReset.length} receipts in this batch...`);
 
     // Reset this batch
@@ -121,25 +110,21 @@ export const resetAllReceiptsToParse = mutation({
       resetCount++;
     }
 
-    const newRemaining = remaining - resetCount;
-    const isComplete = newRemaining === 0;
+    const isComplete = resetCount < batchSize; // If we reset fewer than batchSize, we're done
 
     if (isComplete) {
-      console.log(`✅ All ${totalReceipts} receipts reset to unparsed state - ready for reprocessing!`);
+      console.log(`✅ Batch complete! Reset ${resetCount} receipts. All receipts should now be unparsed.`);
     } else {
-      console.log(`   ⏳ ${newRemaining} receipts remaining - call this function again to continue`);
+      console.log(`   ⏳ Batch complete. Reset ${resetCount} receipts. More remaining - call again to continue.`);
     }
 
     return {
       success: true,
-      totalReceipts,
-      alreadyReset: alreadyReset + resetCount,
       resetThisBatch: resetCount,
-      remaining: newRemaining,
       isComplete,
       message: isComplete
         ? "All receipts reset successfully!"
-        : `Call this function again to reset remaining ${newRemaining} receipts`,
+        : `Call this function again to reset remaining receipts`,
     };
   },
 });

@@ -329,71 +329,114 @@ Respond ONLY with valid JSON (no markdown, no explanation):
   "reasoning": "Brief explanation"
 }`;
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
-        temperature: 0,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
-    });
+  // Retry logic with exponential backoff for rate limiting
+  let retries = 0;
+  const maxRetries = 3;
+  let response: Response | null = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Claude API error:", response.status, errorText);
+  while (retries <= maxRetries) {
+    try {
+      response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 300,
+          temperature: 0,
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      // Handle rate limiting with exponential backoff
+      if (response.status === 429) {
+        if (retries < maxRetries) {
+          const waitTime = Math.pow(2, retries) * 1000; // 1s, 2s, 4s
+          console.warn(`⚠️  Rate limit hit (429). Waiting ${waitTime}ms before retry ${retries + 1}/${maxRetries}...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          retries++;
+          continue;
+        } else {
+          const errorText = await response.text();
+          console.error("❌ Claude API error (max retries exceeded):", response.status, errorText);
+          return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
+        }
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Claude API error:", response.status, errorText);
+        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
+      }
+
+      // Success - break out of retry loop
+      break;
+    } catch (error) {
+      if (retries < maxRetries) {
+        const waitTime = Math.pow(2, retries) * 1000;
+        console.warn(`⚠️  Network error. Waiting ${waitTime}ms before retry ${retries + 1}/${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        retries++;
+        continue;
+      } else {
+        console.error("❌ Claude API call failed (max retries exceeded):", error);
+        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
+      }
+    }
+  }
+
+    if (!response) {
+      console.error("❌ No response received after retries");
       return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
     }
 
-    const data = await response.json();
-    const aiResponse = data.content[0].text;
+    try {
+      const data = await response.json();
+      const aiResponse = data.content[0].text;
 
-    // Extract JSON from response (handle markdown code blocks if present)
-    let jsonText = aiResponse;
-    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[0];
-    }
+      // Extract JSON from response (handle markdown code blocks if present)
+      let jsonText = aiResponse;
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[0];
+      }
 
-    const analysis = JSON.parse(jsonText);
+      const analysis = JSON.parse(jsonText);
 
-    // Only return success if AI confirms it's a subscription
-    if (!analysis.isSubscription) {
+      // Only return success if AI confirms it's a subscription
+      if (!analysis.isSubscription) {
+        return {
+          success: true,
+          merchant: null,
+          amount: null,
+          currency: null,
+          frequency: null,
+          confidence: analysis.confidence || 0,
+          reasoning: analysis.reasoning,
+          nextBillingDate: null,
+        };
+      }
+
       return {
         success: true,
-        merchant: null,
-        amount: null,
-        currency: null,
-        frequency: null,
-        confidence: analysis.confidence || 0,
+        merchant: analysis.merchant,
+        amount: analysis.amount,
+        currency: analysis.currency || "USD",
+        frequency: analysis.frequency,
+        confidence: analysis.confidence || 50,
         reasoning: analysis.reasoning,
-        nextBillingDate: null,
+        nextBillingDate: analysis.nextBillingDate || null,
       };
+    } catch (error) {
+      console.error("❌ Claude API call failed:", error);
+      return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
     }
-
-    return {
-      success: true,
-      merchant: analysis.merchant,
-      amount: analysis.amount,
-      currency: analysis.currency || "USD",
-      frequency: analysis.frequency,
-      confidence: analysis.confidence || 50,
-      reasoning: analysis.reasoning,
-      nextBillingDate: analysis.nextBillingDate || null,
-    };
-  } catch (error) {
-    console.error("❌ Claude API call failed:", error);
-    return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
-  }
 }

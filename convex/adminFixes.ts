@@ -65,12 +65,16 @@ export const resetDetectionCandidates = mutation({
 /**
  * Reset all receipts to unparsed state to force reprocessing
  * USE THIS after fixing the pre-filter to reprocess all 908 filtered receipts
+ * Processes in batches to avoid Convex memory limits
  */
 export const resetAllReceiptsToParse = mutation({
   args: {
     clerkUserId: v.string(),
+    batchSize: v.optional(v.number()), // Default 100 receipts per call
   },
   handler: async (ctx, args) => {
+    const batchSize = args.batchSize || 100;
+
     // Find user
     const user = await ctx.db
       .query("users")
@@ -81,23 +85,29 @@ export const resetAllReceiptsToParse = mutation({
       throw new Error("User not found");
     }
 
-    // Get ALL receipts for this user
+    // Get UNPARSED receipts that still need resetting (batched)
+    const receiptsToReset = await ctx.db
+      .query("emailReceipts")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.neq(q.field("parsed"), false)) // Find receipts that are NOT already false
+      .take(batchSize);
+
+    // Get total count for progress reporting
     const allReceipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
-    console.log(`🔄 Found ${allReceipts.length} total receipts`);
+    const totalReceipts = allReceipts.length;
+    const alreadyReset = allReceipts.filter(r => r.parsed === false).length;
+    const remaining = totalReceipts - alreadyReset;
 
-    const parsed = allReceipts.filter(r => r.parsed === true);
-    const unparsed = allReceipts.filter(r => r.parsed !== true);
+    console.log(`🔄 Progress: ${alreadyReset}/${totalReceipts} receipts reset (${remaining} remaining)`);
+    console.log(`   Processing ${receiptsToReset.length} receipts in this batch...`);
 
-    console.log(`   ${parsed.length} already parsed`);
-    console.log(`   ${unparsed.length} never parsed (filtered out)`);
-
-    // Reset ALL receipts to unparsed state
+    // Reset this batch
     let resetCount = 0;
-    for (const receipt of allReceipts) {
+    for (const receipt of receiptsToReset) {
       await ctx.db.patch(receipt._id, {
         parsed: false,
         merchantName: undefined,
@@ -111,14 +121,25 @@ export const resetAllReceiptsToParse = mutation({
       resetCount++;
     }
 
-    console.log(`✅ Reset ${resetCount} receipts to unparsed state - ready for reprocessing`);
+    const newRemaining = remaining - resetCount;
+    const isComplete = newRemaining === 0;
+
+    if (isComplete) {
+      console.log(`✅ All ${totalReceipts} receipts reset to unparsed state - ready for reprocessing!`);
+    } else {
+      console.log(`   ⏳ ${newRemaining} receipts remaining - call this function again to continue`);
+    }
 
     return {
       success: true,
-      totalReceipts: allReceipts.length,
-      previouslyParsed: parsed.length,
-      neverParsed: unparsed.length,
-      reset: resetCount,
+      totalReceipts,
+      alreadyReset: alreadyReset + resetCount,
+      resetThisBatch: resetCount,
+      remaining: newRemaining,
+      isComplete,
+      message: isComplete
+        ? "All receipts reset successfully!"
+        : `Call this function again to reset remaining ${newRemaining} receipts`,
     };
   },
 });

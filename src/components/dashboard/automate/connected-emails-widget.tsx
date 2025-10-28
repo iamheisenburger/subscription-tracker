@@ -52,53 +52,18 @@ export function ConnectedEmailsWidget() {
   const handleManualScan = async () => {
     if (!user?.id) return;
 
-    // COST OPTIMIZATION: Check if this is first scan or incremental
     const gmailConnection = connections?.find((c) => c.provider === "gmail");
     const isFirstScan = !gmailConnection?.lastFullScanAt;
-
-    // Show different messaging based on scan type
-    let confirmMessage = "";
-    let toastDescription = "";
-
-    if (isFirstScan) {
-      // FIRST SCAN: Full inbox (expensive but one-time)
-      confirmMessage =
-        "📧 FIRST SCAN - Full Inbox Analysis\n\n" +
-        "⏱️ Time: ~10-15 minutes (3 API keys working in parallel)\n" +
-        "💰 Cost: ~$1.50 (one-time only)\n" +
-        "📊 Will analyze: ~400-500 receipts (pre-filtered from 900+)\n\n" +
-        "Future scans will be MUCH faster (2-3 min) and cheaper ($0.08).\n\n" +
-        "This runs in the background - you can close this page.\n\n" +
-        "Continue with first scan?";
-
-      toastDescription = "First scan started! ~10-15 min, $1.50 cost. Future scans will be WAY cheaper ($0.08). You can close this page.";
-    } else {
-      // INCREMENTAL SCAN: Only new emails (super cheap!)
-      confirmMessage =
-        "📧 INCREMENTAL SCAN - New Emails Only\n\n" +
-        "⏱️ Time: ~2-3 minutes\n" +
-        "💰 Cost: ~$0.08\n" +
-        "📊 Will analyze: Only NEW emails since your last scan\n\n" +
-        "This runs in the background - you can close this page.\n\n" +
-        "Continue with scan?";
-
-      toastDescription = "Incremental scan started! ~2-3 min, $0.08 cost. Only scanning new emails. You can close this page.";
-    }
-
-    const confirmed = window.confirm(confirmMessage);
-
-    if (!confirmed) return;
 
     setIsScanning(true);
     try {
       await triggerScan({ clerkUserId: user.id });
-      toast.success(
-        isFirstScan ? "First scan started! 🚀" : "Incremental scan started! ⚡",
-        {
-          description: toastDescription,
-          duration: 10000, // Show for 10 seconds
-        }
-      );
+      toast.success("Scan started", {
+        description: isFirstScan
+          ? "We’re analyzing your inbox for subscription receipts. This runs in the background."
+          : "Scanning new emails since your last run. This runs in the background.",
+        duration: 6000,
+      });
     } catch (error) {
       toast.error("Scan failed", {
         description: "Failed to start email scan. Please try again.",
@@ -315,6 +280,9 @@ export function ConnectedEmailsWidget() {
             statusMessage = "Analyzing receipts with AI...";
           }
 
+          const batchNum = gmailConnection?.currentBatch || 0;
+          const totalBatches = gmailConnection?.totalBatches || 0;
+
           return (
             <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
               <div className="flex items-center justify-between mb-2">
@@ -324,6 +292,16 @@ export function ConnectedEmailsWidget() {
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
                   {displayProcessed} / {displayTotal} receipts
                 </p>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                  {batchNum > 0 && totalBatches > 0 ? `Batch ${batchNum} / ${totalBatches}` : null}
+                </p>
+                {gmailConnection?.batchProgress !== undefined && gmailConnection?.batchTotal !== undefined && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                    {gmailConnection.batchProgress} / {gmailConnection.batchTotal} in current batch
+                  </p>
+                )}
               </div>
               <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
                 <div

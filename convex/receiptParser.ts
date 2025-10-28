@@ -10,10 +10,15 @@ import { internal } from "./_generated/api";
 
 /**
  * AGGRESSIVE PRE-FILTER: Skip obvious non-subscriptions BEFORE AI
- * This saves ~$2 per scan by filtering 942 → ~400 receipts
+ * DISABLED: Was filtering out legitimate subscriptions (Spotify, Surfshark, ChatGPT)
+ * Let AI make the final decision instead
  * Returns true if should SKIP (not send to AI)
  */
 function shouldSkipAI(text: string, subject: string): boolean {
+  // CRITICAL FIX: Disable aggressive pre-filtering
+  // The pre-filter was rejecting 908 out of 953 receipts including Spotify, Surfshark, ChatGPT
+  // Let the AI decide what's a subscription - it's smarter than pattern matching
+  return false; // Don't skip anything - let AI decide
   const lowerText = text.toLowerCase();
   const lowerSubject = subject.toLowerCase();
 

@@ -481,7 +481,7 @@ export const processNextBatch = internalAction({
         userId: user._id,
       });
 
-      console.log(`🎯 Detection result (batch ${args.batchNumber}): ${detectionResult.created} new candidates`);
+      console.log(`🎯 Detection result (batch ${args.batchNumber}): Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
 
       // Check if more batches needed
       const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
@@ -599,7 +599,7 @@ export const triggerUserEmailScan = action({
             currentBatch: 0,
             overallProgress: 0,
             overallTotal: 0,
-            estimatedTimeRemaining: 40, // Initial estimate: 40 minutes for 941 receipts
+            estimatedTimeRemaining: 15, // Initial estimate for Gmail scan phase (~3-5 min), will update after scan
           });
 
           console.log(`📊 Set initial scan state to "scanning_gmail" with state machine`);
@@ -656,7 +656,8 @@ export const triggerUserEmailScan = action({
         // FIX #2 from audit: Calculate batches and update state machine
         const BATCH_SIZE = 150; // Process 150 receipts per batch (to avoid timeout)
         const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
-        const estimatedTime = Math.ceil((totalReceipts * 2) / 60); // 2 seconds per receipt
+        // With 3 AI keys running in parallel + rate limits + overhead = ~1 second per receipt
+        const estimatedTime = Math.ceil(totalReceipts / 60); // 1 second per receipt = totalReceipts / 60 minutes
 
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,

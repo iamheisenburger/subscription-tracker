@@ -606,7 +606,11 @@ export const runPatternBasedDetection = internalMutation({
     }
 
     console.log(`✅ Pattern-based detection complete:`);
-    console.log(`   Created: ${createdCount}, Updated: ${updatedCount}, Skipped: ${skippedCount}`);
+    console.log(`   Total merchants: ${merchantGroups.size}`);
+    console.log(`   Active subscriptions: ${activeSubscriptions.length}`);
+    console.log(`   Created: ${createdCount} new candidates`);
+    console.log(`   Updated: ${updatedCount} existing candidates`);
+    console.log(`   Skipped: ${skippedCount} (already tracked as subscriptions)`);
 
     return { created: createdCount, updated: updatedCount, skipped: skippedCount };
   },

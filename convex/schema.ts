@@ -447,6 +447,7 @@ export default defineSchema({
     aiProcessedCount: v.optional(v.number()), // How many receipts analyzed
     aiTotalCount: v.optional(v.number()), // Total receipts to analyze
     // CRITICAL: Explicit scan state machine for proper tracking (FIX #2 from audit)
+    // FIXED: Added batches 8-15 to support 300+ receipt scans (150 receipts per batch)
     scanState: v.optional(v.union(
       v.literal("idle"),
       v.literal("scanning_gmail"),
@@ -457,6 +458,14 @@ export default defineSchema({
       v.literal("processing_batch_5"),
       v.literal("processing_batch_6"),
       v.literal("processing_batch_7"),
+      v.literal("processing_batch_8"),
+      v.literal("processing_batch_9"),
+      v.literal("processing_batch_10"),
+      v.literal("processing_batch_11"),
+      v.literal("processing_batch_12"),
+      v.literal("processing_batch_13"),
+      v.literal("processing_batch_14"),
+      v.literal("processing_batch_15"),
       v.literal("complete"),
       v.literal("error")
     )),

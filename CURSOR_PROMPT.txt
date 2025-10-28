@@ -1,0 +1,57 @@
+I have a subscription detection system (SubWise Automate) that scans Gmail for subscription receipts using Claude AI.
+
+The system successfully scans 955 receipts from Gmail and splits them into 7 batches of 150 receipts each for AI processing.
+
+CRITICAL BUG #1:
+Batch 1 processes 150 receipts and detects 17 subscriptions.
+Batch 2 processes 150 receipts and detects 1 subscription.
+Batches 3-7 process 600+ receipts and detect 0 subscriptions.
+
+Out of 955 receipts, only the first 300 receipts (batches 1-2) produce any detection results. The remaining 655 receipts in batches 3-7 are processed but create zero detection candidates.
+
+CRITICAL BUG #2:
+User has 6 confirmed active subscriptions with receipts in Gmail that are NOT being detected:
+- ChatGPT ($20/month)
+- Perplexity ($20/month)
+- Surfshark VPN ($10/month)
+- Spotify ($12/month)
+- Telegram community ($7/month)
+- Patreon ($4/month)
+
+Database analysis shows receipts for Spotify and Surfshark exist with "parsed: false" status. They were never sent to the AI or were filtered out before parsing.
+
+CRITICAL BUG #3:
+Of the 18 subscriptions detected, 11 are invalid:
+- Cancelled subscriptions from months/years ago (Skool, ElevenLabs, Canva)
+- Fake subscriptions user never had (AWS, "Email")
+- One-time purchases incorrectly labeled as subscriptions (Startup Club)
+
+Only 7 out of 18 detections (44%) are actual active subscriptions.
+
+CRITICAL BUG #4:
+PlayStation appears twice as separate subscriptions ("PlayStation" and "PlayStation Store").
+
+UI BUGS:
+1. System shows unprofessional popup with cost estimates and internal technical details when user clicks "Scan Now" - not appropriate for monetized consumer app
+2. Progress display shows contradictory information ("26 receipts" and "0 emails scanned" simultaneously)
+3. Batch processing only shows "Starting..." without clear indication of which batch is processing or progress within batch
+
+DATABASE EVIDENCE:
+Production database (hearty-leopard-116) shows:
+- 953 total receipts scanned
+- Only 45 receipts marked "parsed: true"
+- 908 receipts marked "parsed: false" or never parsed
+- Missing subscription receipts (Spotify, Surfshark) exist in database but have "parsed: false"
+
+FILES:
+Backend (Convex):
+- convex/aiReceiptParser.ts (3 parallel AI keys)
+- convex/receiptParser.ts (pre-filtering and regex parsing)
+- convex/emailDetection.ts (detection candidate creation)
+- convex/emailScannerActions.ts (batch orchestration)
+- convex/patternDetection.ts (pattern analysis)
+
+Frontend:
+- src/components/dashboard/automate/connected-emails-widget.tsx (main UI)
+
+See AUTOMATE_UI_UX_AUDIT_AND_REBUILD_PLAN.md and ROOT_CAUSE_ANALYSIS_AND_FIX.md for complete details.

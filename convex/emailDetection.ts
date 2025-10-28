@@ -8,6 +8,20 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 /**
+ * Normalize merchant name for case-insensitive comparison
+ * Prevents duplicates like "PlayStation" vs "playstation"
+ */
+function normalizeMerchantName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .replace(/[,.]?\s*(inc|llc|ltd|limited|corp|corporation|store)\.?$/i, "") // Remove legal suffixes
+    .replace(/\s*\([^)]*\)$/, "") // Remove parenthetical info
+    .trim();
+}
+
+/**
  * Create detection candidates from parsed receipts
  * Only creates candidates for high-confidence receipts
  */
@@ -41,9 +55,9 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
-    // Build in-memory lookup map for O(1) lookups
+    // Build in-memory lookup map for O(1) lookups (case-insensitive)
     const subscriptionsByName = new Map(
-      allUserSubscriptions.map(sub => [sub.name.toLowerCase(), sub])
+      allUserSubscriptions.map(sub => [normalizeMerchantName(sub.name), sub])
     );
 
     const now = Date.now();
@@ -56,7 +70,8 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
       }
 
       // Check if subscription already exists (in-memory lookup - NO database query!)
-      const existingSubscription = subscriptionsByName.get(receipt.merchantName.toLowerCase());
+      const normalizedReceiptMerchant = normalizeMerchantName(receipt.merchantName);
+      const existingSubscription = subscriptionsByName.get(normalizedReceiptMerchant);
 
       if (existingSubscription) {
         // Subscription already exists - link receipt and handle based on receipt type
@@ -107,17 +122,20 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         continue;
       }
 
-      // Check if candidate already exists for this merchant
-      const existingCandidate = await ctx.db
+      // Check if candidate already exists for this merchant (case-insensitive)
+      const normalizedMerchantName = normalizeMerchantName(receipt.merchantName!);
+
+      // Load all pending candidates for this user (cannot filter by normalized name in query)
+      const allPendingCandidates = await ctx.db
         .query("detectionCandidates")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("proposedName"), receipt.merchantName!),
-            q.eq(q.field("status"), "pending")
-          )
-        )
-        .first();
+        .filter((q) => q.eq(q.field("status"), "pending"))
+        .collect();
+
+      // Find existing candidate with case-insensitive comparison
+      const existingCandidate = allPendingCandidates.find(
+        c => normalizeMerchantName(c.proposedName) === normalizedMerchantName
+      );
 
       if (existingCandidate) {
         // Candidate already exists - just link receipt

@@ -154,13 +154,25 @@ async function processReceiptsWithAPIKey(
           receipt.from
         );
 
+        // Log specific missing subscriptions for debugging
+        const missingSubKeywords = ["chatgpt", "openai", "perplexity", "spotify", "surfshark", "brandon", "fpl", "patreon"];
+        const hasMissingSubKeyword = missingSubKeywords.some(keyword =>
+          receipt.subject.toLowerCase().includes(keyword) ||
+          receipt.from.toLowerCase().includes(keyword)
+        );
+
+        if (hasMissingSubKeyword) {
+          console.log(`🔍 MISSING SUB CANDIDATE: "${receipt.subject}" | From: ${receipt.from} | AI Result: ${aiResult.success ? `${aiResult.confidence}% confidence, merchant: ${aiResult.merchant}` : "FAILED"}`);
+        }
+
+        // Keep 40% confidence threshold - real issue was pre-filter blocking receipts entirely
         if (aiResult.success && aiResult.confidence >= 40) {
           // FIX: Don't filter based on past dates - many receipts don't have future dates
           // They're just payment confirmations for the current month (e.g., "Charged $20 for October")
           // Let the user review all detections and manually confirm/dismiss
 
-          // Valid subscription - include it
-          console.log(`  🔑${keyNumber} 🤖 AI: ${aiResult.merchant || "Unknown"} - ${aiResult.amount} ${aiResult.currency} (${aiResult.confidence}% confidence)`);
+          // Valid subscription - include it (40%+ confidence)
+          console.log(`  🔑${keyNumber} 🤖 AI SUCCESS: "${aiResult.merchant || "Unknown"}" - $${aiResult.amount} ${aiResult.currency} (${aiResult.confidence}% confidence) | Subject: "${receipt.subject.substring(0, 60)}"`);
 
           results.push({
             receiptId: receipt._id,
@@ -174,9 +186,9 @@ async function processReceiptsWithAPIKey(
           });
           continue; // Skip regex fallback
         } else if (!aiResult.success) {
-          console.log(`  🔑${keyNumber} ⚠️  AI failed for: ${receipt.subject.substring(0, 40)}... - Falling back to regex`);
+          console.log(`  🔑${keyNumber} ⚠️  AI FAILED: "${receipt.subject.substring(0, 60)}" - Falling back to regex`);
         } else {
-          console.log(`  🔑${keyNumber} ⚠️  Low AI confidence (${aiResult.confidence}%) for: ${receipt.subject.substring(0, 40)}... - Falling back to regex`);
+          console.log(`  🔑${keyNumber} ⚠️  AI LOW CONFIDENCE: ${aiResult.confidence}% (need 40%+) for "${receipt.subject.substring(0, 60)}" - Falling back to regex`);
         }
       }
 
@@ -186,7 +198,7 @@ async function processReceiptsWithAPIKey(
       });
 
       if (regexResult.merchantName && regexResult.amount) {
-        console.log(`  🔑${keyNumber} 📋 Regex: ${regexResult.merchantName} - ${regexResult.amount} ${regexResult.currency}`);
+        console.log(`  🔑${keyNumber} 📋 REGEX SUCCESS: "${regexResult.merchantName}" - $${regexResult.amount} ${regexResult.currency} | Subject: "${receipt.subject.substring(0, 60)}"`);
         results.push({
           receiptId: receipt._id,
           merchantName: regexResult.merchantName,
@@ -198,7 +210,7 @@ async function processReceiptsWithAPIKey(
         });
       } else {
         // Filtered out as non-subscription
-        console.log(`  🔑${keyNumber} ⏭️  Filtered: ${receipt.subject.substring(0, 40)}...`);
+        console.log(`  🔑${keyNumber} ⏭️  FILTERED OUT (non-subscription): "${receipt.subject.substring(0, 80)}"`);
         results.push({
           receiptId: receipt._id,
           merchantName: null,

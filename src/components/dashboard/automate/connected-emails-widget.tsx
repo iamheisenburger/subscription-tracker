@@ -291,6 +291,21 @@ export function ConnectedEmailsWidget() {
               case "processing_batch_33":
               case "processing_batch_34":
               case "processing_batch_35":
+              case "processing_batch_36":
+              case "processing_batch_37":
+              case "processing_batch_38":
+              case "processing_batch_39":
+              case "processing_batch_40":
+              case "processing_batch_41":
+              case "processing_batch_42":
+              case "processing_batch_43":
+              case "processing_batch_44":
+              case "processing_batch_45":
+              case "processing_batch_46":
+              case "processing_batch_47":
+              case "processing_batch_48":
+              case "processing_batch_49":
+              case "processing_batch_50":
                 const batchNum = gmailConnection.currentBatch || 1;
                 const totalBatches = gmailConnection.totalBatches || 1;
                 // Show how many subscriptions found so far

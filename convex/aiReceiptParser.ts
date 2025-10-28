@@ -646,8 +646,8 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         },
         body: JSON.stringify({
           model: "gpt-5-nano-2025-08-07",
-          max_completion_tokens: 300, // GPT-5 uses max_completion_tokens, not max_tokens
-          temperature: 0,
+          max_completion_tokens: 300,
+          // NOTE: GPT-5 Nano only supports temperature: 1 (default), removed temperature parameter
           messages: [
             {
               role: "user",

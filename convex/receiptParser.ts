@@ -218,6 +218,7 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     /openai/i,
     /anthropic/i,
     /claude/i,
+    /cursor/i, // ADDED: Cursor AI IDE subscription
     /perplexity/i,
     /spotify/i,
     /netflix/i,
@@ -236,6 +237,8 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     /zoom/i,
     /telegram/i,
     /discord\s+nitro/i,
+    /ship\/?it/i, // ADDED: Ship/It Weekly newsletter subscription
+    /apple.*(?:music|tv|icloud|arcade|one)/i, // ADDED: Apple services
   ];
 
   const hasSubscriptionKeyword = subscriptionKeywords.some((pattern) =>

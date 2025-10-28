@@ -2,14 +2,14 @@
  * Admin functions to fix production issues
  */
 
-import { internalMutation } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
  * Clear all detection candidates for a user and re-run pattern detection
  * This fixes the PlayStation duplicate and other deduplication issues
  */
-export const resetDetectionCandidates = internalMutation({
+export const resetDetectionCandidates = mutation({
   args: {
     clerkUserId: v.string(),
   },
@@ -66,7 +66,7 @@ export const resetDetectionCandidates = internalMutation({
  * Reset all receipts to unparsed state to force reprocessing
  * USE THIS after fixing the pre-filter to reprocess all 908 filtered receipts
  */
-export const resetAllReceiptsToParse = internalMutation({
+export const resetAllReceiptsToParse = mutation({
   args: {
     clerkUserId: v.string(),
   },

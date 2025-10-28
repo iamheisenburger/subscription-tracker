@@ -462,7 +462,7 @@ export const processNextBatch = internalAction({
           connectionId: firstConnection._id,
           scanState: `processing_batch_${args.batchNumber}` as any,
           batchProgress: parseResult.count || 0,
-          overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 30), // Approx cumulative (30 per batch)
+          overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 10), // Approx cumulative (10 per batch)
         });
       }
 
@@ -493,11 +493,12 @@ export const processNextBatch = internalAction({
       if (hasMoreBatches) {
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
-        // RATE LIMIT FIX: With 30 receipts per batch, need 35 batches for 1000+ receipts
-        // 1000 receipts / 30 per batch = 34 batches (rounded up to 35 for safety)
-        if (args.batchNumber < 35) {
+        // RATE LIMIT FIX: 10 receipts per batch with 60-second delays
+        // 1000 receipts / 10 per batch = 100 batches max
+        if (args.batchNumber < 100) {
+          console.log(`⏰ Waiting 60 seconds before next batch to prevent rate limiting...`);
           await ctx.scheduler.runAfter(
-            0, // Run immediately
+            60000, // CRITICAL FIX: Wait 60 seconds between batches (user requested)
             internal.emailScannerActions.processNextBatch,
             {
               clerkUserId: args.clerkUserId,
@@ -505,7 +506,7 @@ export const processNextBatch = internalAction({
             }
           );
         } else {
-          console.warn(`⚠️  Reached batch limit (35 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
+          console.warn(`⚠️  Reached batch limit (100 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
         }
       } else {
         console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);
@@ -652,11 +653,11 @@ export const triggerUserEmailScan = action({
       const firstConnection = connections.find((c) => c.status === "active");
 
       if (firstConnection) {
-        // RATE LIMIT FIX: Reduced batch size to prevent hitting 50k tokens/min limit
-        const BATCH_SIZE = 30; // Reduced from 150 to 30 (3 keys × 10 receipts = safe under rate limit)
+        // RATE LIMIT FIX: Ultra-conservative batch size + 60s delays to stay under 50k tokens/min
+        const BATCH_SIZE = 10; // User requested: 10 receipts per batch
         const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
-        // DYNAMIC TIME ESTIMATE: With rate limiting + retries, roughly 2 seconds per receipt
-        const estimatedTime = Math.ceil((totalReceipts * 2) / 60); // 2 seconds per receipt
+        // DYNAMIC TIME ESTIMATE: 10 receipts/batch + 60s delay = ~2 min per batch
+        const estimatedTime = Math.ceil(totalBatches * 2); // 2 minutes per batch (includes processing + delay)
 
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,

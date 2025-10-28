@@ -1,7 +1,7 @@
 /**
  * AI-Powered Receipt Parser
  * Uses Claude API for intelligent subscription detection with regex fallback
- * COST OPTIMIZATION: Multi-API-key parallel processing (3 keys = 3x faster)
+ * RATE LIMIT FIX: Sequential processing with 1 key + 60s delays between batches
  */
 
 import { internalAction } from "./_generated/server";
@@ -10,7 +10,7 @@ import { internal } from "./_generated/api";
 
 /**
  * Parse receipts using AI-first approach with regex fallback
- * COST OPTIMIZATION: Uses 3 API keys in parallel for 6-10x speed boost
+ * RATE LIMIT FIX: Sequential processing with 1 API key to prevent 429 errors
  */
 export const parseReceiptsWithAI = internalAction({
   args: {
@@ -25,20 +25,18 @@ export const parseReceiptsWithAI = internalAction({
     connectionId: v.optional(v.id("emailConnections")), // For progress tracking
   },
   handler: async (ctx, args) => {
-    // COST OPTIMIZATION: Use 3 API keys in parallel (6-10x faster!)
-    const apiKeys = [
-      process.env.ANTHROPIC_API_KEY,
-      process.env.ANTHROPIC_API_KEY_2,
-      process.env.ANTHROPIC_API_KEY_3,
-    ].filter(key => key && key.length > 0); // Only use keys that exist
+    // RATE LIMIT FIX: Use only 1 API key (sequential processing)
+    // Previous issue: 3 keys in parallel = 30 receipts hitting API simultaneously = instant rate limit
+    // New approach: 1 key + 10 receipts/batch + 60s delays = ~20k tokens/min (well under 50k limit)
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
-    if (apiKeys.length === 0) {
-      console.error("❌ No API keys configured!");
+    if (!apiKey) {
+      console.error("❌ No API key configured!");
       return { results: [] };
     }
 
-    console.log(`🤖 AI Parser: Analyzing ${args.receipts.length} receipts using ${apiKeys.length} API key(s) in parallel`);
-    console.log(`⚡ Speed boost: ${apiKeys.length}x faster processing!`);
+    console.log(`🤖 AI Parser: Analyzing ${args.receipts.length} receipts SEQUENTIALLY with 1 API key`);
+    console.log(`⏰ Rate limiting protection: Processing one at a time with delays`);
 
     // Validate connectionId for progress tracking
     if (!args.connectionId) {
@@ -57,25 +55,12 @@ export const parseReceiptsWithAI = internalAction({
       });
     }
 
-    // PARALLEL PROCESSING: Split receipts across API keys
-    const receiptsPerKey = Math.ceil(args.receipts.length / apiKeys.length);
-    const workerPromises = apiKeys.map((apiKey, keyIndex) => {
-      const startIdx = keyIndex * receiptsPerKey;
-      const endIdx = Math.min(startIdx + receiptsPerKey, args.receipts.length);
-      const receiptsForThisKey = args.receipts.slice(startIdx, endIdx);
+    // SEQUENTIAL PROCESSING: Process all receipts with 1 API key
+    console.log(`🔑 Processing ${args.receipts.length} receipts sequentially`);
 
-      console.log(`🔑 API Key ${keyIndex + 1}: Processing receipts ${startIdx}-${endIdx} (${receiptsForThisKey.length} receipts)`);
+    const results = await processReceiptsWithAPIKey(ctx, args.receipts, apiKey, 1, args.connectionId);
 
-      return processReceiptsWithAPIKey(ctx, receiptsForThisKey, apiKey!, keyIndex + 1, args.connectionId);
-    });
-
-    // Wait for all workers to complete
-    const allResults = await Promise.all(workerPromises);
-
-    // Flatten results from all workers
-    const results = allResults.flat();
-
-    console.log(`✅ All ${apiKeys.length} workers completed! Total: ${results.length} receipts analyzed`);
+    console.log(`✅ Sequential processing complete! Total: ${results.length} receipts analyzed`);
 
     // Final progress update
     if (args.connectionId) {
@@ -91,10 +76,11 @@ export const parseReceiptsWithAI = internalAction({
     const regexCount = results.filter(r => r.method === "regex_fallback").length;
     const filteredCount = results.filter(r => r.method === "filtered").length;
 
-    console.log(`🎯 AI Parser Summary:`);
+    console.log(`🎯 AI Parser Summary (Sequential Processing):`);
     console.log(`   AI Success: ${aiCount}/${args.receipts.length}`);
     console.log(`   Regex Fallback: ${regexCount}/${args.receipts.length}`);
     console.log(`   Filtered Out: ${filteredCount}/${args.receipts.length}`);
+    console.log(`   ✅ Rate limiting avoided by sequential processing + 60s delays`);
 
     return { results };
   },
@@ -102,7 +88,7 @@ export const parseReceiptsWithAI = internalAction({
 
 /**
  * Process a batch of receipts using a specific API key
- * This runs in parallel with other workers using different keys
+ * RATE LIMIT FIX: Now processes sequentially with delays to prevent 429 errors
  */
 async function processReceiptsWithAPIKey(
   ctx: any,

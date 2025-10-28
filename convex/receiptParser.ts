@@ -610,12 +610,12 @@ export const getUnparsedReceipts = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect(); // Get ALL receipts, no limit
 
-    // RATE LIMIT FIX: Reduced to 30 to prevent hitting Claude API rate limits
+    // RATE LIMIT FIX: Ultra-conservative 10 receipts + 60s delays to stay under 50k tokens/min
     const receiptsToProcess = allReceipts.filter(
       (receipt) =>
         !receipt.parsed ||
         (!receipt.merchantName && !receipt.amount)
-    ).slice(0, 30); // Process 30 at a time to stay under 50k tokens/min
+    ).slice(0, 10); // Process 10 at a time (user requested) with 60s delays between batches
 
     return {
       receipts: receiptsToProcess.map(r => ({

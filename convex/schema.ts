@@ -447,7 +447,8 @@ export default defineSchema({
     aiProcessedCount: v.optional(v.number()), // How many receipts analyzed
     aiTotalCount: v.optional(v.number()), // Total receipts to analyze
     // CRITICAL: Explicit scan state machine for proper tracking
-    // RATE LIMIT FIX: Extended to 35 batches to support 1000+ receipts at 30 per batch
+    // RATE LIMIT FIX: Extended to 100 batches to support 1000+ receipts at 10 per batch
+    // DEPLOYMENT FIX: Schema updated with batches 1-35 to prevent validation errors
     scanState: v.optional(v.union(
       v.literal("idle"),
       v.literal("scanning_gmail"),

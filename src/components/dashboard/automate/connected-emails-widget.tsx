@@ -252,7 +252,9 @@ export function ConnectedEmailsWidget() {
           if (gmailConnection?.scanState) {
             switch (gmailConnection.scanState) {
               case "scanning_gmail":
-                statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} receipts found`;
+                // Show actual total found, not 0
+                const receiptsFound = total > 0 ? total : (gmailConnection?.totalEmailsScanned || 0);
+                statusMessage = `Scanning inbox... ${receiptsFound} receipts found`;
                 break;
               case "processing_batch_1":
               case "processing_batch_2":
@@ -291,7 +293,11 @@ export function ConnectedEmailsWidget() {
               case "processing_batch_35":
                 const batchNum = gmailConnection.currentBatch || 1;
                 const totalBatches = gmailConnection.totalBatches || 1;
-                statusMessage = `Processing batch ${batchNum} of ${totalBatches}...`;
+                // Show how many subscriptions found so far
+                const subsFound = detectionStats?.totalEmailDetections || 0;
+                statusMessage = subsFound > 0
+                  ? `Analyzing receipts... ${subsFound} subscriptions detected`
+                  : `Analyzing batch ${batchNum} of ${totalBatches}...`;
                 break;
               case "complete":
                 statusMessage = "Scan complete!";
@@ -303,9 +309,13 @@ export function ConnectedEmailsWidget() {
                 break;
             }
           } else if (isScanning) {
-            statusMessage = `Scanning inbox for receipts... ${gmailConnection?.totalEmailsScanned || 0} receipts found`;
+            const receiptsFound = total > 0 ? total : (gmailConnection?.totalEmailsScanned || 0);
+            statusMessage = `Scanning inbox... ${receiptsFound} receipts found`;
           } else if (isProcessingAI) {
-            statusMessage = "Analyzing receipts with AI...";
+            const subsFound = detectionStats?.totalEmailDetections || 0;
+            statusMessage = subsFound > 0
+              ? `Analyzing receipts... ${subsFound} subscriptions detected`
+              : "Analyzing receipts...";
           }
 
           const batchNum = gmailConnection?.currentBatch || 0;

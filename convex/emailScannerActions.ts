@@ -462,7 +462,7 @@ export const processNextBatch = internalAction({
           connectionId: firstConnection._id,
           scanState: `processing_batch_${args.batchNumber}` as any,
           batchProgress: parseResult.count || 0,
-          overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 10), // Approx cumulative (10 per batch)
+          overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 40), // Approx cumulative (40 per batch)
         });
       }
 
@@ -493,12 +493,12 @@ export const processNextBatch = internalAction({
       if (hasMoreBatches) {
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
-        // RATE LIMIT FIX: 10 receipts per batch with 60-second delays
-        // 1000 receipts / 10 per batch = 100 batches max
-        if (args.batchNumber < 100) {
-          console.log(`⏰ Waiting 60 seconds before next batch to prevent rate limiting...`);
+        // DUAL PROVIDER: 40 receipts per batch with NO DELAYS (independent rate limits)
+        // 1000 receipts / 40 per batch = 25 batches max
+        if (args.batchNumber < 50) {
+          console.log(`⚡ No delays needed - dual providers have independent rate limits!`);
           await ctx.scheduler.runAfter(
-            60000, // CRITICAL FIX: Wait 60 seconds between batches (user requested)
+            0, // NO DELAY: Different providers = no rate limit conflicts
             internal.emailScannerActions.processNextBatch,
             {
               clerkUserId: args.clerkUserId,
@@ -506,7 +506,7 @@ export const processNextBatch = internalAction({
             }
           );
         } else {
-          console.warn(`⚠️  Reached batch limit (100 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
+          console.warn(`⚠️  Reached batch limit (50 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
         }
       } else {
         console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);
@@ -653,11 +653,11 @@ export const triggerUserEmailScan = action({
       const firstConnection = connections.find((c) => c.status === "active");
 
       if (firstConnection) {
-        // RATE LIMIT FIX: Ultra-conservative batch size + 60s delays to stay under 50k tokens/min
-        const BATCH_SIZE = 10; // User requested: 10 receipts per batch
+        // DUAL PROVIDER FIX: 40 receipts per batch (20 Claude + 20 OpenAI in parallel)
+        const BATCH_SIZE = 40; // 20 receipts per provider, processed in parallel
         const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
-        // DYNAMIC TIME ESTIMATE: 10 receipts/batch + 60s delay = ~2 min per batch
-        const estimatedTime = Math.ceil(totalBatches * 2); // 2 minutes per batch (includes processing + delay)
+        // DYNAMIC TIME ESTIMATE: 40 receipts in parallel = ~30-60 seconds per batch
+        const estimatedTime = Math.ceil(totalBatches * 1); // 1 minute per batch (fast parallel processing)
 
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,

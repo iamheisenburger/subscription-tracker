@@ -338,42 +338,44 @@ export function ConnectedEmailsWidget() {
 
           return (
             <div className="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+              {/* Status message - clear and concise */}
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
                   {statusMessage}
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                  {displayProcessed} / {displayTotal} receipts
-                </p>
-              </div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                  {batchNum > 0 && totalBatches > 0 ? `Batch ${batchNum} / ${totalBatches}` : null}
-                </p>
-                {gmailConnection?.batchProgress !== undefined && gmailConnection?.batchTotal !== undefined && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                    {gmailConnection.batchProgress} / {gmailConnection.batchTotal} in current batch
-                  </p>
+                {/* Batch indicator - only show if meaningful */}
+                {batchNum > 0 && totalBatches > 0 && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                    Batch {batchNum}/{totalBatches}
+                  </span>
                 )}
               </div>
-              <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
-                <div
-                  className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${progressPercent}%`,
-                  }}
-                />
-              </div>
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                  {displayProcessed > 0 ? `${displayProcessed} processed` : 'Starting...'}
-                </p>
-                {gmailConnection?.estimatedTimeRemaining && gmailConnection.estimatedTimeRemaining > 0 && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                    ~{gmailConnection.estimatedTimeRemaining} min remaining
-                  </p>
-                )}
-              </div>
+
+              {/* Progress bar - only show when we have a known total */}
+              {displayTotal > 0 && (
+                <>
+                  <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2 mb-2">
+                    <div
+                      className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${progressPercent}%`,
+                      }}
+                    />
+                  </div>
+
+                  {/* Single progress counter + ETA */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                      {displayProcessed} / {displayTotal} receipts analyzed
+                    </span>
+                    {gmailConnection?.estimatedTimeRemaining && gmailConnection.estimatedTimeRemaining > 0 && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-sans">
+                        ~{gmailConnection.estimatedTimeRemaining} min left
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           );
         })()}

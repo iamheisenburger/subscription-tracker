@@ -460,7 +460,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 300,
+          max_tokens: 500, // INCREASED: 300 was too small, causing truncated JSON with null amounts
           temperature: 0,
           messages: [
             {
@@ -524,7 +524,14 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         jsonText = jsonMatch[0];
       }
 
-      const analysis = JSON.parse(jsonText);
+      let analysis;
+      try {
+        analysis = JSON.parse(jsonText);
+      } catch (parseError) {
+        console.error("❌ Claude JSON parse error. Raw response:", aiResponse.substring(0, 500));
+        console.error("❌ Extracted JSON text:", jsonText.substring(0, 500));
+        throw parseError;
+      }
 
       // Only return success if AI confirms it's a subscription
       if (!analysis.isSubscription) {
@@ -646,7 +653,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         },
         body: JSON.stringify({
           model: "gpt-5-nano-2025-08-07",
-          max_completion_tokens: 300,
+          max_completion_tokens: 500, // INCREASED: 300 was too small, causing truncated JSON
           // NOTE: GPT-5 Nano only supports temperature: 1 (default), removed temperature parameter
           messages: [
             {
@@ -709,7 +716,14 @@ Respond ONLY with valid JSON (no markdown, no explanation):
       jsonText = jsonMatch[0];
     }
 
-    const analysis = JSON.parse(jsonText);
+    let analysis;
+    try {
+      analysis = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error("❌ OpenAI JSON parse error. Raw response:", aiResponse.substring(0, 500));
+      console.error("❌ Extracted JSON text:", jsonText.substring(0, 500));
+      throw parseError;
+    }
 
     // Only return success if AI confirms it's a subscription
     if (!analysis.isSubscription) {

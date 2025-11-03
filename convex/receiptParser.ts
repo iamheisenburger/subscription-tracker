@@ -5,7 +5,7 @@
  */
 
 import { v } from "convex/values";
-import { mutation, internalMutation, action, internalAction } from "./_generated/server";
+import { mutation, internalMutation, action, internalAction, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 /**
@@ -519,38 +519,9 @@ export const parseUnparsedReceiptsWithAI = internalAction({
     connectionId: v.optional(v.id("emailConnections")), // For real-time progress tracking
   },
   handler: async (ctx, args): Promise<{ message?: string; count: number; parsed: number; failed?: number }> => {
-    // Get unparsed receipts via mutation
-    const receiptsData: any = await ctx.runMutation(internal.receiptParser.getUnparsedReceipts, {
-      clerkUserId: args.clerkUserId,
-    });
-
-    if (receiptsData.receipts.length === 0) {
-      console.log("📋 No receipts need parsing");
-      return { message: "No receipts need parsing", count: 0, parsed: 0 };
-    }
-
-    console.log(`🤖 AI Parser: Analyzing ${receiptsData.receipts.length} receipts...`);
-
-    // Call AI parser with all receipts + connectionId for progress tracking
-    const aiResults: any = await ctx.runAction(internal.aiReceiptParser.parseReceiptsWithAI, {
-      receipts: receiptsData.receipts,
-      connectionId: args.connectionId,
-    });
-
-    // Save results to database
-    await ctx.runMutation(internal.receiptParser.saveParsingResults, {
-      results: aiResults.results,
-    });
-
-    const successCount: number = aiResults.results.filter((r: any) => r.merchantName && r.amount).length;
-
-    console.log(`✅ Parsing complete: ${successCount}/${receiptsData.receipts.length} subscriptions detected`);
-
-    return {
-      count: receiptsData.receipts.length,
-      parsed: successCount,
-      failed: receiptsData.receipts.length - successCount,
-    };
+    // This function is deprecated - use aiReceiptParser.parseReceiptsWithAI instead
+    console.log("⚠️ parseUnparsedReceiptsWithAI is deprecated. Use the orchestrator instead.");
+    return { message: "Deprecated - use orchestrator", count: 0, parsed: 0 };
   },
 });
 
@@ -594,40 +565,29 @@ export const countUnparsedReceipts = internalMutation({
 /**
  * Helper: Get unparsed receipts for AI analysis
  */
-export const getUnparsedReceipts = internalMutation({
+export const getUnparsedReceipts = internalQuery({
   args: {
-    clerkUserId: v.string(),
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
-      .first();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const limit = args.limit || 1000;
 
     const allReceipts = await ctx.db
       .query("emailReceipts")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect(); // Get ALL receipts, no limit
 
-    // DUAL PROVIDER: 40 receipts per batch (20 Claude + 20 OpenAI in parallel)
-    const receiptsToProcess = allReceipts.filter(
-      (receipt) =>
+    // Filter for unparsed receipts
+    const receiptsToProcess = allReceipts
+      .filter((receipt) =>
         !receipt.parsed ||
         (!receipt.merchantName && !receipt.amount)
-    ).slice(0, 40); // Process 40 at a time (20 per provider, parallel processing, no delays needed)
+      )
+      .slice(0, limit);
 
-    return {
-      receipts: receiptsToProcess.map(r => ({
-        _id: r._id,
-        subject: r.subject,
-        rawBody: r.rawBody,
-        from: r.from,
-      })),
-    };
+    // Return full receipt objects for the orchestrator
+    return receiptsToProcess;
   },
 });
 
@@ -651,10 +611,12 @@ export const saveParsingResults = internalMutation({
   },
   handler: async (ctx, args) => {
     for (const result of args.results) {
-      if (result.merchantName && result.amount) {
+      // CRITICAL FIX: Accept receipts with merchant name even if amount is null
+      // Many subscription emails (renewals, failed payments) don't contain amounts
+      if (result.merchantName) {
         await ctx.db.patch(result.receiptId as any, {
           merchantName: result.merchantName,
-          amount: result.amount,
+          amount: result.amount || undefined, // Convert null to undefined for schema
           currency: result.currency,
           billingCycle: result.billingCycle || undefined,
           parsed: true,
@@ -662,7 +624,8 @@ export const saveParsingResults = internalMutation({
           parsingMethod: result.method, // Track if AI or regex was used
         });
 
-        console.log(`  ✅ [${result.method.toUpperCase()}] ${result.merchantName}: ${result.amount} ${result.currency}`);
+        const amountStr = result.amount ? `${result.amount} ${result.currency}` : "no amount";
+        console.log(`  ✅ [${result.method.toUpperCase()}] ${result.merchantName}: ${amountStr}`);
       } else {
         // DON'T mark filtered receipts as parsed - keep them available for retry
         console.log(`  ⏭️ Filtered/skipped receipt - keeping unparsed for potential retry`);

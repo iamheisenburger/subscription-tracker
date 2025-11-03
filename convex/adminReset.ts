@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // ADMIN ONLY: Reset email detection system for a user
 export const resetEmailDetectionForUser = mutation({
@@ -167,6 +168,193 @@ export const resetParsedFlagsForUser = mutation({
         connections: connections.length,
       },
       message: `Reset ${resetCount} receipts. User can now trigger a new scan to reprocess.`,
+    };
+  },
+});
+
+// ADMIN ONLY: Batch-safe reset of parsed flags to handle large datasets without hitting Convex limits
+export const resetParsedFlagsBatchSafe = mutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    console.log(`🔧 BATCH-SAFE RESET: Starting for user ${args.clerkUserId}`);
+
+    // Get the user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error(`User not found: ${args.clerkUserId}`);
+    }
+
+    console.log(`👤 Found user: ${user.email}, tier: ${user.tier}`);
+
+    // Count total receipts to process
+    const allReceipts = await ctx.db
+      .query("emailReceipts")
+      .filter((q) => q.eq(q.field("userId"), user._id))
+      .collect();
+
+    const totalReceipts = allReceipts.length;
+    console.log(`📄 Found ${totalReceipts} total receipts`);
+
+    // Delete detection candidates first (smaller dataset)
+    const candidates = await ctx.db
+      .query("detectionCandidates")
+      .filter((q) => q.eq(q.field("userId"), user._id))
+      .collect();
+
+    console.log(`🎯 Deleting ${candidates.length} detection candidates`);
+    for (const candidate of candidates) {
+      await ctx.db.delete(candidate._id);
+    }
+
+    // Reset connection scan states
+    const connections = await ctx.db
+      .query("emailConnections")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    for (const conn of connections) {
+      await ctx.db.patch(conn._id, {
+        scanState: "idle", // Reset to idle so user can trigger new scan
+        scanStatus: "not_started",
+        aiProcessingStatus: "not_started",
+        currentBatch: 0,
+        batchProgress: 0,
+        overallProgress: 0,
+        totalBatches: 0,
+        estimatedTimeRemaining: 0,
+        lastFullScanAt: undefined, // Clear to force full scan instead of incremental
+        pageToken: undefined, // Clear pagination token
+        totalEmailsScanned: 0,
+        totalReceiptsFound: 0,
+      });
+    }
+
+    // Schedule batch processing of receipts (100 at a time to stay under limits)
+    console.log(`🔄 Scheduling batch reset of ${totalReceipts} receipts...`);
+    await ctx.scheduler.runAfter(0, internal.adminReset.resetReceiptsBatch, {
+      userId: user._id,
+      batchNumber: 1,
+      batchSize: 100,
+    });
+
+    return {
+      success: true,
+      message: `Reset initiated for ${totalReceipts} receipts. Processing in batches of 100. Check logs for progress.`,
+      totalReceipts,
+      candidates: candidates.length,
+      connections: connections.length,
+    };
+  },
+});
+
+// INTERNAL: Process a batch of receipt resets
+export const resetReceiptsBatch = internalMutation({
+  args: {
+    userId: v.id("users"),
+    batchNumber: v.number(),
+    batchSize: v.number(),
+  },
+  handler: async (ctx, args) => {
+    console.log(`🔄 Processing batch ${args.batchNumber} (size: ${args.batchSize})`);
+
+    // Get next batch of receipts
+    const receipts = await ctx.db
+      .query("emailReceipts")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .collect();
+
+    const startIdx = (args.batchNumber - 1) * args.batchSize;
+    const batchReceipts = receipts.slice(startIdx, startIdx + args.batchSize);
+
+    console.log(`📄 Resetting ${batchReceipts.length} receipts (batch ${args.batchNumber})`);
+
+    // Reset parsed flags for this batch
+    for (const receipt of batchReceipts) {
+      await ctx.db.patch(receipt._id, {
+        parsed: false,
+        merchantName: undefined,
+        amount: undefined,
+        currency: undefined,
+        billingCycle: undefined,
+        parsingConfidence: undefined,
+        parsingMethod: undefined,
+      });
+    }
+
+    // If there are more receipts, schedule next batch
+    const hasMore = receipts.length > startIdx + args.batchSize;
+    if (hasMore) {
+      console.log(`➡️  Scheduling batch ${args.batchNumber + 1}`);
+      await ctx.scheduler.runAfter(1000, internal.adminReset.resetReceiptsBatch, {
+        userId: args.userId,
+        batchNumber: args.batchNumber + 1,
+        batchSize: args.batchSize,
+      });
+    } else {
+      console.log(`✅ BATCH RESET COMPLETE! Reset ${receipts.length} receipts across ${args.batchNumber} batches`);
+    }
+
+    return {
+      batchNumber: args.batchNumber,
+      processed: batchReceipts.length,
+      hasMore,
+    };
+  },
+});
+
+// ADMIN ONLY: Cancel a running scan for a user
+export const cancelScan = mutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    console.log(`🛑 CANCEL SCAN: Stopping scan for user ${args.clerkUserId}`);
+
+    // Get the user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error(`User not found: ${args.clerkUserId}`);
+    }
+
+    // Get all email connections
+    const connections = await ctx.db
+      .query("emailConnections")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    console.log(`📧 Found ${connections.length} email connections`);
+
+    // Reset all connections to idle state
+    for (const conn of connections) {
+      await ctx.db.patch(conn._id, {
+        scanState: "idle",
+        scanStatus: "not_started",
+        aiProcessingStatus: "not_started",
+        currentBatch: 0,
+        batchProgress: 0,
+        overallProgress: 0,
+        totalBatches: 0,
+        estimatedTimeRemaining: 0,
+        errorMessage: undefined,
+      });
+    }
+
+    console.log(`✅ SCAN CANCELLED - All connections reset to idle state`);
+
+    return {
+      success: true,
+      message: `Scan cancelled for ${user.email}. All connections reset to idle.`,
+      connectionsReset: connections.length,
     };
   },
 });

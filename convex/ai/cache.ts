@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
 
 /**
  * AI RESPONSE CACHE
@@ -376,6 +377,3 @@ export function calculateOptimalTTL(
 
   return ttl;
 }
-
-// Export internal reference
-import { internal } from "../_generated/api";

@@ -387,6 +387,15 @@ export const runPatternBasedDetection = internalMutation({
       const latestReceipt = sortedReceipts[0];
       const latestReceiptDate = latestReceipt.receivedAt;
 
+      // Find first receipt with a valid amount (critical for schema compliance)
+      const receiptWithAmount = sortedReceipts.find(r => r.amount !== undefined && r.amount !== null);
+
+      // Skip this merchant if no receipt has an amount - can't create valid detection candidate
+      if (!receiptWithAmount) {
+        console.log(`  ⏭️  SKIPPED: ${merchantName} - No receipts with valid amounts`);
+        continue;
+      }
+
       // CRITICAL: Infer billing cycle FIRST to apply appropriate time thresholds
       // Annual subscriptions need different thresholds than monthly
       const inferredCycle = inferBillingCycle(sortedReceipts);
@@ -430,8 +439,8 @@ export const runPatternBasedDetection = internalMutation({
         console.log(`  ✅ ACTIVE (recent): ${merchantName} - Last receipt ${daysAgo} days ago (${billingCycle} cycle)`);
         activeSubscriptions.push({
           merchantName,
-          amount: latestReceipt.amount!,
-          currency: latestReceipt.currency || "USD",
+          amount: receiptWithAmount.amount!,
+          currency: receiptWithAmount.currency || "USD",
           billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
@@ -457,8 +466,8 @@ export const runPatternBasedDetection = internalMutation({
         console.log(`  ✅ ACTIVE (recurring pattern): ${merchantName} - ${sortedReceipts.length} receipts, last ${daysAgo} days ago (${billingCycle} cycle)`);
         activeSubscriptions.push({
           merchantName,
-          amount: latestReceipt.amount!,
-          currency: latestReceipt.currency || "USD",
+          amount: receiptWithAmount.amount!,
+          currency: receiptWithAmount.currency || "USD",
           billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,
@@ -470,8 +479,8 @@ export const runPatternBasedDetection = internalMutation({
         console.log(`  ⚠️  UNCERTAIN: ${merchantName} - Last receipt ${daysAgo} days ago, no clear pattern (${billingCycle} cycle)`);
         activeSubscriptions.push({
           merchantName,
-          amount: latestReceipt.amount!,
-          currency: latestReceipt.currency || "USD",
+          amount: receiptWithAmount.amount!,
+          currency: receiptWithAmount.currency || "USD",
           billingCycle,
           lastReceiptDate: latestReceiptDate,
           receiptCount: sortedReceipts.length,

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalQuery, internalAction, internalMutation } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
 import { generateContentHash, getCachedResponse, cacheResponse } from "./cache";
 import { API_PRICING } from "../monitoring/costTracker";
 
@@ -529,6 +530,3 @@ function normalizeBillingCycle(cycle?: string): string {
 
   return 'monthly'; // Default
 }
-
-// Export internal reference
-import { internal } from "../_generated/api";

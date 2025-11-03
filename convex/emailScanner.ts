@@ -457,7 +457,7 @@ function decodeBase64(encoded: string): string {
 /**
  * Get connection by ID (for actions)
  */
-export const getConnectionById = internalMutation({
+export const getConnectionById = internalQuery({
   args: {
     connectionId: v.id("emailConnections"),
   },
@@ -707,19 +707,7 @@ export const storeEmailReceipt = internalMutation({
 export const updateScanStateMachine = internalMutation({
   args: {
     connectionId: v.id("emailConnections"),
-    scanState: v.union(
-      v.literal("idle"),
-      v.literal("scanning_gmail"),
-      v.literal("processing_batch_1"),
-      v.literal("processing_batch_2"),
-      v.literal("processing_batch_3"),
-      v.literal("processing_batch_4"),
-      v.literal("processing_batch_5"),
-      v.literal("processing_batch_6"),
-      v.literal("processing_batch_7"),
-      v.literal("complete"),
-      v.literal("error")
-    ),
+    scanState: v.optional(v.string()),
     totalBatches: v.optional(v.number()),
     currentBatch: v.optional(v.number()),
     batchProgress: v.optional(v.number()),

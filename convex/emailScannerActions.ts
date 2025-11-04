@@ -14,6 +14,7 @@ import { v } from "convex/values";
 import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import { isSubscriptionEmail } from "./scanning/smartFilter";
 
 /**
  * Scan Gmail for receipts using Gmail API
@@ -97,11 +98,11 @@ export const scanGmailForReceipts = internalAction({
         console.log(`💰 INCREMENTAL SCAN: Only fetching NEW emails after ${new Date(connection.lastFullScanAt).toISOString()}`);
         console.log(`💰 Expected: ~20-50 new emails (cost: $0.04-0.10)`);
       } else {
-        // FULL SCAN: Get all subscription emails from last 5 years
-        const fiveYearsAgo = Math.floor((now - 5 * 365 * 24 * 60 * 60 * 1000) / 1000);
-        timeFilter = ` after:${fiveYearsAgo}`;
-        console.log(`📧 FULL INBOX SCAN: Merchant-based search from last 5 years${args.forceFullScan ? " (FORCED by user)" : ""}`);
-        console.log(`📧 Expected: 150-200 emails (cost: $0.30-0.40) - 90% cheaper than broad search!`);
+        // FULL SCAN: Get subscription emails from last 12 MONTHS (captures annual subscriptions!)
+        const twelveMonthsAgo = Math.floor((now - 12 * 30 * 24 * 60 * 60 * 1000) / 1000);
+        timeFilter = ` after:${twelveMonthsAgo}`;
+        console.log(`📧 FULL INBOX SCAN: Merchant-based search from last 12 MONTHS${args.forceFullScan ? " (FORCED by user)" : ""}`);
+        console.log(`📧 Expected: 200-300 emails (cost: $0.40-0.60) - Captures annual subscriptions!`);
       }
 
       // Split domains into batches of 15 (Gmail limit: ~1,500 chars, <20 OR terms)
@@ -161,12 +162,13 @@ export const scanGmailForReceipts = internalAction({
       }
 
       console.log(`🎯 MERCHANT-BASED SEARCH COMPLETE: ${allMessageIds.size} unique emails found`);
-      console.log(`📊 Comparison: Old approach = 1,465 emails | New approach = ${allMessageIds.size} emails | Reduction: ${Math.round((1 - allMessageIds.size / 1465) * 100)}%`);
+      console.log(`📊 Comparison: Old approach = 1,465 emails | New approach = ${allMessageIds.size} emails`);
 
       // Convert Set to array for processing
       const messages = Array.from(allMessageIds).map(id => ({ id }));
 
-      console.log(`📧 Ready to process ${messages.length} unique emails`);
+      console.log(`📧 Downloading ${messages.length} emails...`);
+      console.log(`🧠 Smart filter will reduce these to subscription-likely emails only`);
 
       // For now, we process all messages in one go (no pagination between batches)
       // Future optimization: Could implement pagination if message count exceeds threshold
@@ -248,7 +250,28 @@ export const scanGmailForReceipts = internalAction({
             body = decodeBase64(messageData.payload.body.data);
           }
 
-          // Store raw email in database via mutation
+          // ============================================================================
+          // SMART PRE-FILTER: Check if this looks like a subscription email
+          // Reduces 2,000 emails → 200-300 subscription-likely emails
+          // Cost savings: ~$4-5 per scan (skip non-subscription emails)
+          // ============================================================================
+          const filterResult = isSubscriptionEmail({
+            subject,
+            body,
+            from,
+          });
+
+          processedCount++; // Count all downloaded emails
+
+          // ONLY store if subscription-likely (high or medium confidence)
+          if (!filterResult.isSubscriptionLikely) {
+            console.log(`⏭️  Skipped (${filterResult.reason}): ${subject.substring(0, 50)}`);
+            continue; // Skip this email - don't store, don't parse with AI
+          }
+
+          console.log(`✅ Kept (${filterResult.confidence}): ${subject.substring(0, 50)}`);
+
+          // Store subscription-likely email in database
           await ctx.runMutation(internal.emailScanner.storeEmailReceipt, {
             userId: connection.userId,
             connectionId: connection._id,
@@ -259,8 +282,7 @@ export const scanGmailForReceipts = internalAction({
             rawBody: body.substring(0, 50000), // Limit to 50KB
           });
 
-          newReceiptsCount++;
-          processedCount++;
+          newReceiptsCount++; // Count subscription-likely emails
 
           // Gmail API returns max 50 messages per page - process all of them
           // The while loop in triggerUserEmailScan will continue to next page

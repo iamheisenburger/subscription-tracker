@@ -112,8 +112,17 @@ function shouldSkipAI(text: string, subject: string): boolean {
  * Only filters out obvious non-subscriptions
  */
 function isSubscriptionReceipt(text: string, subject: string): boolean {
+  // Debug Anthropic receipts at the START
+  if (subject.includes("anthropic") && subject.includes("receipt")) {
+    console.log(`🐛 ENTRY - Anthropic receipt: "${subject.substring(0, 60)}"`);
+    console.log(`   text length: ${text.length}, subject length: ${subject.length}`);
+  }
+
   // AGGRESSIVE PRE-FILTER: Skip obvious non-subscriptions before any other checks
   if (shouldSkipAI(text, subject)) {
+    if (subject.includes("anthropic") && subject.includes("receipt")) {
+      console.log(`🐛 Skipped by shouldSkipAI!`);
+    }
     return false; // Filtered out by aggressive pre-filter
   }
 
@@ -137,6 +146,9 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
   );
 
   if (isCancelled) {
+    if (subject.includes("anthropic") && subject.includes("receipt")) {
+      console.log(`🐛 Rejected by cancellation patterns!`);
+    }
     return false; // Skip cancelled subscriptions
   }
 
@@ -162,10 +174,18 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
   );
 
   if (isExcluded) {
+    if (subject.includes("anthropic") && subject.includes("receipt")) {
+      console.log(`🐛 Rejected by exclude patterns!`);
+    }
     return false;
   }
 
+  // WHITELIST: Stripe receipts are ALWAYS subscriptions - bypass one-time purchase check
+  // Stripe format: "Your receipt from [Merchant]" or "Your invoice from [Merchant]"
+  const isStripeReceipt = /(?:your\s+(?:receipt|invoice)\s+from)\s+\w+/i.test(subject);
+
   // EXCLUDE: One-time purchase indicators (even if they have "receipt")
+  // BUT: Skip this check for Stripe receipts - they're always subscriptions
   const oneTimePurchaseIndicators = [
     /\bone[\s-]?time\b/i,
     /\bsingle\s+payment/i,
@@ -177,11 +197,14 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     /\bdelivery\s+confirmation/i,
   ];
 
-  const isOneTimePurchase = oneTimePurchaseIndicators.some((pattern) =>
+  const isOneTimePurchase = !isStripeReceipt && oneTimePurchaseIndicators.some((pattern) =>
     pattern.test(text) || pattern.test(subject)
   );
 
   if (isOneTimePurchase) {
+    if (subject.includes("anthropic") && subject.includes("receipt")) {
+      console.log(`🐛 Rejected by one-time purchase indicators!`);
+    }
     return false; // Explicit one-time purchase - reject
   }
 
@@ -255,11 +278,27 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
 
   // RELAXED FILTER: Accept if:
   // 1. Has explicit subscription keyword, OR
-  // 2. Is from a known service (even without receipt keyword - let AI decide)
+  // 2. Has receipt/payment keywords (invoice, receipt, payment received, etc.), OR
+  // 3. Is from a known service (even without receipt keyword - let AI decide)
   //
-  // This ensures ChatGPT, Spotify, Perplexity, etc. always make it to AI analysis
-  // The AI will determine if it's actually a subscription or not
-  return hasSubscriptionKeyword || isKnownService;
+  // This ensures ALL receipt emails are processed, including:
+  // - Stripe receipts: "Your receipt from Anthropic/Vercel/X"
+  // - Invoice emails: "Your invoice from Apple"
+  // - Payment confirmations: "Payment received from Microsoft"
+  // - Known services: ChatGPT, Spotify, Perplexity, etc.
+
+  const result = hasSubscriptionKeyword || hasReceiptKeyword || isKnownService;
+
+  // Debug logging for Anthropic receipts that are mysteriously being skipped
+  if (subject.toLowerCase().includes("anthropic") && subject.toLowerCase().includes("receipt")) {
+    console.log(`🐛 DEBUG Anthropic receipt: "${subject.substring(0, 60)}"`);
+    console.log(`   hasSubscriptionKeyword: ${hasSubscriptionKeyword}`);
+    console.log(`   hasReceiptKeyword: ${hasReceiptKeyword}`);
+    console.log(`   isKnownService: ${isKnownService}`);
+    console.log(`   RESULT: ${result}`);
+  }
+
+  return result;
 }
 
 /**
@@ -444,13 +483,23 @@ export const parseUnparsedReceipts = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .take(500); // Get all receipts to parse
 
+    console.log(`🔍 Fetched ${allReceipts.length} total receipts`);
+    console.log(`🔍 Unparsed: ${allReceipts.filter(r => !r.parsed).length}`);
+    console.log(`🔍 Parsed but no/invalid merchantName: ${allReceipts.filter(r => r.parsed && (!r.merchantName || r.merchantName === "NULL" || r.merchantName === "")).length}`);
+    console.log(`🔍 Parsed with valid merchantName: ${allReceipts.filter(r => r.parsed && r.merchantName && r.merchantName !== "NULL" && r.merchantName !== "").length}`);
+
     const receiptsToProcess = allReceipts.filter(
       (receipt) =>
         // Either not parsed yet
         !receipt.parsed ||
-        // Or marked as parsed but missing critical data (broken parse)
-        (!receipt.merchantName && !receipt.amount)
+        // Or marked as parsed but missing merchantName (broken parse)
+        !receipt.merchantName ||
+        receipt.merchantName === "" ||
+        receipt.merchantName === null ||
+        receipt.merchantName === "NULL" // Catch string "NULL" from broken parses
     ).slice(0, 100); // Process 100 receipts at a time
+
+    console.log(`🎯 Filter matched ${receiptsToProcess.length} receipts to process`);
 
     if (receiptsToProcess.length === 0) {
       console.log("📋 No receipts need parsing (all receipts have valid data)");
@@ -542,10 +591,11 @@ export const countUnparsedReceipts = internalMutation({
       return { count: 0, totalReceipts: 0 };
     }
 
+    // LIMIT to 1000 to prevent 16MB query error
     const allReceipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(1000);
 
     const unparsedCount = allReceipts.filter(
       (receipt) =>
@@ -640,141 +690,235 @@ export const saveParsingResults = internalMutation({
 
 /**
  * Extract merchant name from email
+ * PRIORITY: Subject line → Email domain → Known merchant patterns (fallback)
  */
 function extractMerchant(
   text: string,
   from: string,
   subject: string
 ): { name: string | null; confidence: number } {
-  // Known merchant patterns (most common subscription services)
+  // STEP 1: Extract from SUBJECT LINE (highest priority, most reliable)
+  // Stripe format: "Your receipt from Anthropic, PBC #2864-6784-4869"
+  // Invoice format: "Your invoice from Apple"
+  // Alternative: "Your Netflix receipt"
+
+  // Pattern 1: "Your receipt from [MERCHANT]" or "Your invoice from [MERCHANT]"
+  const stripePattern = /(?:receipt|invoice)\s+from\s+([^#\n]+?)(?:\s*#|\s*$)/i;
+  const stripeMatch = subject.match(stripePattern);
+  if (stripeMatch) {
+    let merchant = stripeMatch[1].trim();
+    // Clean up common suffixes: "Anthropic, PBC" → "Anthropic"
+    merchant = merchant.replace(/,?\s*(Inc\.?|LLC\.?|Ltd\.?|PBC|Corporation|Corp\.?)$/i, "").trim();
+    if (merchant.length > 2 && merchant.length < 50) {
+      console.log(`✅ Extracted merchant from subject: "${merchant}"`);
+      return { name: merchant, confidence: 0.95 };
+    }
+  }
+
+  // Pattern 2: "Your [MERCHANT] receipt/invoice/payment"
+  const standardPattern = /your\s+([A-Za-z0-9\s]+?)\s+(?:receipt|invoice|payment|subscription)/i;
+  const standardMatch = subject.match(standardPattern);
+  if (standardMatch) {
+    const merchant = standardMatch[1].trim();
+    if (merchant.length > 2 && merchant.length < 50) {
+      console.log(`✅ Extracted merchant from subject: "${merchant}"`);
+      return { name: merchant, confidence: 0.9 };
+    }
+  }
+
+  // Pattern 3: "[MERCHANT] receipt/invoice"
+  const simplePattern = /^([A-Za-z0-9\s]+?)\s+(?:receipt|invoice)/i;
+  const simpleMatch = subject.match(simplePattern);
+  if (simpleMatch) {
+    const merchant = simpleMatch[1].trim();
+    if (merchant.length > 2 && merchant.length < 50) {
+      console.log(`✅ Extracted merchant from subject: "${merchant}"`);
+      return { name: merchant, confidence: 0.85 };
+    }
+  }
+
+  // STEP 2: Extract from EMAIL DOMAIN (second priority)
+  // Handle subdomains: invoice@mail.anthropic.com → anthropic
+  // Handle direct: noreply@spotify.com → spotify
+
+  // Try to extract full domain first (handle subdomains)
+  const fullDomainMatch = from.match(/@(?:[a-zA-Z0-9-]+\.)*([a-zA-Z0-9-]+)\.[a-zA-Z]{2,}/);
+  if (fullDomainMatch) {
+    const mainDomain = fullDomainMatch[1];
+    const genericDomains = ["gmail", "yahoo", "outlook", "hotmail", "email", "noreply", "stripe", "mail"];
+    if (!genericDomains.includes(mainDomain.toLowerCase())) {
+      // Capitalize first letter
+      const name = mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
+      console.log(`✅ Extracted merchant from email domain: "${name}"`);
+      return { name, confidence: 0.75 };
+    }
+  }
+
+  // STEP 3: Check known merchant patterns (FALLBACK ONLY, check against SUBJECT only)
+  // This prevents false matches from email body
   const knownMerchants = [
     { pattern: /netflix/i, name: "Netflix" },
     { pattern: /spotify/i, name: "Spotify" },
-    { pattern: /apple\s*(music|tv|arcade|one)/i, name: "Apple" },
-    { pattern: /amazon\s*prime/i, name: "Amazon Prime" },
-    { pattern: /disney\+|disneyplus/i, name: "Disney+" },
-    { pattern: /hbo\s*max/i, name: "HBO Max" },
-    { pattern: /hulu/i, name: "Hulu" },
-    { pattern: /youtube\s*(premium|music)/i, name: "YouTube Premium" },
+    { pattern: /apple\s*(?:music|tv|arcade|one|icloud)?/i, name: "Apple" },
     { pattern: /microsoft\s*365/i, name: "Microsoft 365" },
     { pattern: /adobe/i, name: "Adobe" },
-    { pattern: /dropbox/i, name: "Dropbox" },
-    { pattern: /google\s*(one|workspace)/i, name: "Google One" },
-    { pattern: /icloud/i, name: "iCloud" },
+    { pattern: /anthropic/i, name: "Anthropic" },
+    { pattern: /vercel/i, name: "Vercel" },
+    { pattern: /cursor/i, name: "Cursor" },
+    { pattern: /openai|chatgpt/i, name: "OpenAI" },
+    { pattern: /perplexity/i, name: "Perplexity" },
+    { pattern: /github/i, name: "GitHub" },
+    { pattern: /canva/i, name: "Canva" },
     { pattern: /notion/i, name: "Notion" },
+    { pattern: /figma/i, name: "Figma" },
     { pattern: /slack/i, name: "Slack" },
     { pattern: /zoom/i, name: "Zoom" },
-    { pattern: /github/i, name: "GitHub" },
+    { pattern: /dropbox/i, name: "Dropbox" },
+    { pattern: /google\s*(?:one|workspace)/i, name: "Google" },
+    { pattern: /youtube\s*(?:premium|music)/i, name: "YouTube Premium" },
+    { pattern: /amazon\s*prime/i, name: "Amazon Prime" },
+    { pattern: /disney\+|disneyplus/i, name: "Disney+" },
+    { pattern: /hulu/i, name: "Hulu" },
     { pattern: /linkedin\s*premium/i, name: "LinkedIn Premium" },
-    { pattern: /canva/i, name: "Canva" },
-    { pattern: /grammarly/i, name: "Grammarly" },
-    { pattern: /nordvpn|expressvpn|protonvpn/i, name: "VPN Service" },
-    { pattern: /new york times|nytimes/i, name: "New York Times" },
-    { pattern: /washington post/i, name: "Washington Post" },
-    { pattern: /audible/i, name: "Audible" },
-    { pattern: /kindle unlimited/i, name: "Kindle Unlimited" },
-    { pattern: /peloton/i, name: "Peloton" },
-    { pattern: /headspace|calm/i, name: "Meditation App" },
-    { pattern: /duolingo/i, name: "Duolingo" },
-    { pattern: /coursera|udemy|skillshare/i, name: "Online Learning" },
-    { pattern: /patreon/i, name: "Patreon" },
-    { pattern: /onlyfans/i, name: "OnlyFans" },
-    { pattern: /squarespace|wix|wordpress/i, name: "Website Builder" },
-    { pattern: /mailchimp/i, name: "Mailchimp" },
-    { pattern: /salesforce/i, name: "Salesforce" },
-    { pattern: /hubspot/i, name: "HubSpot" },
-    { pattern: /shopify/i, name: "Shopify" },
-    { pattern: /quickbooks/i, name: "QuickBooks" },
-    { pattern: /dashlane|1password|lastpass/i, name: "Password Manager" },
-    { pattern: /evernote/i, name: "Evernote" },
-    { pattern: /trello|asana|monday\.com/i, name: "Project Management" },
-    { pattern: /figma/i, name: "Figma" },
-    { pattern: /cloudflare/i, name: "Cloudflare" },
-    { pattern: /aws|amazon web services/i, name: "AWS" },
-    { pattern: /vercel/i, name: "Vercel" },
-    { pattern: /heroku/i, name: "Heroku" },
-    { pattern: /twilio/i, name: "Twilio" },
-    { pattern: /stripe/i, name: "Stripe" },
   ];
 
-  // Check known merchants first (high confidence)
+  // Check against SUBJECT + FROM only (NOT full email body to avoid false matches)
+  const searchText = `${subject} ${from}`;
   for (const merchant of knownMerchants) {
-    if (merchant.pattern.test(text) || merchant.pattern.test(from)) {
-      return { name: merchant.name, confidence: 0.95 };
+    if (merchant.pattern.test(searchText)) {
+      console.log(`✅ Matched known merchant: "${merchant.name}"`);
+      return { name: merchant.name, confidence: 0.7 };
     }
   }
 
-  // Try to extract from "from" email address
-  // Example: noreply@spotify.com → Spotify
-  const emailMatch = from.match(/@([a-zA-Z0-9-]+)\./);
-  if (emailMatch) {
-    const domain = emailMatch[1];
-    // Filter out generic domains
-    const genericDomains = ["gmail", "yahoo", "outlook", "hotmail", "mail", "email", "noreply"];
-    if (!genericDomains.includes(domain.toLowerCase())) {
-      // Capitalize first letter
-      const name = domain.charAt(0).toUpperCase() + domain.slice(1);
-      return { name, confidence: 0.7 };
+  // STEP 4: Last resort - try subdomain extraction
+  const subdomainMatch = from.match(/@([a-zA-Z0-9-]+)\./);
+  if (subdomainMatch) {
+    const subdomain = subdomainMatch[1];
+    const genericDomains = ["gmail", "yahoo", "outlook", "hotmail", "mail", "email", "noreply", "no-reply", "notifications", "receipts", "invoice", "invoices", "billing"];
+    if (!genericDomains.includes(subdomain.toLowerCase())) {
+      const name = subdomain.charAt(0).toUpperCase() + subdomain.slice(1);
+      console.log(`⚠️ Using subdomain as fallback: "${name}"`);
+      return { name, confidence: 0.4 };
     }
   }
 
-  // Try to extract from subject line
-  // Example: "Your Netflix receipt" → Netflix
-  const subjectMatch = subject.match(/(?:your|from)\s+([A-Z][a-zA-Z0-9\s]+?)(?:\s+(?:receipt|invoice|payment|subscription))/i);
-  if (subjectMatch) {
-    const name = subjectMatch[1].trim();
-    if (name.length > 2 && name.length < 30) {
-      return { name, confidence: 0.6 };
-    }
-  }
-
-  // Last resort: use domain from email
-  if (emailMatch) {
-    const domain = emailMatch[1];
-    const name = domain.charAt(0).toUpperCase() + domain.slice(1);
-    return { name, confidence: 0.4 };
-  }
-
+  console.log(`❌ Could not extract merchant name from: "${subject}"`);
   return { name: null, confidence: 0 };
 }
 
 /**
  * Extract amount and currency from email text
+ * CRITICAL FIX: Only extract from RECEIPT context, not promotional prices
  */
 function extractAmount(text: string): { amount: number | null; currency: string } {
-  // Currency patterns
-  const currencyPatterns = [
-    { symbol: "$", code: "USD", pattern: /\$\s*(\d+(?:[.,]\d{2})?)/ },
-    { symbol: "£", code: "GBP", pattern: /£\s*(\d+(?:[.,]\d{2})?)/ },
-    { symbol: "€", code: "EUR", pattern: /€\s*(\d+(?:[.,]\d{2})?)/ },
-    { symbol: "USD", code: "USD", pattern: /(\d+(?:[.,]\d{2})?)\s*USD/ },
-    { symbol: "GBP", code: "GBP", pattern: /(\d+(?:[.,]\d{2})?)\s*GBP/ },
-    { symbol: "EUR", code: "EUR", pattern: /(\d+(?:[.,]\d{2})?)\s*EUR/ },
+  // STEP 1: Reject emails with promotional/marketing indicators
+  const promotionalPatterns = [
+    /save\s+(?:up\s+to\s+)?\$?\d+/i,
+    /get\s+\d+%\s+off/i,
+    /only\s+\$?\d+/i,
+    /just\s+\$?\d+/i,
+    /\d+%\s+off/i,
+    /special\s+offer/i,
+    /limited\s+time/i,
+    /sale\s+price/i,
+    /promotional\s+price/i,
+    /discount/i,
+    /pre-?order/i,
+    /flash\s+sale/i,
   ];
 
-  // Look for amount with currency symbol
-  for (const currency of currencyPatterns) {
-    const match = text.match(currency.pattern);
+  const hasPromotionalContent = promotionalPatterns.some(p => p.test(text));
+  if (hasPromotionalContent) {
+    console.log("⚠️  Rejected: Contains promotional content");
+    return { amount: null, currency: "USD" };
+  }
+
+  // STEP 2: ONLY extract amounts with RECEIPT context
+  // These patterns REQUIRE receipt keywords near the amount
+  const receiptContextPatterns = [
+    // MICROSOFT 365: "GBP 84.99 including taxes" or "USD XX.XX including tax"
+    { pattern: /\bGBP\s*(\d+(?:[.,]\d{2})?)\s+including\s+tax/i, currency: "GBP" },
+    { pattern: /\bUSD\s*(\d+(?:[.,]\d{2})?)\s+including\s+tax/i, currency: "USD" },
+    { pattern: /\bEUR\s*(\d+(?:[.,]\d{2})?)\s+including\s+tax/i, currency: "EUR" },
+
+    // APPLE INVOICES: "Plan Price: GBP XX.XX including taxes/1 year"
+    { pattern: /plan\s+price:\s*GBP\s*(\d+(?:[.,]\d{2})?)\s+including\s+tax/i, currency: "GBP" },
+    { pattern: /plan\s+price:\s*USD\s*(\d+(?:[.,]\d{2})?)\s+including\s+tax/i, currency: "USD" },
+
+    // APPLE INVOICES: Line item amounts with VAT context (£9.99 near "Inclusive of VAT")
+    { pattern: /£\s*(\d+(?:[.,]\d{2})?)\s*\n?.*inclusive\s+of\s+vat/i, currency: "GBP" },
+    { pattern: /\$\s*(\d+(?:[.,]\d{2})?)\s*\n?.*inclusive\s+of\s+vat/i, currency: "USD" },
+    { pattern: /inclusive\s+of\s+vat.*£\s*(\d+(?:[.,]\d{2})?)/i, currency: "GBP" },
+
+    // APPLE INVOICES: Subtotal format
+    { pattern: /subtotal\s+£\s*(\d+(?:[.,]\d{2})?)/i, currency: "GBP" },
+    { pattern: /subtotal\s+\$\s*(\d+(?:[.,]\d{2})?)/i, currency: "USD" },
+
+    // INDIAN RUPEE support (for Adobe and other Indian subscriptions)
+    { pattern: /₹\s*(\d+(?:[.,]\d{2})?)\s+(?:incl|including)\.?\s+tax/i, currency: "INR" },
+    { pattern: /charged\s+₹\s*(\d+(?:[.,]\d{2})?)/i, currency: "INR" },
+    { pattern: /total\s+₹\s*(\d+(?:[.,]\d{2})?)/i, currency: "INR" },
+
+    // HIGHEST PRIORITY: Stripe receipt format "Receipt from X $20.00 Paid"
+    // This is the most common subscription receipt format
+    { pattern: /\$\s*(\d+(?:[.,]\d{2})?)\s+paid/i, currency: "USD" },
+    { pattern: /£\s*(\d+(?:[.,]\d{2})?)\s+paid/i, currency: "GBP" },
+    { pattern: /€\s*(\d+(?:[.,]\d{2})?)\s+paid/i, currency: "EUR" },
+    { pattern: /paid\s+\$\s*(\d+(?:[.,]\d{2})?)/i, currency: "USD" },
+    { pattern: /paid\s+£\s*(\d+(?:[.,]\d{2})?)/i, currency: "GBP" },
+    { pattern: /paid\s+€\s*(\d+(?:[.,]\d{2})?)/i, currency: "EUR" },
+
+    // "Payment received: $20.00"
+    { pattern: /(?:payment|charge)\s+(?:received|processed|confirmed)[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
+    { pattern: /(?:payment|charge)\s+(?:received|processed|confirmed)[\s:]+£\s*(\d+(?:[.,]\d{2})?)/, currency: "GBP" },
+    { pattern: /(?:payment|charge)\s+(?:received|processed|confirmed)[\s:]+€\s*(\d+(?:[.,]\d{2})?)/, currency: "EUR" },
+
+    // "Charged $20.00" or "Billed $20.00"
+    { pattern: /(?:charged|billed)[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
+    { pattern: /(?:charged|billed)[\s:]+£\s*(\d+(?:[.,]\d{2})?)/, currency: "GBP" },
+    { pattern: /(?:charged|billed)[\s:]+€\s*(\d+(?:[.,]\d{2})?)/, currency: "EUR" },
+
+    // "Total: $20.00"
+    { pattern: /total[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
+    { pattern: /total[\s:]+£\s*(\d+(?:[.,]\d{2})?)/, currency: "GBP" },
+    { pattern: /total[\s:]+€\s*(\d+(?:[.,]\d{2})?)/, currency: "EUR" },
+
+    // "Amount: $20.00"
+    { pattern: /amount[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
+    { pattern: /amount[\s:]+£\s*(\d+(?:[.,]\d{2})?)/, currency: "GBP" },
+    { pattern: /amount[\s:]+€\s*(\d+(?:[.,]\d{2})?)/, currency: "EUR" },
+
+    // "Invoice for $20.00"
+    { pattern: /invoice\s+(?:for|total|amount)[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
+    { pattern: /invoice\s+(?:for|total|amount)[\s:]+£\s*(\d+(?:[.,]\d{2})?)/, currency: "GBP" },
+    { pattern: /invoice\s+(?:for|total|amount)[\s:]+€\s*(\d+(?:[.,]\d{2})?)/, currency: "EUR" },
+
+    // "Receipt: $20.00" or "Receipt from X $20.00"
+    { pattern: /receipt(?:\s+from\s+[\w\s,\.]+)?[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
+    { pattern: /receipt(?:\s+from\s+[\w\s,\.]+)?[\s:]+£\s*(\d+(?:[.,]\d{2})?)/, currency: "GBP" },
+    { pattern: /receipt(?:\s+from\s+[\w\s,\.]+)?[\s:]+€\s*(\d+(?:[.,]\d{2})?)/, currency: "EUR" },
+
+    // "$20.00 USD" format (amount followed by currency code)
+    { pattern: /(\d+(?:[.,]\d{2})?)\s*USD/i, currency: "USD" },
+    { pattern: /(\d+(?:[.,]\d{2})?)\s*GBP/i, currency: "GBP" },
+    { pattern: /(\d+(?:[.,]\d{2})?)\s*EUR/i, currency: "EUR" },
+  ];
+
+  // Try RECEIPT context patterns first (highest priority)
+  for (const { pattern, currency } of receiptContextPatterns) {
+    const match = text.match(pattern);
     if (match) {
       const amountStr = match[1].replace(",", ".");
       const amount = parseFloat(amountStr);
       if (amount > 0 && amount < 10000) {
-        // Reasonable subscription range
-        return { amount, currency: currency.code };
+        console.log(`✅ Extracted ${amount} ${currency} from receipt context`);
+        return { amount, currency };
       }
     }
   }
 
-  // Fallback: look for "total" or "amount" with number
-  const totalMatch = text.match(/(?:total|amount|charged|paid)[\s:]*\$?\s*(\d+(?:[.,]\d{2})?)/i);
-  if (totalMatch) {
-    const amountStr = totalMatch[1].replace(",", ".");
-    const amount = parseFloat(amountStr);
-    if (amount > 0 && amount < 10000) {
-      return { amount, currency: "USD" }; // Default to USD
-    }
-  }
-
+  console.log("⚠️  No receipt context found - rejected");
   return { amount: null, currency: "USD" };
 }
 

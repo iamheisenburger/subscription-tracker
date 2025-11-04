@@ -4,7 +4,6 @@
  */
 
 export type FeatureFlag =
-  | "bank_integrations"
   | "email_parsing"
   | "cancel_assistant";
 
@@ -26,16 +25,10 @@ export interface FeatureFlagConfig {
  * Update these to control feature rollout
  */
 export const FEATURE_FLAGS: Record<FeatureFlag, FeatureFlagConfig> = {
-  bank_integrations: {
-    enabled: true,
-    description: "Bank account connections via Plaid",
-    rolloutPercentage: 100,
-    allowedTiers: ["automate_1"],
-  },
   email_parsing: {
-    enabled: false, // Phase 2
+    enabled: true,
     description: "Gmail/Outlook receipt parsing",
-    rolloutPercentage: 0,
+    rolloutPercentage: 100,
     allowedTiers: ["automate_1"],
   },
   cancel_assistant: {

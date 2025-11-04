@@ -8,13 +8,8 @@ import type { UserTier } from "./feature-flags";
 export interface PlanEntitlement {
   tier: UserTier;
   displayName: string;
-  // Bank integration limits
-  connectionsIncluded: number; // Number of free bank connections
-  connectionOveragePrice: number; // Price per additional connection ($/mo)
-  canLinkBanks: boolean; // Whether tier allows bank connections
-  maxAccountsPerConnection: number; // Accounts per institution link
-  syncFrequency: "manual" | "daily" | "hourly";
-  maxHistoryMonths: number; // Transaction history window
+  // Email connection limits
+  emailConnectionsIncluded: number; // Number of email accounts that can be connected
   // Profile & org limits
   profilesLimit: number;
   seatsIncluded: number; // For teams
@@ -41,13 +36,8 @@ export const PLAN_ENTITLEMENTS: Record<UserTier, PlanEntitlement> = {
   free_user: {
     tier: "free_user",
     displayName: "Free - Track",
-    // Bank integration
-    connectionsIncluded: 0,
-    connectionOveragePrice: 0,
-    canLinkBanks: false,
-    maxAccountsPerConnection: 0,
-    syncFrequency: "manual",
-    maxHistoryMonths: 0,
+    // Email connections
+    emailConnectionsIncluded: 0,
     // Profiles
     profilesLimit: 1,
     seatsIncluded: 1,
@@ -74,13 +64,8 @@ export const PLAN_ENTITLEMENTS: Record<UserTier, PlanEntitlement> = {
   premium_user: {
     tier: "premium_user",
     displayName: "Premium (Legacy)",
-    // Bank integration
-    connectionsIncluded: 0,
-    connectionOveragePrice: 0,
-    canLinkBanks: false,
-    maxAccountsPerConnection: 0,
-    syncFrequency: "manual",
-    maxHistoryMonths: 0,
+    // Email connections
+    emailConnectionsIncluded: 0,
     // Profiles
     profilesLimit: 1,
     seatsIncluded: 1,
@@ -106,13 +91,8 @@ export const PLAN_ENTITLEMENTS: Record<UserTier, PlanEntitlement> = {
   plus: {
     tier: "plus",
     displayName: "Plus",
-    // Bank integration
-    connectionsIncluded: 0,
-    connectionOveragePrice: 0,
-    canLinkBanks: false,
-    maxAccountsPerConnection: 0,
-    syncFrequency: "manual",
-    maxHistoryMonths: 0,
+    // Email connections
+    emailConnectionsIncluded: 0,
     // Profiles
     profilesLimit: 1,
     seatsIncluded: 1,
@@ -138,13 +118,8 @@ export const PLAN_ENTITLEMENTS: Record<UserTier, PlanEntitlement> = {
   automate_1: {
     tier: "automate_1",
     displayName: "Automate",
-    // Bank integration
-    connectionsIncluded: 1,
-    connectionOveragePrice: 0, // No overages in v1
-    canLinkBanks: true,
-    maxAccountsPerConnection: 3,
-    syncFrequency: "daily",
-    maxHistoryMonths: 24,
+    // Email connections
+    emailConnectionsIncluded: 1,
     // Profiles
     profilesLimit: 1,
     seatsIncluded: 1,
@@ -177,43 +152,7 @@ export function getPlanEntitlement(tier: UserTier): PlanEntitlement {
 }
 
 /**
- * Check if user can add another bank connection
- */
-export function canAddBankConnection(
-  tier: UserTier,
-  currentConnections: number
-): { allowed: boolean; requiresUpgrade: boolean; requiresPayment: boolean } {
-  const entitlement = getPlanEntitlement(tier);
-
-  if (!entitlement.canLinkBanks) {
-    return {
-      allowed: false,
-      requiresUpgrade: true,
-      requiresPayment: false,
-    };
-  }
-
-  if (currentConnections < entitlement.connectionsIncluded) {
-    return {
-      allowed: true,
-      requiresUpgrade: false,
-      requiresPayment: false,
-    };
-  }
-
-  // No overage in v1
-  // Future: could allow overage with payment
-
-  return {
-    allowed: false,
-    requiresUpgrade: true,
-    requiresPayment: false,
-  };
-}
-
-/**
  * Check if user can add another email connection
- * Email connections use the same limit as bank connections (connectionsIncluded)
  */
 export function canAddEmailConnection(
   tier: UserTier,
@@ -230,8 +169,7 @@ export function canAddEmailConnection(
     };
   }
 
-  // Use same connection limit as bank connections
-  const maxConnections = entitlement.connectionsIncluded;
+  const maxConnections = entitlement.emailConnectionsIncluded;
 
   if (currentEmailConnections < maxConnections) {
     return {
@@ -246,21 +184,6 @@ export function canAddEmailConnection(
     requiresUpgrade: false, // Already on correct tier, just hit limit
     maxConnections,
   };
-}
-
-/**
- * Calculate overage cost for additional connections
- */
-export function calculateConnectionOverage(
-  tier: UserTier,
-  currentConnections: number
-): number {
-  const entitlement = getPlanEntitlement(tier);
-  const overage = Math.max(
-    0,
-    currentConnections - entitlement.connectionsIncluded
-  );
-  return overage * entitlement.connectionOveragePrice;
 }
 
 /**
@@ -345,7 +268,7 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
     annualPrice: 78,
     features: [
       "Everything in Plus",
-      "1 bank connection (up to 3 accounts)",
+      "1 email connection",
       "Auto subscription detection",
       "Price change & duplicate alerts",
       "Email receipt parsing",

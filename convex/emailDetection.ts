@@ -107,9 +107,8 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
 
         // HANDLE RENEWAL RECEIPTS
         if (receipt.receiptType === "renewal") {
-          // Update last charge date
+          // Update timestamp
           await ctx.db.patch(existingSubscription._id, {
-            lastChargeAt: receipt.receivedAt,
             updatedAt: now,
           });
         }
@@ -175,6 +174,32 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         receipt.receiptType === "payment_failed"
       ) {
         console.log(`⏭️  Skipping candidate creation for ${receipt.receiptType} receipt: ${receipt.merchantName}`);
+        continue;
+      }
+
+      // ============================================================================
+      // RECENCY FILTER: Skip old receipts (likely cancelled subscriptions)
+      // This prevents creating false positive candidates for long-cancelled services
+      // ============================================================================
+
+      const receiptAge = now - receipt.receivedAt;
+      const daysSinceReceipt = receiptAge / (24 * 60 * 60 * 1000);
+
+      // Determine billing cycle for threshold
+      const billingCycle = receipt.billingCycle || "monthly";
+
+      // Apply cycle-specific age thresholds
+      let maxDaysOld: number;
+      if (billingCycle === "yearly") {
+        maxDaysOld = 450; // 15 months for annual subscriptions
+      } else if (billingCycle === "weekly") {
+        maxDaysOld = 45; // 1.5 months for weekly subscriptions
+      } else {
+        maxDaysOld = 90; // 3 months for monthly subscriptions
+      }
+
+      if (daysSinceReceipt > maxDaysOld) {
+        console.log(`⏭️  Skipping old receipt (${Math.floor(daysSinceReceipt)} days old, ${billingCycle}): ${receipt.merchantName}`);
         continue;
       }
 

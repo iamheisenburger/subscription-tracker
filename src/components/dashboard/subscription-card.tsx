@@ -196,8 +196,8 @@ export function SubscriptionCard({
                   </Link>
                 )}
 
-                {/* Duplicate alert - only for detected subscriptions with bank data */}
-                {isAutomate && subscription.source === "detected" && subscription.lastChargeAt && (
+                {/* Duplicate alert - only for detected subscriptions */}
+                {isAutomate && subscription.source === "detected" && (
                   <Link href={`/dashboard/insights?tab=alerts`}>
                     <FeatureBadge type="duplicate-alert" clickable />
                   </Link>

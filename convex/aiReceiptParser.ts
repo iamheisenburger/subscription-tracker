@@ -9,7 +9,7 @@
  * - Skip AI calls for duplicate emails (90% cost reduction on subsequent scans!)
  */
 
-import { internalAction, internalQuery, internalMutation } from "./_generated/server";
+import { internalAction, internalQuery, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -150,7 +150,7 @@ export const parseReceiptsWithAI = internalAction({
 
     // Use cached results immediately (no AI needed)
     const cachedResults = cachedReceipts.map((check: any) => ({
-      receiptId: check.receipt.receipt._id,
+      receiptId: check.receipt._id,  // FIX: was check.receipt.receipt._id
       hash: check.receipt.hash,
       ...check.cached!,
     }));
@@ -187,7 +187,14 @@ export const parseReceiptsWithAI = internalAction({
     }
 
     // SPLIT UNCACHED RECEIPTS 50/50 between providers
-    const uncachedReceiptData = uncachedReceipts.map((check: any) => check.receipt.receipt);
+    const uncachedReceiptData = uncachedReceipts
+      .map((check: any) => check.receipt)  // FIX: was check.receipt.receipt
+      .filter((r: any) => r && r._id && r.subject);  // Filter out invalid receipts
+
+    if (uncachedReceiptData.length < uncachedReceipts.length) {
+      console.warn(`⚠️ Filtered out ${uncachedReceipts.length - uncachedReceiptData.length} invalid receipts`);
+    }
+
     const midPoint = Math.ceil(uncachedReceiptData.length / 2);
     const claudeReceipts = uncachedReceiptData.slice(0, midPoint);
     const openaiReceipts = uncachedReceiptData.slice(midPoint);
@@ -204,7 +211,7 @@ export const parseReceiptsWithAI = internalAction({
     const aiResultsWithHashes = await Promise.all([...claudeResults, ...openaiResults].map(async (result: any) => {
       // Find the hash for this receipt
       const receiptWithHash = uncachedReceipts.find(
-        (check: any) => check.receipt.receipt._id === result.receiptId
+        (check: any) => check.receipt._id === result.receiptId  // FIX: was check.receipt.receipt._id
       );
       const hash = receiptWithHash?.receipt.hash || generateContentHash("");
 
@@ -294,6 +301,12 @@ async function processReceiptsWithClaude(
   console.log(`🤖 Claude: Processing ${receipts.length} receipts`);
 
   for (const receipt of receipts) {
+    // Defensive check: Skip if receipt is undefined or missing required fields
+    if (!receipt || !receipt._id || !receipt.subject) {
+      console.error(`  ❌ Invalid receipt object: ${JSON.stringify(receipt)}`);
+      continue;
+    }
+
     try {
       // Analyze with Claude AI
       const aiResult = await analyzeReceiptWithClaudeAPI(
@@ -434,6 +447,12 @@ async function processReceiptsWithOpenAI(
   console.log(`⚡ OpenAI: Processing ${receipts.length} receipts`);
 
   for (const receipt of receipts) {
+    // Defensive check: Skip if receipt is undefined or missing required fields
+    if (!receipt || !receipt._id || !receipt.subject) {
+      console.error(`  ❌ Invalid receipt object: ${JSON.stringify(receipt)}`);
+      continue;
+    }
+
     try {
       // Analyze with OpenAI GPT-5 Nano
       const aiResult = await analyzeReceiptWithOpenAIAPI(
@@ -578,23 +597,28 @@ WHAT IS NOT A SUBSCRIPTION:
 - Single app/game purchases (unless they mention recurring charges)
 - Restaurant/food delivery orders
 - Travel bookings
+- API credits, account funding, balance top-ups, wallet recharges (e.g., "Your account has been funded $10")
+- One-time license purchases
+- Gift card purchases
 
 EXTRACT THE FOLLOWING:
 1. Merchant/Service name
 2. Charge amount
 3. Currency (USD, GBP, EUR, INR, etc.)
 4. Billing frequency (monthly, yearly, weekly, etc.)
-5. Next billing date (if mentioned in the email)
+5. Next billing date (if mentioned in the email - optional)
 
-DATE VALIDATION:
-- If you find a "next billing date" or "renewal date", include it
-- If the next billing date is BEFORE ${formattedDate}, this subscription may be cancelled, so lower confidence to 60-70%
-- If no date found but other subscription indicators exist, still mark as subscription
+IMPORTANT RULES:
+- Most receipts are payment confirmations (e.g., "Paid $20 for October") - these ARE valid subscriptions even without future dates
+- API credits/funding emails (e.g., "account funded", "balance topped up") are NOT subscriptions
+- Don't penalize receipts for not having future billing dates - they're usually just payment confirmations
+- If you see words like "subscription", "membership", "plan", "recurring" → it's a subscription
 
 CONFIDENCE SCORING:
 - High confidence (80-95%): Clear subscription language, recurring billing mentioned
 - Medium confidence (60-79%): Likely subscription but some ambiguity
 - Low confidence (50-59%): Possible subscription but uncertain
+- REJECT (mark as NOT subscription): API credits, one-time purchases, physical goods
 
 BE INCLUSIVE: If it looks like a recurring payment service, mark it as subscription. The user will review all detections.
 
@@ -953,3 +977,60 @@ Respond ONLY with valid JSON (no markdown, no explanation):
     return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
   }
 }
+
+/**
+ * PUBLIC ADMIN FUNCTION: Parse unparsed receipts with AI
+ * Bypasses orchestrator for direct AI parsing
+ */
+export const adminParseReceipts = action({
+  args: {
+    clerkUserId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<any> => {
+    // Get user
+    const user: any = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
+      clerkUserId: args.clerkUserId,
+    });
+
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    // Get unparsed receipts
+    const receipts: any[] = await ctx.runQuery(internal.receiptParser.getUnparsedReceipts, {
+      userId: user._id,
+      limit: args.limit || 100,
+    });
+
+    console.log(`📧 Found ${receipts.length} unparsed receipts for ${user.email}`);
+
+    if (receipts.length === 0) {
+      return { message: "No unparsed receipts found", count: 0 };
+    }
+
+    // Parse with AI - ensure receipts have proper structure
+    const formattedReceipts = receipts.map((r: any) => ({
+      _id: r._id,
+      subject: r.subject || "No subject",
+      rawBody: r.rawBody || "",
+      from: r.from || "unknown",
+    })).filter((r: any) => r && r._id && r.subject);
+
+    console.log(`🤖 Sending ${formattedReceipts.length} receipts to AI parser...`);
+
+    // Call the internal AI parser
+    const results: any = await ctx.runAction(internal.aiReceiptParser.parseReceiptsWithAI, {
+      receipts: formattedReceipts,
+    });
+
+    console.log(`✅ AI parsing complete: ${results.results.length} receipts processed`);
+
+    // Results are automatically saved by the AI parser
+    return {
+      message: `Parsed ${results.results.length} receipts with AI`,
+      count: results.results.length,
+      results: results.results.slice(0, 10), // Show first 10
+    };
+  },
+});

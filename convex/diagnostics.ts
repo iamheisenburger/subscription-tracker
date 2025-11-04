@@ -29,17 +29,17 @@ export const getScanDiagnostics = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
-    // Get receipts
+    // Get receipts (LIMIT to prevent 16MB error)
     const allReceipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(1000);
 
-    // Get detection candidates
+    // Get detection candidates (LIMIT to prevent 16MB error)
     const candidates = await ctx.db
       .query("detectionCandidates")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(100);
 
     const connection = connections[0];
 
@@ -74,7 +74,6 @@ export const getScanDiagnostics = query({
         accepted: candidates.filter(c => c.status === "accepted").length,
         dismissed: candidates.filter(c => c.status === "dismissed").length,
         fromEmail: candidates.filter(c => c.source === "email").length,
-        fromBank: candidates.filter(c => c.source === "bank").length,
       },
     };
   },

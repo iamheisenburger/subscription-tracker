@@ -37,10 +37,11 @@ export const getUserEmailReceipts = query({
       throw new Error("User not found");
     }
 
+    // LIMIT to 500 receipts to prevent 16MB query error
     const receipts = await ctx.db
       .query("emailReceipts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(500);
 
     return receipts.map((r) => ({
       _id: r._id,

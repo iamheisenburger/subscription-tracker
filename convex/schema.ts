@@ -25,8 +25,6 @@ export default defineSchema({
     // Push notification settings
     pushSubscription: v.optional(v.record(v.string(), v.any())), // Web Push subscription object
     pushEnabled: v.optional(v.boolean()), // User's push notification preference
-    // Bank integration fields
-    connectionsUsed: v.optional(v.number()), // Number of bank connections currently active
     // Email integration fields - Prevent exploitation
     emailConnectionsUsedLifetime: v.optional(v.number()), // Total unique emails EVER connected (never decrements)
     orgId: v.optional(v.id("organizations")), // For Family/Teams tier
@@ -57,7 +55,7 @@ export default defineSchema({
       v.literal("confirmed_renewed"),
       v.literal("confirmed_cancelled")
     )),
-    // Bank integration fields
+    // Detection fields
     source: v.optional(v.union(
       v.literal("manual"),
       v.literal("detected"),
@@ -65,7 +63,6 @@ export default defineSchema({
     )),
     detectionConfidence: v.optional(v.number()), // 0-1 confidence score
     merchantId: v.optional(v.id("merchants")),
-    lastChargeAt: v.optional(v.number()), // Last transaction date from bank
     // Renewal prediction fields (Automate tier)
     predictedCadence: v.optional(v.union(
       v.literal("weekly"),
@@ -159,8 +156,6 @@ export default defineSchema({
     .index("by_user_read", ["userId", "read"])
     .index("by_created", ["createdAt"]),
 
-  // ===== BANK INTEGRATION TABLES =====
-
   // Feature flags for gradual rollout
   featureFlags: defineTable({
     flag: v.string(), // e.g., "bank_integrations", "email_parsing", "cancel_assistant"
@@ -173,115 +168,6 @@ export default defineSchema({
   })
     .index("by_flag", ["flag"])
     .index("by_enabled", ["enabled"]),
-
-  // Plan entitlements and limits by tier
-  planEntitlements: defineTable({
-    tier: v.string(), // "free_user", "plus", "automate", "family", "teams"
-    connectionsIncluded: v.number(), // Number of free bank connections
-    connectionOveragePrice: v.number(), // Price per additional connection (e.g., 3.00 for $3/mo)
-    profilesLimit: v.number(), // Number of user profiles allowed
-    syncFrequency: v.string(), // "manual", "daily", "hourly"
-    canLinkBanks: v.boolean(), // Whether tier allows bank connections at all
-    canParseEmails: v.boolean(), // Email receipt parsing
-    canUseCancelAssistant: v.boolean(), // Cancel assistant access
-    maxHistoryMonths: v.number(), // Transaction history window (24 months max)
-    maxAccountsPerConnection: v.number(), // Accounts per institution link (default 3)
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_tier", ["tier"]),
-
-  // Plaid institutions metadata
-  institutions: defineTable({
-    plaidInstitutionId: v.string(), // Plaid's institution ID
-    name: v.string(),
-    logoUrl: v.optional(v.string()),
-    primaryColor: v.optional(v.string()),
-    url: v.optional(v.string()),
-    countryCode: v.string(), // "US", "CA", etc.
-    products: v.array(v.string()), // ["transactions", "auth", "balance"]
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_plaid_id", ["plaidInstitutionId"])
-    .index("by_country", ["countryCode"]),
-
-  // Bank connections (one per institution)
-  bankConnections: defineTable({
-    userId: v.id("users"),
-    orgId: v.optional(v.id("organizations")), // For Family/Teams
-    institutionId: v.id("institutions"),
-    plaidItemId: v.string(), // Plaid's item_id
-    accessToken: v.string(), // Encrypted by Convex
-    status: v.union(
-      v.literal("active"),
-      v.literal("disconnected"),
-      v.literal("error"),
-      v.literal("requires_reauth")
-    ),
-    consentExpiresAt: v.optional(v.number()),
-    lastSyncedAt: v.optional(v.number()),
-    syncCursor: v.optional(v.string()), // Plaid transaction sync cursor
-    errorCode: v.optional(v.string()),
-    errorMessage: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_org", ["orgId"])
-    .index("by_status", ["status"])
-    .index("by_plaid_item", ["plaidItemId"])
-    .index("by_user_status", ["userId", "status"]),
-
-  // Bank accounts within a connection
-  accounts: defineTable({
-    bankConnectionId: v.id("bankConnections"),
-    plaidAccountId: v.string(),
-    name: v.string(), // "Checking", "Credit Card"
-    officialName: v.optional(v.string()),
-    type: v.string(), // "depository", "credit", "loan", etc.
-    subtype: v.optional(v.string()), // "checking", "savings", "credit card"
-    mask: v.optional(v.string()), // Last 4 digits
-    currency: v.string(),
-    balanceCurrent: v.optional(v.number()),
-    balanceAvailable: v.optional(v.number()),
-    isActive: v.boolean(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_connection", ["bankConnectionId"])
-    .index("by_plaid_id", ["plaidAccountId"])
-    .index("by_connection_active", ["bankConnectionId", "isActive"]),
-
-  // Transactions from bank accounts
-  transactions: defineTable({
-    accountId: v.id("accounts"),
-    plaidTransactionId: v.string(),
-    merchantId: v.optional(v.id("merchants")),
-    amount: v.number(), // Positive = debit, Negative = credit (Plaid convention)
-    currency: v.string(),
-    date: v.string(), // YYYY-MM-DD (authorized date)
-    authorizedDate: v.optional(v.string()),
-    postedDate: v.optional(v.string()),
-    merchantName: v.optional(v.string()), // Raw merchant name from Plaid
-    merchantNameNormalized: v.optional(v.string()), // Normalized by our system
-    categoryId: v.optional(v.string()), // Plaid category ID
-    category: v.optional(v.array(v.string())), // Plaid category hierarchy
-    pending: v.boolean(),
-    paymentChannel: v.optional(v.string()), // "online", "in store", etc.
-    transactionType: v.optional(v.string()),
-    description: v.optional(v.string()),
-    mcc: v.optional(v.string()), // Merchant Category Code
-    hash: v.string(), // For deduplication
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_account", ["accountId"])
-    .index("by_plaid_id", ["plaidTransactionId"])
-    .index("by_merchant", ["merchantId"])
-    .index("by_date", ["date"])
-    .index("by_account_date", ["accountId", "date"])
-    .index("by_hash", ["hash"]),
 
   // Normalized merchants directory
   merchants: defineTable({
@@ -312,7 +198,6 @@ export default defineSchema({
   detectionCandidates: defineTable({
     userId: v.id("users"),
     merchantId: v.optional(v.id("merchants")), // Optional for email-based detection
-    transactionIds: v.optional(v.array(v.id("transactions"))), // Optional for email-based detection
     proposedName: v.string(),
     proposedAmount: v.number(),
     proposedCurrency: v.string(),
@@ -330,7 +215,6 @@ export default defineSchema({
     // Source tracking
     source: v.optional(v.union(
       v.literal("email"),
-      v.literal("bank"),
       v.literal("manual")
     )),
     // Email-specific fields

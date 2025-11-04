@@ -138,3 +138,35 @@ export const resetLifetimeLimit = mutation({
     };
   },
 });
+
+/**
+ * Fix email connection by adding missing userId field
+ * Use this when connection exists but is missing userId
+ */
+export const fixConnectionUserId = mutation({
+  args: {
+    email: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const connection = await ctx.db
+      .query("emailConnections")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (!connection) {
+      return { success: false, message: "Connection not found" };
+    }
+
+    await ctx.db.patch(connection._id, {
+      userId: args.userId,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      message: `Added userId ${args.userId} to connection for ${args.email}`,
+      connectionId: connection._id,
+    };
+  },
+});

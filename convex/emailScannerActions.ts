@@ -164,6 +164,34 @@ export const scanGmailForReceipts = internalAction({
       console.log(`🎯 MERCHANT-BASED SEARCH COMPLETE: ${allMessageIds.size} unique emails found`);
       console.log(`📊 Comparison: Old approach = 1,465 emails | New approach = ${allMessageIds.size} emails`);
 
+      // FALLBACK: Add payment processor keyword search to catch Stripe, PayPal, etc.
+      // This catches subscriptions paid through processors not in merchant list
+      // Also catches PlayStation transaction emails which use subdomain @txn-email.playstation.com
+      const fallbackQuery = `(from:stripe.com OR from:paypal.com OR from:paddle.com OR from:substack.com OR from:gumroad.com OR from:txn-email.playstation.com OR from:txn-email03.playstation.com OR subject:"payment receipt" OR subject:"subscription receipt" OR subject:"Thank You For Your Purchase" OR subject:"invoice" subject:"subscription")${timeFilter}`;
+      const fallbackUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(fallbackQuery)}&maxResults=500`;
+
+      console.log(`🔄 FALLBACK: Searching payment processors and receipt keywords...`);
+
+      try {
+        const fallbackResponse = await fetch(fallbackUrl, {
+          headers: { Authorization: `Bearer ${connection.accessToken}` },
+        });
+
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          const fallbackMessages = fallbackData.messages || [];
+          const beforeFallback = allMessageIds.size;
+
+          for (const message of fallbackMessages) {
+            allMessageIds.add(message.id);
+          }
+
+          console.log(`✅ FALLBACK: Added ${allMessageIds.size - beforeFallback} new receipts (${fallbackMessages.length} found, ${allMessageIds.size - beforeFallback} unique)`);
+        }
+      } catch (error) {
+        console.error(`⚠️ Fallback search failed (continuing with merchant results):`, error);
+      }
+
       // Convert Set to array for processing
       const messages = Array.from(allMessageIds).map(id => ({ id }));
 
@@ -266,7 +294,7 @@ export const scanGmailForReceipts = internalAction({
           // ONLY store if subscription-likely (high or medium confidence)
           if (!filterResult.isSubscriptionLikely) {
             console.log(`⏭️  Skipped (${filterResult.reason}): ${subject.substring(0, 50)}`);
-            continue; // Skip this email - don't store, don't parse with AI
+            continue; // Skip this email - don't store
           }
 
           console.log(`✅ Kept (${filterResult.confidence}): ${subject.substring(0, 50)}`);

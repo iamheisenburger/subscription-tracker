@@ -126,6 +126,28 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     return false; // Filtered out by aggressive pre-filter
   }
 
+  // EXCLUDE: API usage costs / credit purchases (NOT subscriptions)
+  const apiCostPatterns = [
+    /\bAPI\b.*(?:usage|credits?|balance|billing)/i,
+    /(?:usage|credits?).*\bAPI\b/i,
+    /funded.*account/i, // "You funded your account"
+    /account.*funded/i,
+    /credits?\s+purchase/i,
+    /top[—-]?up/i, // Account top-up
+    /pay[—-]?as[—-]?you[—-]?go/i,
+    /\bPAYG\b/i,
+    /usage\s+charges?/i,
+  ];
+
+  const isApiCost = apiCostPatterns.some((pattern) =>
+    pattern.test(text) || pattern.test(subject)
+  );
+
+  if (isApiCost) {
+    console.log(`⏭️  Skipping API cost/credit purchase: ${subject.substring(0, 50)}...`);
+    return false; // API costs are not subscriptions
+  }
+
   // EXCLUDE: Cancellation emails first (highest priority)
   const cancellationPatterns = [
     /cancel(l)?ed/i,
@@ -173,11 +195,18 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     pattern.test(text) || pattern.test(subject)
   );
 
-  if (isExcluded) {
+  // Check if email contains pricing despite having trial keywords
+  const hasPricingInfo = /(?:\$|£|€|₹)\s*\d+(?:[.,]\d{2})?|(?:\d+(?:[.,]\d{2})?)\s*(?:USD|GBP|EUR|INR)|monthly|yearly|per\s+month/i.test(text);
+
+  if (isExcluded && !hasPricingInfo) {
     if (subject.includes("anthropic") && subject.includes("receipt")) {
       console.log(`🐛 Rejected by exclude patterns!`);
     }
     return false;
+  }
+
+  if (isExcluded && hasPricingInfo) {
+    console.log(`✅ Trial/welcome email WITH pricing - allowing through for analysis`);
   }
 
   // WHITELIST: Stripe receipts are ALWAYS subscriptions - bypass one-time purchase check
@@ -197,7 +226,14 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     /\bdelivery\s+confirmation/i,
   ];
 
-  const isOneTimePurchase = !isStripeReceipt && oneTimePurchaseIndicators.some((pattern) =>
+  // WHITELIST: Check for recurring subscription indicators that override one-time purchase detection
+  // This catches PlayStation-style receipts with "Thank You For Your Purchase" subject but "Recurring Subscription Fee" body
+  const hasRecurringIndicators = /\brecurring\s+(?:subscription\s+)?fee/i.test(text) ||
+                                   /\brecurring\s+payment/i.test(text) ||
+                                   /\brecurring\s+charge/i.test(text) ||
+                                   /\bauto[\s-]?renew/i.test(text);
+
+  const isOneTimePurchase = !isStripeReceipt && !hasRecurringIndicators && oneTimePurchaseIndicators.some((pattern) =>
     pattern.test(text) || pattern.test(subject)
   );
 
@@ -261,7 +297,10 @@ function isSubscriptionReceipt(text: string, subject: string): boolean {
     /telegram/i,
     /discord\s+nitro/i,
     /ship\/?it/i, // ADDED: Ship/It Weekly newsletter subscription
-    /apple.*(?:music|tv|icloud|arcade|one)/i, // ADDED: Apple services
+    /\bapple\b/i, // FIX: Match all Apple invoices (including third-party subscriptions via Apple)
+    /\bconvex\b/i, // ADDED: Convex backend platform
+    /playstation|ps\s*plus|ps\s*network/i, // ADDED: PlayStation subscriptions
+    /vercel/i, // ADDED: Vercel hosting platform
   ];
 
   const hasSubscriptionKeyword = subscriptionKeywords.some((pattern) =>
@@ -335,8 +374,8 @@ function parseReceiptData(receipt: {
   // Extract merchant name
   const merchantResult = extractMerchant(text, receipt.from, receipt.subject);
 
-  // Extract amount and currency
-  const amountResult = extractAmount(text);
+  // Extract amount and currency (pass subject for fallback extraction)
+  const amountResult = extractAmount(text, receipt.subject);
 
   // Extract billing cycle
   const billingCycle = extractBillingCycle(text);
@@ -496,7 +535,10 @@ export const parseUnparsedReceipts = internalMutation({
         !receipt.merchantName ||
         receipt.merchantName === "" ||
         receipt.merchantName === null ||
-        receipt.merchantName === "NULL" // Catch string "NULL" from broken parses
+        receipt.merchantName === "NULL" || // Catch string "NULL" from broken parses
+        // Or missing amount (e.g., Cursor receipts with merchant but no amount)
+        !receipt.amount ||
+        receipt.amount === null
     ).slice(0, 100); // Process 100 receipts at a time
 
     console.log(`🎯 Filter matched ${receiptsToProcess.length} receipts to process`);
@@ -518,11 +560,11 @@ export const parseUnparsedReceipts = internalMutation({
       try {
         const parsed = parseReceiptData(receipt);
 
-        // Only save if we have at least merchant + amount
-        if (parsed.merchantName && parsed.amount) {
+        // Save if we have EITHER merchant OR amount (partial data is better than nothing)
+        if (parsed.merchantName || parsed.amount) {
           await ctx.db.patch(receipt._id, {
-            merchantName: parsed.merchantName,
-            amount: parsed.amount,
+            merchantName: parsed.merchantName || undefined,
+            amount: parsed.amount || undefined,
             currency: parsed.currency,
             billingCycle: parsed.billingCycle || undefined,
             nextChargeDate: parsed.nextChargeDate || undefined,
@@ -531,7 +573,13 @@ export const parseUnparsedReceipts = internalMutation({
             parsingConfidence: parsed.confidence,
           });
 
-          console.log(`  ✅ ${parsed.merchantName}: ${parsed.amount} ${parsed.currency} (${Math.round(parsed.confidence * 100)}% confidence)`);
+          if (parsed.merchantName && parsed.amount) {
+            console.log(`  ✅ ${parsed.merchantName}: ${parsed.amount} ${parsed.currency} (${Math.round(parsed.confidence * 100)}% confidence)`);
+          } else if (parsed.merchantName) {
+            console.log(`  ⚠️  ${parsed.merchantName}: (no amount) (${Math.round(parsed.confidence * 100)}% confidence)`);
+          } else {
+            console.log(`  ⚠️  (no merchant): ${parsed.amount} ${parsed.currency} (${Math.round(parsed.confidence * 100)}% confidence)`);
+          }
           successCount++;
         } else {
           // Mark as parsed but low confidence (won't create detection)
@@ -764,6 +812,7 @@ function extractMerchant(
     { pattern: /adobe/i, name: "Adobe" },
     { pattern: /anthropic/i, name: "Anthropic" },
     { pattern: /vercel/i, name: "Vercel" },
+    { pattern: /convex/i, name: "Convex" }, // ADDED: Fix Convex invoice parsing
     { pattern: /cursor/i, name: "Cursor" },
     { pattern: /openai|chatgpt/i, name: "OpenAI" },
     { pattern: /perplexity/i, name: "Perplexity" },
@@ -780,6 +829,8 @@ function extractMerchant(
     { pattern: /disney\+|disneyplus/i, name: "Disney+" },
     { pattern: /hulu/i, name: "Hulu" },
     { pattern: /linkedin\s*premium/i, name: "LinkedIn Premium" },
+    { pattern: /playstation|ps\s*plus/i, name: "PlayStation Plus" }, // ADDED: Fix PlayStation parsing
+    { pattern: /substack|ship\/?it/i, name: "Substack" }, // ADDED: Substack/Ship subscriptions
   ];
 
   // Check against SUBJECT + FROM only (NOT full email body to avoid false matches)
@@ -795,7 +846,7 @@ function extractMerchant(
   const subdomainMatch = from.match(/@([a-zA-Z0-9-]+)\./);
   if (subdomainMatch) {
     const subdomain = subdomainMatch[1];
-    const genericDomains = ["gmail", "yahoo", "outlook", "hotmail", "mail", "email", "noreply", "no-reply", "notifications", "receipts", "invoice", "invoices", "billing"];
+    const genericDomains = ["gmail", "yahoo", "outlook", "hotmail", "mail", "email", "noreply", "no-reply", "notifications", "receipts", "invoice", "invoices", "billing", "sony", "txn-email", "txn-email03"]; // ADDED: PlayStation domains
     if (!genericDomains.includes(subdomain.toLowerCase())) {
       const name = subdomain.charAt(0).toUpperCase() + subdomain.slice(1);
       console.log(`⚠️ Using subdomain as fallback: "${name}"`);
@@ -810,8 +861,9 @@ function extractMerchant(
 /**
  * Extract amount and currency from email text
  * CRITICAL FIX: Only extract from RECEIPT context, not promotional prices
+ * NEW: Added subject-line fallback for receipts without body amounts (e.g., Cursor)
  */
-function extractAmount(text: string): { amount: number | null; currency: string } {
+function extractAmount(text: string, subject?: string): { amount: number | null; currency: string } {
   // STEP 1: Reject emails with promotional/marketing indicators
   const promotionalPatterns = [
     /save\s+(?:up\s+to\s+)?\$?\d+/i,
@@ -856,9 +908,19 @@ function extractAmount(text: string): { amount: number | null; currency: string 
     { pattern: /subtotal\s+\$\s*(\d+(?:[.,]\d{2})?)/i, currency: "USD" },
 
     // INDIAN RUPEE support (for Adobe and other Indian subscriptions)
-    { pattern: /₹\s*(\d+(?:[.,]\d{2})?)\s+(?:incl|including)\.?\s+tax/i, currency: "INR" },
-    { pattern: /charged\s+₹\s*(\d+(?:[.,]\d{2})?)/i, currency: "INR" },
-    { pattern: /total\s+₹\s*(\d+(?:[.,]\d{2})?)/i, currency: "INR" },
+    // Support commas in amounts: ₹1,100.94 or ₹499
+    { pattern: /₹\s*([\d,]+(?:\.\d{2})?)\s+\(incl\.?\s+tax\)/i, currency: "INR" }, // Adobe format: "₹1,100.94 (incl. tax)"
+    { pattern: /charged\s+₹\s*([\d,]+(?:\.\d{2})?)/i, currency: "INR" },
+    { pattern: /you\s+will\s+be\s+charged\s+₹\s*([\d,]+(?:\.\d{2})?)/i, currency: "INR" }, // Adobe trial end format
+    { pattern: /total\s+₹\s*([\d,]+(?:\.\d{2})?)/i, currency: "INR" },
+    { pattern: /₹\s*([\d,]+(?:\.\d{2})?)\s+(?:incl|including)\.?\s+tax/i, currency: "INR" }, // Generic INR with tax
+
+    // PLAYSTATION receipts: "Rs 499" or "Rs. 499" (with or without space/period)
+    { pattern: /Rs\.?\s*(\d+(?:[.,]\d{2})?)\s+(?:per|\/)\s*month/i, currency: "INR" }, // "Rs 499 per month"
+    { pattern: /Rs\.?\s*(\d+(?:[.,]\d{2})?)\s+monthly/i, currency: "INR" }, // "Rs 499 monthly"
+    { pattern: /recurring\s+(?:subscription\s+)?fee:\s*Rs\.?\s*(\d+)/i, currency: "INR" }, // "Recurring fee: Rs 499"
+    { pattern: /subscription\s+fee\s+of\s+Rs\.?\s*(\d+)/i, currency: "INR" }, // "Subscription fee of Rs 499"
+    { pattern: /Rs\.?\s*(\d+(?:[.,]\d{2})?)/i, currency: "INR" }, // Generic Rs pattern (fallback)
 
     // HIGHEST PRIORITY: Stripe receipt format "Receipt from X $20.00 Paid"
     // This is the most common subscription receipt format
@@ -868,6 +930,10 @@ function extractAmount(text: string): { amount: number | null; currency: string 
     { pattern: /paid\s+\$\s*(\d+(?:[.,]\d{2})?)/i, currency: "USD" },
     { pattern: /paid\s+£\s*(\d+(?:[.,]\d{2})?)/i, currency: "GBP" },
     { pattern: /paid\s+€\s*(\d+(?:[.,]\d{2})?)/i, currency: "EUR" },
+
+    // CONVEX INVOICES: "Payment received for Convex invoice" - look for amount anywhere in body
+    { pattern: /convex.*\$(\d+(?:[.,]\d{2})?)/i, currency: "USD" },
+    { pattern: /\$(\d+(?:[.,]\d{2})?).*convex/i, currency: "USD" },
 
     // "Payment received: $20.00"
     { pattern: /(?:payment|charge)\s+(?:received|processed|confirmed)[\s:]+\$\s*(\d+(?:[.,]\d{2})?)/, currency: "USD" },
@@ -909,11 +975,53 @@ function extractAmount(text: string): { amount: number | null; currency: string 
   for (const { pattern, currency } of receiptContextPatterns) {
     const match = text.match(pattern);
     if (match) {
-      const amountStr = match[1].replace(",", ".");
+      // Handle both European format (1.234,56) and Indian format (1,234.56)
+      let amountStr = match[1];
+      // If there's a comma followed by exactly 2 digits at the end, it's European decimal (1.234,56)
+      if (/,\d{2}$/.test(amountStr)) {
+        amountStr = amountStr.replace(/\./g, "").replace(",", "."); // European: 1.234,56 → 1234.56
+      } else {
+        amountStr = amountStr.replace(/,/g, ""); // Indian/US: 1,234.56 → 1234.56
+      }
       const amount = parseFloat(amountStr);
-      if (amount > 0 && amount < 10000) {
+      if (amount > 0 && amount < 100000) { // Increased limit for subscriptions like Adobe ₹1,100
         console.log(`✅ Extracted ${amount} ${currency} from receipt context`);
         return { amount, currency };
+      }
+    }
+  }
+
+  // FALLBACK: Extract from subject line if provided (for Cursor, Stripe-style subjects)
+  // Only do this if subject contains payment/confirm keywords (avoid false positives)
+  if (subject) {
+    const subjectLower = subject.toLowerCase();
+    const hasPaymentKeyword = /payment|confirm|invoice|receipt|charged|billed/i.test(subjectLower);
+
+    if (hasPaymentKeyword) {
+      // Try to extract currency + amount from subject (support commas: $1,234.56 or ₹1,100.94)
+      const subjectPatterns = [
+        { pattern: /\$\s*([\d,]+(?:\.\d{2})?)/i, currency: "USD" },
+        { pattern: /£\s*([\d,]+(?:\.\d{2})?)/i, currency: "GBP" },
+        { pattern: /€\s*([\d,]+(?:\.\d{2})?)/i, currency: "EUR" },
+        { pattern: /₹\s*([\d,]+(?:\.\d{2})?)/i, currency: "INR" },
+      ];
+
+      for (const { pattern, currency } of subjectPatterns) {
+        const match = subject.match(pattern);
+        if (match) {
+          // Handle both European format (1.234,56) and Indian format (1,234.56)
+          let amountStr = match[1];
+          if (/,\d{2}$/.test(amountStr)) {
+            amountStr = amountStr.replace(/\./g, "").replace(",", "."); // European
+          } else {
+            amountStr = amountStr.replace(/,/g, ""); // Indian/US
+          }
+          const amount = parseFloat(amountStr);
+          if (amount > 0 && amount < 100000) {
+            console.log(`✅ Extracted ${amount} ${currency} from subject line (fallback)`);
+            return { amount, currency };
+          }
+        }
       }
     }
   }

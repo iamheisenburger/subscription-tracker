@@ -59,11 +59,14 @@ export function isSubscriptionEmail(email: EmailMessage): FilterResult {
     { keyword: "invoice", requiresAmount: false },  // "Payment received for invoice" is clearly a payment
     { keyword: "receipt", requiresAmount: false },  // "Receipt from X" is clearly a payment
     { keyword: "payment received", requiresAmount: false },  // "Payment received" is explicitly a payment
+    { keyword: "thank you for your purchase", requiresAmount: false },  // PlayStation, Adobe style receipts
+    { keyword: "thanks for your purchase", requiresAmount: false },  // Adobe style receipts
+    { keyword: "order from", requiresAmount: false },  // "Order from Adobe" style receipts
     { keyword: "billing", requiresAmount: true },  // "Billing" alone is too vague, needs amount
     { keyword: "payment", requiresAmount: true },  // "Payment" alone is too vague, needs amount
   ];
 
-  const hasAmount = /\$\d+(\.\d{2})?|\£\d+(\.\d{2})?|\€\d+(\.\d{2})?/.test(body) || /\$\d+(\.\d{2})?|\£\d+(\.\d{2})?|\€\d+(\.\d{2})?/.test(subject);
+  const hasAmount = /\$\d+(\.\d{2})?|\£\d+(\.\d{2})?|\€\d+(\.\d{2})?|₹[\d,]+(\.\d{2})?|Rs\.?\s*\d+/.test(body) || /\$\d+(\.\d{2})?|\£\d+(\.\d{2})?|\€\d+(\.\d{2})?|₹[\d,]+(\.\d{2})?|Rs\.?\s*\d+/.test(subject);
 
   for (const {keyword, requiresAmount} of billingKeywords) {
     if (subject.includes(keyword)) {

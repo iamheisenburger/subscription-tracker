@@ -117,12 +117,13 @@ export function ScanConsole() {
   const hasCompletedScan = Boolean(gmailConnection?.lastFullScanAt);
   const isActive = gmailConnection?.status === "active";
   const requiresReauth = gmailConnection?.status === "requires_reauth";
-  const isScanningState =
+  const isScanningState = Boolean(
     gmailConnection?.scanStatus === "scanning" ||
     gmailConnection?.aiProcessingStatus === "processing" ||
     (gmailConnection?.scanState &&
       gmailConnection.scanState !== "complete" &&
-      gmailConnection.scanState !== "failed");
+      gmailConnection.scanState !== "failed")
+  );
 
   // Derive current step from connection state
   const getCurrentStep = (): ScanStep => {
@@ -212,7 +213,7 @@ export function ScanConsole() {
         description: "We're analyzing your inbox for subscription receipts. This runs in the background.",
         duration: 6000,
       });
-    } catch (error) {
+    } catch {
       toast.error("Scan failed", {
         description: "Failed to start email scan. Please try again.",
       });
@@ -253,15 +254,7 @@ export function ScanConsole() {
     );
   }
 
-  // Calculate cooldown
-  const now = Date.now();
-  const cooldownActive =
-    gmailConnection.nextEligibleManualScanAt &&
-    now < gmailConnection.nextEligibleManualScanAt;
-  const cooldownMs = cooldownActive
-    ? gmailConnection.nextEligibleManualScanAt! - now
-    : 0;
-  const cooldownMinutes = Math.max(1, Math.ceil(cooldownMs / 60000));
+  // Cooldown is enforced server-side, no need to display it in UI
 
   // Last scan time
   const lastScanTime =
@@ -461,14 +454,10 @@ export function ScanConsole() {
             </div>
           )}
 
-          {/* Weekly incremental + cooldown messaging */}
+          {/* Weekly incremental messaging */}
           {hasCompletedScan && !isScanningState && (
             <div className="text-xs text-muted-foreground font-sans">
-              {cooldownActive ? (
-                <span>Manual scan available again in ~{cooldownMinutes} min</span>
-              ) : (
-                <span>New emails are scanned automatically once a week</span>
-              )}
+              <span>New emails are scanned automatically once a week</span>
             </div>
           )}
 

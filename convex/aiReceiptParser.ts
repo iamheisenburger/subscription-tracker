@@ -674,17 +674,16 @@ async function processReceiptsWithOpenAI(
       if (aiResult.success && aiResult.confidence >= 40) {
         console.log(`  ⚡ OpenAI SUCCESS: "${aiResult.merchant}" - $${aiResult.amount} ${aiResult.currency} (${aiResult.confidence}%)`);
 
-        results.push({
+        return {
           receiptId: receipt._id,
           merchantName: refinedMerchant,
           amount: aiResult.amount,
           currency: aiResult.currency || "USD",
           billingCycle: aiResult.frequency === "monthly" ? "monthly" : aiResult.frequency === "yearly" ? "yearly" : null,
           confidence: aiResult.confidence / 100,
-          method: "ai",
+          method: "ai" as const,
           reasoning: aiResult.reasoning,
-        });
-        continue;
+        };
       } else if (!aiResult.success) {
         console.log(`  ⚠️ OpenAI FAILED - Falling back to regex`);
       } else {

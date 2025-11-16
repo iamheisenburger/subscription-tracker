@@ -880,7 +880,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ Claude API error:", response.status, errorText);
-        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null, inputTokens: 0, outputTokens: 0, duration: 0 };
+        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
       }
 
       // Success - break out of retry loop
@@ -1103,7 +1103,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ OpenAI API error:", response.status, errorText);
-        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null, inputTokens: 0, outputTokens: 0, duration: 0 };
+        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
       }
 
       break;
@@ -1116,14 +1116,14 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         continue;
       } else {
         console.error("❌ OpenAI API call failed (max retries):", error);
-        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null, inputTokens: 0, outputTokens: 0, duration: 0 };
+        return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
       }
     }
   }
 
   if (!response) {
     console.error("❌ No OpenAI response received");
-    return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null, inputTokens: 0, outputTokens: 0, duration: 0 };
+    return { success: false, merchant: null, amount: null, currency: null, frequency: null, confidence: 0, nextBillingDate: null };
   }
 
   try {

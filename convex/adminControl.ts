@@ -32,13 +32,15 @@ export const getSafeModeStatus = query({
       .query("systemSettings")
       .first();
 
-    if (settings?.safeModeEnabled) {
+    // Check both new and legacy field names
+    const isEnabled = settings?.safeModeEnabled === true || settings?.safeMode === true || settings?.cronsDisabled === true;
+    if (isEnabled) {
       return {
         enabled: true,
-        reason: settings.safeModeReason || "manual",
+        reason: settings.safeModeReason || settings.autoKillReason || "manual",
         source: "database",
         message: settings.safeModeMessage || "Safe mode enabled",
-        enabledAt: settings.safeModeEnabledAt,
+        enabledAt: settings.safeModeEnabledAt || settings.autoKillAt,
       };
     }
 
@@ -114,7 +116,8 @@ export const isSafeModeEnabled = internalQuery({
       .query("systemSettings")
       .first();
 
-    return settings?.safeModeEnabled === true;
+    // Check both new and legacy field names for backward compatibility
+    return settings?.safeModeEnabled === true || settings?.safeMode === true || settings?.cronsDisabled === true;
   },
 });
 

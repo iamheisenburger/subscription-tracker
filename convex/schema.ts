@@ -413,11 +413,20 @@ export default defineSchema({
 
   // Distributed locking system for preventing concurrent operations
   systemSettings: defineTable({
-    // Safe Mode / Kill Switch
-    safeModeEnabled: v.boolean(),
+    // Safe Mode / Kill Switch (new schema)
+    safeModeEnabled: v.optional(v.boolean()), // Optional for backward compatibility
     safeModeReason: v.optional(v.string()),
     safeModeMessage: v.optional(v.string()),
     safeModeEnabledAt: v.optional(v.number()),
+    // Legacy fields (for backward compatibility)
+    safeMode: v.optional(v.boolean()), // Old field name
+    cronsDisabled: v.optional(v.boolean()), // Old field name
+    autoKillAt: v.optional(v.number()),
+    autoKillReason: v.optional(v.string()),
+    detectionCountStreak: v.optional(v.number()),
+    lastDetectionCount: v.optional(v.number()),
+    lastHeuristicsUpdateAt: v.optional(v.number()),
+    key: v.optional(v.string()),
     // Debug query throttling
     debugQueriesDisabled: v.boolean(),
     minDebugPollIntervalMs: v.number(),

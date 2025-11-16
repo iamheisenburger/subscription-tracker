@@ -604,10 +604,10 @@ export const processNextBatch = internalAction({
         return { success: false, error: "User not found" };
       }
 
-      // Get up to 40 unparsed receipts for AI
+      // Get up to 60 unparsed receipts for AI (increased from 40 for speed)
       const receiptsToParse: any[] = await ctx.runQuery(internal.receiptParser.getUnparsedReceipts, {
         userId: userForBatch._id,
-        limit: 40,
+        limit: 60,
       });
 
       let parsedCount = 0;
@@ -637,7 +637,7 @@ export const processNextBatch = internalAction({
           // scanState: `processing_batch_${args.batchNumber}` as any, // DISABLED: Schema validation broken
           currentBatch: args.batchNumber,
           batchProgress: parsedCount,
-          overallProgress: (parsedCount || 0) + ((args.batchNumber - 1) * 40), // Approx cumulative (40 per batch)
+          overallProgress: (parsedCount || 0) + ((args.batchNumber - 1) * 60), // Approx cumulative (60 per batch)
         });
       }
 
@@ -651,8 +651,8 @@ export const processNextBatch = internalAction({
       if (hasMoreBatches) {
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
-        // DUAL PROVIDER: 40 receipts per batch with NO DELAYS (independent rate limits)
-        // 1000 receipts / 40 per batch = 25 batches max
+        // DUAL PROVIDER: 60 receipts per batch with NO DELAYS (independent rate limits)
+        // Increased batch size for faster processing (30 Claude + 30 OpenAI in parallel)
         if (args.batchNumber < 50) {
           console.log(`⚡ No delays needed - dual providers have independent rate limits!`);
           await ctx.scheduler.runAfter(
@@ -908,11 +908,11 @@ export const triggerUserEmailScan = action({
       const firstConnection = connections.find((c) => c.status === "active");
 
       if (firstConnection) {
-        // DUAL PROVIDER FIX: 40 receipts per batch (20 Claude + 20 OpenAI in parallel)
-        const BATCH_SIZE = 40; // 20 receipts per provider, processed in parallel
+        // DUAL PROVIDER FIX: 60 receipts per batch (30 Claude + 30 OpenAI in parallel)
+        const BATCH_SIZE = 60; // 30 receipts per provider, processed in parallel for faster scans
         const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
-        // DYNAMIC TIME ESTIMATE: 40 receipts in parallel = ~30-60 seconds per batch
-        const estimatedTime = Math.ceil(totalBatches * 1); // 1 minute per batch (fast parallel processing)
+        // DYNAMIC TIME ESTIMATE: 60 receipts in parallel = ~45-90 seconds per batch
+        const estimatedTime = Math.ceil(totalBatches * 0.75); // 45 seconds per batch (optimized parallel processing)
 
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,
@@ -969,4 +969,5 @@ export const triggerUserEmailScan = action({
     }
   },
 });
+
 

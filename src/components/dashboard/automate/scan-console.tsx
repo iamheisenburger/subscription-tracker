@@ -453,20 +453,12 @@ export function ScanConsole() {
             )}
           </div>
 
-          {/* Progress Block - Only show during Gmail Scan stage with valid progress */}
+          {/* Gmail Scan status - Text only, no loading bar */}
           {isScanningState && 
            currentStep === "gmail_scan" && 
            progressData.hasValidProgress && (
-            <div className="p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
-                  Collecting emails from your inbox
-                </span>
-              </div>
-              <Progress value={progressData.percent} className="mb-2" />
-              <div className="text-xs text-blue-600 dark:text-blue-400 font-sans">
-                {progressData.processed} / {progressData.total} analyzed
-              </div>
+            <div className="mt-2 text-xs text-muted-foreground font-sans text-center">
+              {progressData.processed} / {progressData.total} emails collected
             </div>
           )}
 

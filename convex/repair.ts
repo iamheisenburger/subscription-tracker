@@ -26,13 +26,30 @@ export const repairParsedReceipts = internalMutation({
       .collect();
 
     // Consider a receipt "broken" if it is missing merchant/amount OR has a generic aggregator merchant
+    // OR if merchant name doesn't match subject pattern (mislabeled receipts)
     const AGGREGATOR_NAMES = new Set(["apple", "stripe", "paypal", "google", "paddle"]);
     const brokenAll = parsed.filter((r: any) => {
       const hasMissing = r.merchantName == null || r.amount == null;
       if (hasMissing) return true;
       // If merchant exists but is an aggregator, attempt service extraction to unify clusters
       const normalized = normalizeMerchantName(r.merchantName || "");
-      return AGGREGATOR_NAMES.has(normalized);
+      if (AGGREGATOR_NAMES.has(normalized)) return true;
+      
+      // Check for mislabeled merchants: subject contains merchant name that doesn't match current merchant
+      // Pattern: "Fortect Premium: Thank You For Your Purchase" but merchant is "PlayStation"
+      const subject = (r as any).subject || "";
+      const subjectMerchantPattern = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You\s+for\s+Your\s+Purchase/i;
+      const subjectMatch = subject.match(subjectMerchantPattern);
+      if (subjectMatch && subjectMatch[1]) {
+        const subjectMerchant = normalizeMerchantName(subjectMatch[1].replace(/\s+(Premium|Pro|Plus|Basic|Standard)$/i, "").trim());
+        const currentMerchant = normalized;
+        // If subject merchant doesn't match current merchant, this is mislabeled
+        if (subjectMerchant && subjectMerchant !== currentMerchant && subjectMerchant.length > 2) {
+          return true; // Mark as broken to repair
+        }
+      }
+      
+      return false;
     });
     // Process newest broken receipts first for determinism across scans
     const broken = brokenAll

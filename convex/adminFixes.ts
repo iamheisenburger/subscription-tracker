@@ -2,8 +2,9 @@
  * Admin functions to fix production issues
  */
 
-import { mutation } from "./_generated/server";
+import { mutation, action } from "./_generated/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 
 /**
  * Clear all detection candidates for a user and re-run pattern detection
@@ -125,6 +126,65 @@ export const resetAllReceiptsToParse = mutation({
       message: isComplete
         ? "All receipts reset successfully!"
         : `Call this function again to reset remaining receipts`,
+    };
+  },
+});
+
+/**
+ * Run repair and detection on existing data (for investigation)
+ */
+export const runRepairAndDetection = action({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    repair?: any;
+    detection?: any;
+    error?: string;
+  }> => {
+    // Find user
+    const user = await ctx.runQuery((internal as any).emailScanner.getUserByClerkId, {
+      clerkUserId: args.clerkUserId,
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    console.log(`🔧 Running repair and detection for user ${user.email}...`);
+
+    // Run repair
+    let repairResult;
+    try {
+      console.log("🧰 Running repair pass...");
+      repairResult = await ctx.runMutation((internal as any).repair.repairParsedReceipts, {
+        userId: user._id,
+        limit: 800,
+      });
+      console.log(`✅ Repair complete:`, repairResult);
+    } catch (e) {
+      console.error("❌ Repair failed:", e);
+      repairResult = { error: String(e) };
+    }
+
+    // Run detection
+    let detectionResult;
+    try {
+      console.log("🎯 Running pattern detection...");
+      detectionResult = await ctx.runMutation((internal as any).patternDetection.runPatternBasedDetection, {
+        userId: user._id,
+      });
+      console.log(`✅ Detection complete:`, detectionResult);
+    } catch (e) {
+      console.error("❌ Detection failed:", e);
+      detectionResult = { error: String(e) };
+    }
+
+    return {
+      success: true,
+      repair: repairResult,
+      detection: detectionResult,
     };
   },
 });

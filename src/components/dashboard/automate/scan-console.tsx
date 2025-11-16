@@ -117,12 +117,27 @@ export function ScanConsole() {
   const hasCompletedScan = Boolean(gmailConnection?.lastFullScanAt);
   const isActive = gmailConnection?.status === "active";
   const requiresReauth = gmailConnection?.status === "requires_reauth";
+
+  // Treat scan as "actively running" only when backend reports an in‑progress state.
+  // Guard against stale scanState values like "processing_batch_X" once both
+  // scanStatus and aiProcessingStatus are complete.
+  const scanStatus = gmailConnection?.scanStatus;
+  const aiStatus = gmailConnection?.aiProcessingStatus;
+  const scanState = gmailConnection?.scanState;
+
   const isScanningState = Boolean(
-    gmailConnection?.scanStatus === "scanning" ||
-    gmailConnection?.aiProcessingStatus === "processing" ||
-    (gmailConnection?.scanState &&
-      gmailConnection.scanState !== "complete" &&
-      gmailConnection.scanState !== "failed")
+    gmailConnection &&
+      (
+        scanStatus === "scanning" ||
+        aiStatus === "processing" ||
+        (scanState &&
+          scanState !== "complete" &&
+          scanState !== "failed" &&
+          scanState !== "reviewing")
+      ) &&
+      // If both status flags are complete, treat the scan as finished even if
+      // scanState still has an intermediate value.
+      !(scanStatus === "complete" && aiStatus === "complete")
   );
 
   // Derive current step from connection state
@@ -134,6 +149,12 @@ export function ScanConsole() {
     const scanState = gmailConnection.scanState;
     const scanStatus = gmailConnection.scanStatus;
     const aiStatus = gmailConnection.aiProcessingStatus;
+
+    // If the backend says both scanning and AI processing are complete,
+    // always show the final "Review" step regardless of any stale scanState.
+    if (scanStatus === "complete" && aiStatus === "complete") {
+      return "review";
+    }
 
     // Map backend states to steps
     if (scanState === "queued" || scanState === "connecting") {

@@ -107,10 +107,22 @@ export const repairParsedReceipts = internalMutation({
         // Subject patterns
         const fromMatch = subject.match(/(?:receipt|invoice)\s+from\s+([^#\n]+?)(?:\s*#|\s*$)/i);
         const yourPattern = subject.match(/your\s+([A-Za-z0-9\s]+?)\s+(?:receipt|invoice|payment|subscription)/i);
+        // Pattern: "Final invoice bill for Snaptinker" → extract "Snaptinker"
+        const finalInvoicePattern = /(?:final|last|new|recent)\s+(?:invoice|bill|receipt|payment)\s+(?:bill\s+)?for\s+([A-Za-z0-9\s&]+?)(?:\s*$|\s*#|\s*\(|\s*:)/i;
+        const finalInvoiceMatch = subject.match(finalInvoicePattern);
         const simplePattern = subject.match(/^([A-Za-z0-9\s]+?)\s+(?:receipt|invoice)/i);
 
         if (fromMatch) {
           newMerchant = cleanMerchant(fromMatch[1]);
+        } else if (finalInvoiceMatch && finalInvoiceMatch[1]) {
+          // Extract merchant from "Final invoice bill for Snaptinker" pattern
+          const candidate = cleanMerchant(finalInvoiceMatch[1]);
+          const normalized = normalizeMerchantName(candidate);
+          // Don't use generic words as merchant names
+          if (candidate && normalized !== "final" && normalized !== "last" && normalized !== "new" && normalized !== "recent" && normalized !== "your" && normalized.length > 2) {
+            newMerchant = candidate;
+            console.log(`🔧 REPAIR: Fixed "Final invoice" pattern: "${r.merchantName}" → "${newMerchant}"`);
+          }
         } else if (yourPattern) {
           const candidate = cleanMerchant(yourPattern[1]);
           if (candidate && candidate.toLowerCase() !== "your") newMerchant = candidate;

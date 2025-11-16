@@ -36,6 +36,11 @@ const NEGATIVE_MERCHANTS = new Set([
   "receipt",
   "invoice",
   "payment",
+  // Generic words that appear in subject lines but aren't merchants
+  "final", // "Final invoice bill" - not a merchant name
+  "last", // "Last invoice" - not a merchant name
+  "new", // "New invoice" - not a merchant name
+  "recent", // "Recent transaction" - not a merchant name
 ]);
 
 /**

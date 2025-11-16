@@ -632,20 +632,26 @@ export const processNextBatch = internalAction({
 
       // Update overall progress after parsing (DISABLED scanState to bypass validation bug)
       if (firstConnection) {
+        // Recalculate total batches based on remaining receipts to keep UI accurate
+        const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
+          clerkUserId: args.clerkUserId,
+        });
+        const processedSoFar = (args.batchNumber - 1) * 60 + parsedCount;
+        const estimatedTotal = processedSoFar + remainingResult.count;
+        const updatedTotalBatches = Math.ceil(estimatedTotal / 60);
+        
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,
           // scanState: `processing_batch_${args.batchNumber}` as any, // DISABLED: Schema validation broken
           currentBatch: args.batchNumber,
+          totalBatches: updatedTotalBatches, // Update total batches dynamically
           batchProgress: parsedCount,
-          overallProgress: (parsedCount || 0) + ((args.batchNumber - 1) * 60), // Approx cumulative (60 per batch)
+          overallProgress: processedSoFar,
+          overallTotal: estimatedTotal,
         });
       }
 
-      // Check if more batches needed
-      const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
-        clerkUserId: args.clerkUserId,
-      });
-
+      // Check if more batches needed (remainingResult already fetched above)
       const hasMoreBatches = remainingResult.count > 0;
 
       if (hasMoreBatches) {

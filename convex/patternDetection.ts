@@ -606,6 +606,17 @@ export const runPatternBasedDetection = internalMutation({
           console.log(`  ⏭️  Skipping blocked merchant: ${merchantName}`);
           continue;
         }
+        
+        // Filter out "final invoice" receipts - these are one-time invoices, not subscriptions
+        // Pattern: "Final invoice bill for X" indicates a one-time invoice, not recurring
+        const hasFinalInvoicePattern = sortedReceipts.some((r: any) => {
+          const subject = (r as any).subject || "";
+          return /(?:final|last)\s+invoice\s+bill\s+for/i.test(subject);
+        });
+        if (hasFinalInvoicePattern && sortedReceipts.length === 1) {
+          console.log(`  ⏭️  Skipping one-time final invoice: ${merchantName} - "Final invoice bill" pattern detected`);
+          continue;
+        }
         // Allow single recent receipt for YEARLY plans.
         // By the time we label something YEARLY we already have strong textual
         // cadence evidence (\"annual plan\", etc.). We still require

@@ -82,7 +82,8 @@ export const repairParsedReceipts = internalMutation({
       
       // Check for mislabeled merchants FIRST (before other repairs)
       // Pattern: "Fortect Premium: Thank You For Your Purchase" but merchant is "PlayStation"
-      const subjectMerchantPattern = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You\s+for\s+Your\s+Purchase/i;
+      // More flexible: "Merchant Name: Thank You" (with or without "For Your Purchase")
+      const subjectMerchantPattern = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You/i;
       const subjectMerchantMatch = subject.match(subjectMerchantPattern);
       if (subjectMerchantMatch && subjectMerchantMatch[1]) {
         const extracted = subjectMerchantMatch[1].trim();
@@ -92,6 +93,13 @@ export const repairParsedReceipts = internalMutation({
         if (normalizedSubject && normalizedSubject !== normalizedCurrent && normalizedSubject.length > 2) {
           newMerchant = cleaned;
           console.log(`🔧 REPAIR: Fixed mislabeled merchant "${r.merchantName}" → "${newMerchant}" from subject pattern`);
+          // Save immediately - don't wait for other repairs
+          const normalized = normalizeMerchantName(newMerchant);
+          if (normalized && normalized !== "apple" && normalized !== "your" && newMerchant) {
+            await ctx.db.patch(r._id, { merchantName: newMerchant, parsingConfidence: Math.max(r.parsingConfidence ?? 0.6, 0.8) });
+            fixedMerchant++;
+            continue; // Skip other repairs, already fixed
+          }
         }
       }
       

@@ -450,6 +450,7 @@ export default defineSchema({
       pageToken: v.optional(v.string()),
       lastProcessedMessageId: v.optional(v.string()),
       lastProcessedReceiptId: v.optional(v.id("emailReceipts")),
+      processedReceiptIds: v.optional(v.array(v.id("emailReceipts"))),
       emailsCollected: v.number(),
       receiptsProcessed: v.number(),
       candidatesCreated: v.number(),

@@ -205,6 +205,9 @@ export default defineSchema({
     proposedNextBilling: v.number(),
     confidence: v.number(), // 0-1
     detectionReason: v.string(), // Human-readable explanation
+    // Optional evidence metadata used by pattern-based detection
+    evidenceSnippet: v.optional(v.string()),
+    evidenceType: v.optional(v.string()),
     status: v.union(
       v.literal("pending"),
       v.literal("accepted"),

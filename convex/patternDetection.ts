@@ -1034,14 +1034,23 @@ function hasNextBillingDateEvidence(
 function hasChargeConfirmationReceipt(
   receipts: Array<{ [key: string]: any }>
 ): boolean {
-  const chargeWords = /\b(charged?|paid|billed?|invoice|receipt|order\s+#?)\b/i;
+  // Charge confirmation patterns: explicit charge words OR purchase confirmation patterns
+  const chargeWords = /\b(charged?|paid|billed?|invoice|receipt|order\s+#?|purchase|transaction)\b/i;
+  const purchaseConfirmation = /\b(thank\s+you\s+for\s+your\s+purchase|purchase\s+confirmation|transaction\s+(id|#)|order\s+confirmation)\b/i;
+  
   for (const r of receipts) {
     if (isCreditOrTopUp(r)) continue;
     if (r.amount === null || r.amount === undefined || r.amount <= 0) continue;
     const subject: string = (r as any).subject || "";
     const body: string = (r as any).rawBody || "";
     const text = `${subject}\n${body}`;
-    if (chargeWords.test(text) && !/\b(refund|refunded|reversal|credited)\b/i.test(text)) {
+    
+    // Check for charge words OR purchase confirmation patterns
+    const hasChargeWords = chargeWords.test(text);
+    const hasPurchaseConfirmation = purchaseConfirmation.test(text);
+    const isRefund = /\b(refund|refunded|reversal|credited)\b/i.test(text);
+    
+    if ((hasChargeWords || hasPurchaseConfirmation) && !isRefund) {
       return true;
     }
   }

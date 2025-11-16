@@ -21,6 +21,46 @@ export const getAllUsers = query({
 });
 
 /**
+ * Find Fortect receipts for debugging
+ */
+export const findFortectReceipts = query({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const allReceipts = await ctx.db
+      .query("emailReceipts")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const fortectReceipts = allReceipts.filter((r) => 
+      (r.subject && r.subject.toLowerCase().includes("fortect")) ||
+      (r.merchantName && r.merchantName.toLowerCase().includes("fortect")) ||
+      (r.from && r.from.toLowerCase().includes("fortect"))
+    );
+
+    return fortectReceipts.map((r) => ({
+      _id: r._id,
+      merchantName: r.merchantName,
+      subject: r.subject?.substring(0, 100),
+      from: r.from,
+      amount: r.amount,
+      parsed: r.parsed,
+      receivedAt: r.receivedAt,
+    }));
+  },
+});
+
+/**
  * Get all email receipts for a user (for debugging)
  */
 export const getUserEmailReceipts = query({

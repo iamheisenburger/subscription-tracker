@@ -564,17 +564,41 @@ export const processNextBatch = internalAction({
   args: {
     clerkUserId: v.string(),
     batchNumber: v.number(),
+    allowDuringSafeMode: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{
     success: boolean;
     error?: string;
     hasMoreBatches?: boolean;
   }> => {
+    const allowDuringSafeMode = args.allowDuringSafeMode ?? false;
+
     // SAFE MODE CHECK: Block BACKGROUND batch processing if safe mode enabled
-    // This prevents runaway costs from background automations
+    // Manual scans explicitly pass allowDuringSafeMode=true so users can finish scans even in safe mode.
     const safeModeEnabled = await ctx.runQuery(internal.adminControl.isSafeModeEnabled, {});
-    if (safeModeEnabled) {
-      console.log(`🔴 SAFE MODE: Batch ${args.batchNumber} skipped - safe mode enabled (background processing blocked)`);
+    if (!allowDuringSafeMode && safeModeEnabled) {
+      console.log(
+        `🔴 SAFE MODE: Batch ${args.batchNumber} skipped - safe mode enabled (background processing blocked)`
+      );
+
+      // Update scan state machine so UI can show paused status
+      try {
+        const connections: any[] = await ctx.runQuery(internal.emailScanner.getUserConnectionsInternal, {
+          clerkUserId: args.clerkUserId,
+        });
+        const firstConnection = connections.find((c) => c.status === "active");
+        if (firstConnection) {
+          await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+            connectionId: firstConnection._id,
+            scanState: "paused_safe_mode",
+            estimatedTimeRemaining: undefined,
+            currentBatch: args.batchNumber,
+          });
+        }
+      } catch (stateError) {
+        console.error("Failed to mark scan as paused due to safe mode:", stateError);
+      }
+
       return { success: false, error: "Safe mode enabled - background batch processing stopped" };
     }
 
@@ -678,6 +702,7 @@ export const processNextBatch = internalAction({
             {
               clerkUserId: args.clerkUserId,
               batchNumber: args.batchNumber + 1,
+              allowDuringSafeMode,
             }
           );
         } else {
@@ -961,6 +986,7 @@ export const triggerUserEmailScan = action({
         {
           clerkUserId: args.clerkUserId,
           batchNumber: 1,
+          allowDuringSafeMode: true,
         }
       );
 

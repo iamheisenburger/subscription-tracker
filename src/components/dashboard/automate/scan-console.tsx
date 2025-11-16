@@ -175,6 +175,7 @@ export function ScanConsole() {
     if (
       scanState === "parsing" ||
       scanState?.startsWith("processing_batch_") ||
+      scanState === "paused_safe_mode" ||
       aiStatus === "processing"
     ) {
       return "parse";
@@ -227,6 +228,7 @@ export function ScanConsole() {
   };
 
   const progressData = getProgressData();
+  const isPausedBySafeMode = gmailConnection?.scanState === "paused_safe_mode";
 
   // Handle first scan
   const handleFirstScan = async () => {
@@ -367,7 +369,7 @@ export function ScanConsole() {
                     </Badge>
                   )}
                   <Button
-                    variant={hasCompletedScan ? "outline" : "default"}
+                    variant="default"
                     size="sm"
                     onClick={handleFirstScan}
                     disabled={isScanning || isScanningState}
@@ -451,6 +453,13 @@ export function ScanConsole() {
                 );
               })}
             </div>
+            {/* Safe mode pause notice */}
+            {isPausedBySafeMode && (
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200 text-center font-sans">
+                Scan paused by Safe Mode to prevent unexpected costs. Resume automatically once Safe Mode is turned off.
+              </div>
+            )}
+
             {/* Current step description with inline parse status */}
             {isScanningState && (
               <div className="mt-3 text-sm text-muted-foreground font-sans text-center">

@@ -320,30 +320,33 @@ export function ScanConsole() {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Reconnect
                 </Button>
-              ) : isActive && !hasCompletedScan ? (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleFirstScan}
-                  disabled={isScanning || isScanningState}
-                  className="font-sans"
-                >
-                  {isScanning || isScanningState ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Scanning...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Run first scan
-                    </>
+              ) : isActive ? (
+                <>
+                  {hasCompletedScan && (
+                    <Badge variant="secondary" className="font-sans text-xs mr-2">
+                      Weekly incremental enabled
+                    </Badge>
                   )}
-                </Button>
-              ) : hasCompletedScan ? (
-                <Badge variant="secondary" className="font-sans text-xs">
-                  Weekly incremental enabled
-                </Badge>
+                  <Button
+                    variant={hasCompletedScan ? "outline" : "default"}
+                    size="sm"
+                    onClick={handleFirstScan}
+                    disabled={isScanning || isScanningState}
+                    className="font-sans"
+                  >
+                    {isScanning || isScanningState ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Scanning...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        {hasCompletedScan ? "Scan Now" : "Run first scan"}
+                      </>
+                    )}
+                  </Button>
+                </>
               ) : null}
             </div>
           </div>

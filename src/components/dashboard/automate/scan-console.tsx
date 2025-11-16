@@ -13,7 +13,6 @@ import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Mail,
@@ -247,9 +246,15 @@ export function ScanConsole() {
         description: "We're analyzing your inbox for subscription receipts. This runs in the background.",
         duration: 6000,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Failed to start email scan. Please try again.";
       toast.error("Scan failed", {
-        description: error?.message || "Failed to start email scan. Please try again.",
+        description: message,
       });
     } finally {
       setIsScanning(false);

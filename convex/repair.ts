@@ -134,19 +134,35 @@ export const repairParsedReceipts = internalMutation({
           if (svc) newMerchant = svc;
         }
 
+        // Extract merchant from subject patterns BEFORE template matching
+        // Pattern: "Fortect Premium: Thank You For Your Purchase" → "Fortect"
+        const subjectMerchantPattern = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You\s+for\s+Your\s+Purchase/i;
+        const subjectMerchantMatch = subject.match(subjectMerchantPattern);
+        if (subjectMerchantMatch && subjectMerchantMatch[1]) {
+          const extracted = subjectMerchantMatch[1].trim();
+          // Remove common suffixes
+          const cleaned = extracted.replace(/\s+(Premium|Pro|Plus|Basic|Standard)$/i, "").trim();
+          if (cleaned.length > 2 && cleaned.length < 50) {
+            newMerchant = cleaned;
+          }
+        }
+
         // PlayStation receipts ("Thank You For Your Purchase") salvage
         // Many PlayStation emails are purchases/renewals sent from txn domains and lack explicit "receipt/invoice" phrasing.
         // When the sender matches PlayStation transaction domains or subject matches their template, assign merchant and try to pull amount.
-        const fromLower = from.toLowerCase();
-        const isPlayStationSender =
-          fromLower.includes("txn-email.playstation.com") ||
-          fromLower.includes("txn-email03.playstation.com") ||
-          fromLower.includes("playstation");
-        const looksLikePlayStationTemplate =
-          /thank\s+you\s+for\s+your\s+purchase/i.test(subject) ||
-          /your\s+playstation\s+store\s+transaction\s+was\s+successful/i.test(body || "");
-        if ((!newMerchant || normalizeMerchantName(newMerchant) === "your") && (isPlayStationSender || looksLikePlayStationTemplate)) {
-          newMerchant = "PlayStation";
+        // NOTE: Only apply if merchant wasn't already extracted from subject pattern above
+        if (!newMerchant || normalizeMerchantName(newMerchant) === "your") {
+          const fromLower = from.toLowerCase();
+          const isPlayStationSender =
+            fromLower.includes("txn-email.playstation.com") ||
+            fromLower.includes("txn-email03.playstation.com") ||
+            fromLower.includes("playstation");
+          const looksLikePlayStationTemplate =
+            /thank\s+you\s+for\s+your\s+purchase/i.test(subject) ||
+            /your\s+playstation\s+store\s+transaction\s+was\s+successful/i.test(body || "");
+          if (isPlayStationSender || looksLikePlayStationTemplate) {
+            newMerchant = "PlayStation";
+          }
         }
 
         if (newMerchant) {

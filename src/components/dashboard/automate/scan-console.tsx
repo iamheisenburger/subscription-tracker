@@ -439,10 +439,16 @@ export function ScanConsole() {
                 );
               })}
             </div>
-            {/* Current step description */}
+            {/* Current step description with inline parse status */}
             {isScanningState && (
               <div className="mt-3 text-sm text-muted-foreground font-sans text-center">
                 {STEP_CONFIG[currentStep].description}
+                {currentStep === "parse" && gmailConnection?.currentBatch && gmailConnection?.totalBatches && (
+                  <span className="ml-2 text-xs">
+                    (Batch {gmailConnection.currentBatch}/{gmailConnection.totalBatches}
+                    {progressData.hasValidProgress && ` • ${progressData.processed}/${progressData.total}`})
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -464,29 +470,6 @@ export function ScanConsole() {
             </div>
           )}
 
-          {/* Parse stage status - Show batch progress without loading bar */}
-          {isScanningState && currentStep === "parse" && (
-            <div className="p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                <div className="flex-1">
-                  <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
-                    {STEP_CONFIG[currentStep].description}
-                  </span>
-                  {gmailConnection?.currentBatch && gmailConnection?.totalBatches && (
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-sans ml-2">
-                      (Batch {gmailConnection.currentBatch} of {gmailConnection.totalBatches})
-                    </span>
-                  )}
-                  {progressData.hasValidProgress && (
-                    <div className="text-xs text-blue-600 dark:text-blue-400 font-sans mt-1">
-                      {progressData.processed} of {progressData.total} receipts analyzed
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Non-numeric active state - Only show when no valid progress */}
           {isScanningState && 

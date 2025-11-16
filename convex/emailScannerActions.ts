@@ -933,15 +933,35 @@ export const triggerUserEmailScan = action({
       }
 
       // Schedule AI parsing + detection immediately (runs in background)
-      console.log(`🔄 Scheduling AI parsing in background...`);
+      // STAGGERED BATCH PROCESSING: Schedule batches with small delays for parallel processing
+      // This allows batches to overlap while avoiding conflicts (each batch gets different receipts)
+      console.log(`🔄 Scheduling AI parsing in background with staggered batches...`);
+      const BATCH_SIZE = 60;
+      const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
+      const STAGGER_DELAY_SECONDS = 5; // 5 seconds between batches for overlap
+      
+      // Schedule first batch immediately, then stagger subsequent batches
       await ctx.scheduler.runAfter(
-        0, // Start immediately
+        0,
         internal.emailScannerActions.processNextBatch,
         {
           clerkUserId: args.clerkUserId,
-          batchNumber: 1, // This is the first parsing batch
+          batchNumber: 1,
         }
       );
+      
+      // Schedule next 2 batches with small delays for parallel processing
+      for (let i = 2; i <= Math.min(3, totalBatches); i++) {
+        await ctx.scheduler.runAfter(
+          (i - 1) * STAGGER_DELAY_SECONDS, // Stagger: batch 2 at 5s, batch 3 at 10s
+          internal.emailScannerActions.processNextBatch,
+          {
+            clerkUserId: args.clerkUserId,
+            batchNumber: i,
+          }
+        );
+      }
+      console.log(`⚡ Scheduled batches with ${STAGGER_DELAY_SECONDS}s stagger for parallel processing`);
 
       console.log(`✅ Scan initiated! Receipts are being analyzed in the background.`);
 

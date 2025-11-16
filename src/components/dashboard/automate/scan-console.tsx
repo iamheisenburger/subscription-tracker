@@ -453,10 +453,11 @@ export function ScanConsole() {
             )}
           </div>
 
-          {/* Gmail Scan status - Text only, no loading bar */}
+          {/* Gmail Scan status - Text only, no loading bar - Only show when actively scanning */}
           {isScanningState && 
            currentStep === "gmail_scan" && 
-           progressData.hasValidProgress && (
+           progressData.hasValidProgress &&
+           progressData.processed < progressData.total && (
             <div className="mt-2 text-xs text-muted-foreground font-sans text-center">
               {progressData.processed} / {progressData.total} emails collected
             </div>

@@ -558,8 +558,11 @@ export const processNextBatch = internalAction({
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
         // DUAL PROVIDER: 40 receipts per batch with NO DELAYS (independent rate limits)
-        // 1000 receipts / 40 per batch = 25 batches max
-        if (args.batchNumber < 50) {
+        // Calculate max batches needed: (total receipts / 40) + safety margin
+        // For 188 receipts: 188/40 = 4.7, so 5 batches + 5 safety = 10 max
+        // But allow up to 100 batches for very large inboxes
+        const MAX_BATCHES = 100;
+        if (args.batchNumber < MAX_BATCHES) {
           console.log(`⚡ No delays needed - dual providers have independent rate limits!`);
           await ctx.scheduler.runAfter(
             0, // NO DELAY: Different providers = no rate limit conflicts
@@ -570,7 +573,41 @@ export const processNextBatch = internalAction({
             }
           );
         } else {
-          console.warn(`⚠️  Reached batch limit (50 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
+          console.warn(`⚠️  Reached batch limit (${MAX_BATCHES} batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
+          
+          // Even if batch limit hit, still run detection on what we have
+          const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
+            clerkUserId: args.clerkUserId,
+          });
+          
+          if (user && firstConnection) {
+            await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+              connectionId: firstConnection._id,
+              scanState: "detecting",
+            });
+            
+            const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
+              userId: user._id,
+            });
+            
+            console.log(`🎯 Detection after batch limit: Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
+            
+            await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+              connectionId: firstConnection._id,
+              scanState: "reviewing",
+            });
+            
+            await ctx.runMutation(internal.emailScanner.updateScanProgress, {
+              connectionId: firstConnection._id,
+              scanStatus: "complete",
+            });
+            await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+              connectionId: firstConnection._id,
+              status: "complete",
+              processed: 0,
+              total: 0,
+            });
+          }
         }
       } else {
         console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);

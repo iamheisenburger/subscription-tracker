@@ -130,22 +130,23 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
         }
         
         // Allow single receipt if:
-        // 1. Yearly subscription (strong evidence from text)
-        // 2. Trusted merchant (Spotify, PlayStation, X)
-        // 3. Strong subject/body evidence + subscription keywords + charge confirmation
+        // 1. Yearly subscription (strong evidence from text) - requires charge evidence
+        // 2. Trusted merchant (Spotify, PlayStation, X) OR strong subject/body + keywords
+        // 3. Must have charge evidence (or purchase-like for trusted merchants)
         const allowSingleForYearly = billingCycle === "yearly" && sortedReceipts.length >= 1;
-        const allowSingleForTrusted = isTrustedMerchantForSingleMonthly(merchantName) && sortedReceipts.length >= 1;
         const strongSubjectEvidence = hasStrongSubjectEvidence(sortedReceipts, merchantName);
         const hasSubKeywords = hasSubscriptionKeywords(sortedReceipts);
-        const hasChargeEvidence = hasChargeConfirmationReceipt(sortedReceipts);
         const allowSingleForMonthly = billingCycle !== "yearly" && 
           sortedReceipts.length >= 1 &&
-          strongSubjectEvidence && 
-          hasSubKeywords && 
-          hasChargeEvidence;
+          (
+            (strongSubjectEvidence && hasSubKeywords) ||
+            isTrustedMerchantForSingleMonthly(merchantName)
+          );
+        const hasChargeEvidence = hasChargeConfirmationReceipt(sortedReceipts) ||
+          (isTrustedMerchantForSingleMonthly(merchantName) && hasPurchaseLikeEvidence(sortedReceipts));
         
-        // Require evidence: at least 2 receipts OR single receipt with strong evidence
-        if (sortedReceipts.length >= 2 || allowSingleForYearly || allowSingleForTrusted || allowSingleForMonthly) {
+        // Require evidence: at least 2 receipts OR single receipt with strong evidence AND charge evidence
+        if ((sortedReceipts.length >= 2 || allowSingleForYearly || allowSingleForMonthly) && hasChargeEvidence) {
           const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
           console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle}) - ${sortedReceipts.length} receipt(s)`);
 

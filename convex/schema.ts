@@ -323,6 +323,7 @@ export default defineSchema({
     lastSyncedAt: v.optional(v.number()), // Last time we scanned emails
     syncCursor: v.optional(v.string()), // Timestamp for incremental scans
     lastFullScanAt: v.optional(v.number()), // When last FULL inbox scan completed (for incremental mode)
+    lastScannedInternalDate: v.optional(v.number()), // Gmail internalDate of last scanned message
     // Full inbox scan pagination (Phase 3)
     scanStatus: v.optional(v.union(
       v.literal("not_started"),  // Never scanned before

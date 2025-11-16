@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as adminAIParse from "../adminAIParse.js";
 import type * as adminCleanup from "../adminCleanup.js";
+import type * as adminControl from "../adminControl.js";
 import type * as adminFixes from "../adminFixes.js";
 import type * as adminQueries from "../adminQueries.js";
 import type * as adminReset from "../adminReset.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminAIParse: typeof adminAIParse;
   adminCleanup: typeof adminCleanup;
+  adminControl: typeof adminControl;
   adminFixes: typeof adminFixes;
   adminQueries: typeof adminQueries;
   adminReset: typeof adminReset;

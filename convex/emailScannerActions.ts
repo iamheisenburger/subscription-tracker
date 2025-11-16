@@ -570,6 +570,13 @@ export const processNextBatch = internalAction({
     error?: string;
     hasMoreBatches?: boolean;
   }> => {
+    // SAFE MODE CHECK: Early return if safe mode enabled
+    const safeModeEnabled = await ctx.runQuery(internal.adminControl.isSafeModeEnabled, {});
+    if (safeModeEnabled) {
+      console.log(`🔴 SAFE MODE: Batch ${args.batchNumber} skipped - safe mode enabled`);
+      return { success: false, error: "Safe mode enabled - batch processing stopped" };
+    }
+
     try {
       console.log(`🔄 Auto-batching: Processing batch ${args.batchNumber} for user ${args.clerkUserId}`);
 
@@ -813,6 +820,15 @@ export const triggerUserEmailScan = action({
     scannedConnections?: number;
     results?: any[];
   }> => {
+    // SAFE MODE CHECK: Early return if safe mode enabled
+    const safeModeEnabled = await ctx.runQuery(internal.adminControl.isSafeModeEnabled, {});
+    if (safeModeEnabled) {
+      console.log("🔴 SAFE MODE: Manual scan blocked - safe mode enabled");
+      return { 
+        success: false, 
+        error: "Scan blocked - Safe mode is enabled. Please contact support or wait for safe mode to be disabled." 
+      };
+    }
     try {
       console.log(`🚀 triggerUserEmailScan called for clerkUserId: ${args.clerkUserId}`);
 

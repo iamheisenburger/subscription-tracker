@@ -412,6 +412,22 @@ export default defineSchema({
     .index("by_content_hash", ["contentHash"]), // NEW: For SHA-256 cache lookups
 
   // Distributed locking system for preventing concurrent operations
+  systemSettings: defineTable({
+    // Safe Mode / Kill Switch
+    safeModeEnabled: v.boolean(),
+    safeModeReason: v.optional(v.string()),
+    safeModeMessage: v.optional(v.string()),
+    safeModeEnabledAt: v.optional(v.number()),
+    // Debug query throttling
+    debugQueriesDisabled: v.boolean(),
+    minDebugPollIntervalMs: v.number(),
+    // Detection queue monitoring
+    lastDetectionQueueSize: v.optional(v.number()),
+    lastDetectionQueueCheck: v.optional(v.number()),
+    consecutiveUnchangedRuns: v.optional(v.number()),
+  })
+    .index("by_safe_mode", ["safeModeEnabled"]),
+
   distributedLocks: defineTable({
     resourceType: v.string(), // e.g., "emailConnection", "userScan"
     resourceId: v.string(),   // e.g., connection ID, user ID

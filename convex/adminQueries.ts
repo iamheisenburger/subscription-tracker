@@ -61,6 +61,34 @@ export const findFortectReceipts = query({
 });
 
 /**
+ * Get detection queue stats (for monitoring)
+ * Per COST_SAFETY_AND_UNIT_ECONOMICS.md
+ */
+export const getDetectionQueueStats = query({
+  args: {},
+  handler: async (ctx) => {
+    // Count receipts needing detection (not linked to subscriptions or candidates)
+    const queueSize = await ctx.db
+      .query("emailReceipts")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("parsed"), true),
+          q.eq(q.field("subscriptionId"), undefined),
+          q.eq(q.field("detectionCandidateId"), undefined),
+          q.gte(q.field("parsingConfidence"), 0.6)
+        )
+      )
+      .collect();
+
+    return {
+      queueSize: queueSize.length,
+      timestamp: Date.now(),
+      warning: queueSize.length >= 150 ? "Queue size exceeds threshold (150) - safe mode should trigger" : null,
+    };
+  },
+});
+
+/**
  * Get all email receipts for a user (for debugging)
  */
 export const getUserEmailReceipts = query({

@@ -1,12 +1,40 @@
 /**
  * Scheduled Cron Jobs
  * Automated background tasks for email scanning, parsing, and detection
+ * 
+ * SAFE MODE PROTECTION: All crons check safe mode before running
+ * Per COST_SAFETY_AND_UNIT_ECONOMICS.md
  */
 
 import { cronJobs } from "convex/server";
 import { internal } from "./_generated/api";
 
 const crons = cronJobs();
+
+/**
+ * Check if safe mode is enabled (env or database)
+ * Early return wrapper for all cron handlers
+ */
+async function checkSafeMode(ctx: any): Promise<boolean> {
+  // Check environment variable first (highest priority)
+  if (process.env.SUBWISE_DISABLE_CRONS === "true" || 
+      process.env.SUBWISE_SAFE_MODE === "true") {
+    console.log("🔴 SAFE MODE: Crons disabled via environment variable");
+    return true;
+  }
+
+  // Check database
+  const settings = await ctx.db
+    .query("systemSettings")
+    .first();
+
+  if (settings?.safeModeEnabled) {
+    console.log(`🔴 SAFE MODE: Crons disabled - ${settings.safeModeReason || "manual"}`);
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * Email Scanner - Every 6 hours

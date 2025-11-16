@@ -97,23 +97,31 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
         middleZoneConfidence = 0.75;
       }
 
-      // RULE 1: Recent receipts based on billing cycle = ACTIVE
+      // RULE 1: Recent receipts based on billing cycle = ACTIVE.
+      // Require more evidence for monthly/weekly subs (>=2 receipts), but allow
+      // a single recent receipt for yearly subscriptions so new annual subs like
+      // Quittr are detected without waiting a full year.
       if (latestReceiptDate >= recentThreshold) {
-        const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
-        console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
+        const minReceiptsForRecent = billingCycle === "yearly" ? 1 : 2;
+        if (sortedReceipts.length >= minReceiptsForRecent) {
+          const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
+          console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
 
-        activeSubscriptions.push({
-          merchantName,
-          amount: latestReceipt.amount!,
-          currency: latestReceipt.currency || "USD",
-          billingCycle,
-          lastReceiptDate: latestReceiptDate,
-          receiptCount: sortedReceipts.length,
-          confidence: 0.95,
-          patternType: "recent",
-          receiptIds: sortedReceipts.map(r => r._id),
-        });
-        continue;
+          activeSubscriptions.push({
+            merchantName,
+            amount: latestReceipt.amount!,
+            currency: latestReceipt.currency || "USD",
+            billingCycle,
+            lastReceiptDate: latestReceiptDate,
+            receiptCount: sortedReceipts.length,
+            confidence: 0.95,
+            patternType: "recent",
+            receiptIds: sortedReceipts.map(r => r._id),
+          });
+          continue;
+        } else {
+          console.log(`  ⏭️  Skipping RECENT with single receipt: ${merchantName}`);
+        }
       }
 
       // RULE 2: Old receipts based on billing cycle = CANCELLED
@@ -686,6 +694,8 @@ function normalizeMerchantName(name: string): string {
     .trim()
     .replace(/\s+/g, " ") // Normalize whitespace
     .replace(/[,.]?\s*(inc|llc|ltd|limited|corp|corporation|store)\.?$/i, "") // Remove legal suffixes
+    // Remove generic plan/tier suffixes so "Spotify Premium" and "Spotify" group together
+    .replace(/[,.]?\s*(premium|pro|plus|basic|standard|personal|plan|membership|subscription)\s*$/i, "")
     .replace(/\s*\([^)]*\)$/, "") // Remove parenthetical info
     .trim();
 }

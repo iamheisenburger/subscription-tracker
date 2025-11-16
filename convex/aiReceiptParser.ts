@@ -14,6 +14,187 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
 /**
+ * Basic merchant normalization used for comparison inside this module.
+ * Mirrors the normalization in detection/pattern modules but kept local to
+ * avoid tight coupling.
+ */
+function normalizeMerchantForComparison(name: string | null | undefined): string {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    // Remove common legal / store suffixes
+    .replace(/[,.]?\s*(inc|llc|ltd|limited|corp|corporation|store|company|co)\.?$/i, "")
+    // Remove plan/tier suffixes (Premium, Pro, Plus, Plan, Subscription, Membership)
+    .replace(/[,.]?\s*(premium|pro|plus|basic|standard|personal|plan|membership|subscription)\s*$/i, "")
+    .replace(/\s*\([^)]*\)$/, "")
+    .trim();
+}
+
+const GENERIC_FROM_WORDS = new Set([
+  "inc",
+  "llc",
+  "ltd",
+  "limited",
+  "corp",
+  "corporation",
+  "store",
+  "company",
+  "co",
+  "support",
+  "team",
+  "supportteam",
+  "billing",
+  "noreply",
+  "no-reply",
+  "notifications",
+  "notification",
+]);
+
+const GENERIC_SUBJECT_WORDS = new Set([
+  "your",
+  "receipt",
+  "invoice",
+  "from",
+  "subscription",
+  "confirmation",
+  "thank",
+  "you",
+  "for",
+  "purchase",
+  "order",
+  "payment",
+  "renewal",
+  "notice",
+  "update",
+]);
+
+// Payment/aggregator brands where the From/Subject name should NOT override AI
+const AGGREGATOR_BRANDS = new Set([
+  "apple",
+  "google",
+  "google payments",
+  "google play",
+  "stripe",
+  "paypal",
+  "paddle",
+  "shopify",
+  "shopify billing",
+  "visa",
+  "mastercard",
+  "american express",
+]);
+
+function extractBrandFromFromHeader(from: string): string | null {
+  // Format: "Display Name" <email@domain>
+  const match = from.match(/"?(.*?)"?\s*<[^>]+>/);
+  const displayName = (match?.[1] || from).trim();
+
+  if (!displayName) return null;
+
+  const cleaned = displayName.replace(/["']/g, "");
+  const tokens = cleaned.split(/[\s,]+/).filter(Boolean);
+
+  const filtered = tokens.filter((token) => {
+    const norm = token.toLowerCase();
+    return !GENERIC_FROM_WORDS.has(norm);
+  });
+
+  if (!filtered.length) return null;
+
+  // Use the first one or two words as brand (e.g. "Anthropic PBC")
+  return filtered.slice(0, 2).join(" ");
+}
+
+function extractBrandFromSubject(subject: string): string | null {
+  // Take the first segment before ":" / "-" / "|" which usually carries the brand
+  const firstSegment = (subject.split(/[-–|:]/)[0] || subject).trim();
+  if (!firstSegment) return null;
+
+  const tokens = firstSegment.split(/\s+/).filter(Boolean);
+
+  const filtered = tokens.filter((token) => {
+    const norm = token.toLowerCase();
+    return !GENERIC_SUBJECT_WORDS.has(norm);
+  });
+
+  if (!filtered.length) return null;
+
+  return filtered.slice(0, 2).join(" ");
+}
+
+/**
+ * General sanity check / refinement for AI-detected merchant names.
+ *
+ * Goal: prevent obvious mislabels (e.g., Fortect receipt labeled as PlayStation)
+ * while keeping aggregator cases (Apple/Stripe/PayPal/etc.) intact.
+ */
+function refineMerchantName(
+  aiMerchant: string | null,
+  subject: string,
+  from: string,
+  body: string
+): string | null {
+  if (!aiMerchant) return null;
+
+  const merchantNorm = normalizeMerchantForComparison(aiMerchant);
+  if (!merchantNorm) return null;
+
+  const fromBrand = extractBrandFromFromHeader(from);
+  const subjectBrand = extractBrandFromSubject(subject);
+  const lowerSubject = subject.toLowerCase();
+  const lowerFrom = from.toLowerCase();
+  const lowerBody = body.toLowerCase();
+
+  type BrandCandidate = { norm: string; label: string };
+  const candidates: BrandCandidate[] = [];
+
+  const addCandidate = (label: string | null) => {
+    if (!label) return;
+    const norm = normalizeMerchantForComparison(label);
+    if (!norm) return;
+    if (AGGREGATOR_BRANDS.has(norm)) return; // don't use pure aggregators as brand overrides
+
+    const firstWord = norm.split(" ")[0];
+    if (!firstWord) return;
+    const needle = firstWord.toLowerCase();
+
+    // Require the brand to actually appear in one of the headers/body
+    if (
+      !lowerSubject.includes(needle) &&
+      !lowerFrom.includes(needle) &&
+      !lowerBody.includes(needle)
+    ) {
+      return;
+    }
+
+    candidates.push({ norm, label });
+  };
+
+  addCandidate(fromBrand);
+  addCandidate(subjectBrand);
+
+  if (!candidates.length) {
+    return aiMerchant;
+  }
+
+  // If AI merchant already aligns with any candidate, keep it
+  const conflictsWithAll = candidates.every(
+    (c) =>
+      !merchantNorm.includes(c.norm) &&
+      !c.norm.includes(merchantNorm)
+  );
+
+  if (!conflictsWithAll) {
+    return aiMerchant;
+  }
+
+  // Otherwise, prefer the first strong brand candidate
+  return candidates[0].label;
+}
+
+/**
  * Generate simple hash from email body (without crypto module)
  * Used for deduplication - same email body = same hash = skip AI processing
  * Note: This is a simple hash for caching, not cryptographic security
@@ -316,6 +497,16 @@ async function processReceiptsWithClaude(
         receipt.from
       );
 
+      const refinedMerchant =
+        aiResult.success && aiResult.merchant
+          ? refineMerchantName(
+              aiResult.merchant,
+              receipt.subject,
+              receipt.from,
+              receipt.rawBody || ""
+            )
+          : aiResult.merchant;
+
         // Log specific missing subscriptions for debugging
         const missingSubKeywords = ["chatgpt", "openai", "perplexity", "spotify", "surfshark", "brandon", "fpl", "patreon"];
         const hasMissingSubKeyword = missingSubKeywords.some(keyword =>
@@ -338,7 +529,7 @@ async function processReceiptsWithClaude(
 
         results.push({
           receiptId: receipt._id,
-          merchantName: aiResult.merchant,
+          merchantName: refinedMerchant,
           amount: aiResult.amount,
           currency: aiResult.currency || "USD",
           billingCycle: aiResult.frequency === "monthly" ? "monthly" : aiResult.frequency === "yearly" ? "yearly" : null,
@@ -462,6 +653,16 @@ async function processReceiptsWithOpenAI(
         receipt.from
       );
 
+      const refinedMerchant =
+        aiResult.success && aiResult.merchant
+          ? refineMerchantName(
+              aiResult.merchant,
+              receipt.subject,
+              receipt.from,
+              receipt.rawBody || ""
+            )
+          : aiResult.merchant;
+
       const missingSubKeywords = ["chatgpt", "openai", "perplexity", "spotify", "surfshark", "brandon", "fpl", "patreon"];
       const hasMissingSubKeyword = missingSubKeywords.some(keyword =>
         receipt.subject.toLowerCase().includes(keyword) ||
@@ -477,7 +678,7 @@ async function processReceiptsWithOpenAI(
 
         results.push({
           receiptId: receipt._id,
-          merchantName: aiResult.merchant,
+          merchantName: refinedMerchant,
           amount: aiResult.amount,
           currency: aiResult.currency || "USD",
           billingCycle: aiResult.frequency === "monthly" ? "monthly" : aiResult.frequency === "yearly" ? "yearly" : null,

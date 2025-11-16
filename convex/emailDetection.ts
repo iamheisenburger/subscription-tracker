@@ -17,6 +17,8 @@ function normalizeMerchantName(name: string): string {
     .trim()
     .replace(/\s+/g, " ") // Normalize whitespace
     .replace(/[,.]?\s*(inc|llc|ltd|limited|corp|corporation|store)\.?$/i, "") // Remove legal suffixes
+    // Remove generic plan/tier suffixes so "Spotify Premium" and "Spotify" group together
+    .replace(/[,.]?\s*(premium|pro|plus|basic|standard|personal|plan|membership|subscription)\s*$/i, "")
     .replace(/\s*\([^)]*\)$/, "") // Remove parenthetical info
     .trim();
 }

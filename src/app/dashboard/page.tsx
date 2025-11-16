@@ -7,7 +7,7 @@ import { RenewalConfirmationSystem } from "@/components/dashboard/renewal-confir
 import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { AutomateDetectionQueue } from "@/components/dashboard/automate/automate-detection-queue";
-import { ConnectedEmailsWidget } from "@/components/dashboard/automate/connected-emails-widget";
+import { ScanConsole } from "@/components/dashboard/automate/scan-console";
 import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
@@ -58,8 +58,8 @@ export default async function DashboardPage() {
       {/* Stats Overview */}
       <OverviewCards userId={userId} />
 
-      {/* Automate-specific: Connected Emails Widget (shows email scan status) */}
-      <ConnectedEmailsWidget />
+      {/* Automate-specific: Scan Console (shows email scan status with stepper) */}
+      <ScanConsole />
 
       {/* Mobile Annual Upgrade CTA */}
       <MobileAnnualCTA />

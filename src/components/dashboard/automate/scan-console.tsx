@@ -235,14 +235,21 @@ export function ScanConsole() {
 
     setIsScanning(true);
     try {
-      await triggerScan({ clerkUserId: user.id });
+      const result = await triggerScan({ clerkUserId: user.id });
+      if (result.success === false && result.error) {
+        toast.error("Scan blocked", {
+          description: result.error,
+          duration: 8000,
+        });
+        return;
+      }
       toast.success("Scan started", {
         description: "We're analyzing your inbox for subscription receipts. This runs in the background.",
         duration: 6000,
       });
-    } catch {
+    } catch (error: any) {
       toast.error("Scan failed", {
-        description: "Failed to start email scan. Please try again.",
+        description: error?.message || "Failed to start email scan. Please try again.",
       });
     } finally {
       setIsScanning(false);

@@ -607,15 +607,37 @@ export const runPatternBasedDetection = internalMutation({
           continue;
         }
         
-        // Filter out "final invoice" receipts - these are one-time invoices, not subscriptions
-        // Pattern: "Final invoice bill for X" indicates a one-time invoice, not recurring
-        const hasFinalInvoicePattern = sortedReceipts.some((r: any) => {
-          const subject = (r as any).subject || "";
-          return /(?:final|last)\s+invoice\s+bill\s+for/i.test(subject);
-        });
-        if (hasFinalInvoicePattern && sortedReceipts.length === 1) {
-          console.log(`  ⏭️  Skipping one-time final invoice: ${merchantName} - "Final invoice bill" pattern detected`);
-          continue;
+        // Filter out one-time invoices/purchases - require evidence of recurring pattern
+        // For single receipts, check if they indicate one-time vs recurring
+        if (sortedReceipts.length === 1) {
+          const receipt = sortedReceipts[0];
+          const subject: string = (receipt as any).subject || "";
+          const body: string = (receipt as any).rawBody || "";
+          const text = `${subject}\n${body}`.toLowerCase();
+          
+          // One-time invoice/purchase indicators (general patterns)
+          const oneTimeIndicators = [
+            /(?:final|last|closing)\s+invoice/i, // "Final invoice", "Last invoice", "Closing invoice"
+            /invoice\s+(?:for|#)\s+\w+.*(?:final|last|one[-\s]?time)/i, // "Invoice for X - Final"
+            /\bone[-\s]?time\s+(?:payment|purchase|invoice|charge)/i, // "One-time payment"
+            /\bsingle\s+(?:payment|purchase|invoice)/i, // "Single payment"
+            /\bnon[-\s]?recurring/i, // "Non-recurring"
+            /\bfinal\s+bill/i, // "Final bill"
+          ];
+          
+          // Check if receipt indicates one-time purchase
+          const isOneTimeInvoice = oneTimeIndicators.some(pattern => pattern.test(text));
+          
+          // Require subscription/recurring evidence for single receipts
+          const hasRecurringEvidence = 
+            /\b(?:recurring|subscription|auto[\s-]?renew|renewal|billing\s+cycle|next\s+(?:payment|charge|billing))/i.test(text) ||
+            /\b(?:monthly|yearly|annual|weekly)\s+(?:subscription|plan|billing)/i.test(text);
+          
+          // If it's a one-time invoice AND lacks recurring evidence, skip it
+          if (isOneTimeInvoice && !hasRecurringEvidence) {
+            console.log(`  ⏭️  Skipping one-time invoice: ${merchantName} - One-time purchase pattern detected without recurring evidence`);
+            continue;
+          }
         }
         // Allow single recent receipt for YEARLY plans.
         // By the time we label something YEARLY we already have strong textual

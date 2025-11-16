@@ -479,13 +479,14 @@ async function processReceiptsWithClaude(
     reasoning?: string;
   }> = [];
 
-  console.log(`🤖 Claude: Processing ${receipts.length} receipts`);
+  console.log(`🤖 Claude: Processing ${receipts.length} receipts in parallel`);
 
-  for (const receipt of receipts) {
+  // Process all receipts in parallel for maximum speed
+  const receiptPromises = receipts.map(async (receipt) => {
     // Defensive check: Skip if receipt is undefined or missing required fields
     if (!receipt || !receipt._id || !receipt.subject) {
       console.error(`  ❌ Invalid receipt object: ${JSON.stringify(receipt)}`);
-      continue;
+      return null;
     }
 
     try {
@@ -527,17 +528,16 @@ async function processReceiptsWithClaude(
         // Valid subscription - include it (40%+ confidence)
         console.log(`  🤖 Claude SUCCESS: "${aiResult.merchant}" - $${aiResult.amount} ${aiResult.currency} (${aiResult.confidence}%)`);
 
-        results.push({
+        return {
           receiptId: receipt._id,
           merchantName: refinedMerchant,
           amount: aiResult.amount,
           currency: aiResult.currency || "USD",
           billingCycle: aiResult.frequency === "monthly" ? "monthly" : aiResult.frequency === "yearly" ? "yearly" : null,
           confidence: aiResult.confidence / 100,
-          method: "ai",
+          method: "ai" as const,
           reasoning: aiResult.reasoning,
-        });
-        continue;
+        };
       } else if (!aiResult.success) {
         console.log(`  ⚠️ Claude FAILED - Falling back to regex`);
       } else {
@@ -551,49 +551,46 @@ async function processReceiptsWithClaude(
 
       if (regexResult.merchantName && regexResult.amount) {
         console.log(`  📋 Claude REGEX: "${regexResult.merchantName}" - $${regexResult.amount} ${regexResult.currency}`);
-        results.push({
+        return {
           receiptId: receipt._id,
           merchantName: regexResult.merchantName,
           amount: regexResult.amount,
           currency: regexResult.currency,
           billingCycle: regexResult.billingCycle,
           confidence: regexResult.confidence,
-          method: "regex_fallback",
-        });
+          method: "regex_fallback" as const,
+        };
       } else {
-        results.push({
+        return {
           receiptId: receipt._id,
           merchantName: null,
           amount: null,
           currency: "USD",
           billingCycle: null,
           confidence: 0,
-          method: "filtered",
-        });
+          method: "filtered" as const,
+        };
       }
     } catch (error) {
       console.error(`  ❌ Claude error:`, error);
-      results.push({
+      return {
         receiptId: receipt._id,
         merchantName: null,
         amount: null,
         currency: "USD",
         billingCycle: null,
         confidence: 0,
-        method: "filtered",
-      });
+        method: "filtered" as const,
+      };
     }
+  });
 
-    // Update progress every 5 receipts for real-time UI feedback
-    if (connectionId && results.length % 5 === 0) {
-      await ctx.runMutation(internal.emailScanner.updateAIProgress, {
-        connectionId,
-        status: "processing",
-        processed: results.length,
-        total: receipts.length,
-      });
-    }
-  }
+  // Wait for all receipts to process in parallel
+  const receiptResults = await Promise.all(receiptPromises);
+  
+  // Filter out null results and collect valid ones
+  const validResults = receiptResults.filter((r): r is NonNullable<typeof r> => r !== null);
+  results.push(...validResults);
 
   console.log(`✅ Claude: ${results.length} receipts processed`);
 

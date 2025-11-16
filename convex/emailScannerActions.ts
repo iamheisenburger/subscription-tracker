@@ -570,11 +570,12 @@ export const processNextBatch = internalAction({
     error?: string;
     hasMoreBatches?: boolean;
   }> => {
-    // SAFE MODE CHECK: Early return if safe mode enabled
+    // SAFE MODE CHECK: Block BACKGROUND batch processing if safe mode enabled
+    // This prevents runaway costs from background automations
     const safeModeEnabled = await ctx.runQuery(internal.adminControl.isSafeModeEnabled, {});
     if (safeModeEnabled) {
-      console.log(`🔴 SAFE MODE: Batch ${args.batchNumber} skipped - safe mode enabled`);
-      return { success: false, error: "Safe mode enabled - batch processing stopped" };
+      console.log(`🔴 SAFE MODE: Batch ${args.batchNumber} skipped - safe mode enabled (background processing blocked)`);
+      return { success: false, error: "Safe mode enabled - background batch processing stopped" };
     }
 
     try {
@@ -820,15 +821,9 @@ export const triggerUserEmailScan = action({
     scannedConnections?: number;
     results?: any[];
   }> => {
-    // SAFE MODE CHECK: Early return if safe mode enabled
-    const safeModeEnabled = await ctx.runQuery(internal.adminControl.isSafeModeEnabled, {});
-    if (safeModeEnabled) {
-      console.log("🔴 SAFE MODE: Manual scan blocked - safe mode enabled");
-      return { 
-        success: false, 
-        error: "Scan blocked - Safe mode is enabled. Please contact support or wait for safe mode to be disabled." 
-      };
-    }
+    // NOTE: Manual scans are NOT blocked by safe mode
+    // Safe mode only blocks BACKGROUND cron jobs (per COST_SAFETY_AND_UNIT_ECONOMICS.md)
+    // Manual scans respect 24h cooldown but are allowed even when safe mode is active
     try {
       console.log(`🚀 triggerUserEmailScan called for clerkUserId: ${args.clerkUserId}`);
 

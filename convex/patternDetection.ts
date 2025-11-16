@@ -539,14 +539,34 @@ export const runPatternBasedDetection = internalMutation({
       const inferredCycle = inferBillingCycle(sortedReceipts);
       const detectedCycle = latestReceipt.billingCycle; // From AI parsing
       const textualCycle = inferCycleFromText(sortedReceipts);
+      
+      // For single receipts: Infer yearly from amount pattern if no explicit cycle
+      // Annual subscriptions often have higher amounts (e.g., £26.95/year vs £9.99/month)
+      let inferredYearlyFromAmount = false;
+      if (sortedReceipts.length === 1 && !textualCycle && !detectedCycle && !inferredCycle) {
+        const receiptAmount = receiptWithAmount.amount || 0;
+        const currency = receiptWithAmount.currency || "USD";
+        // If amount > $15 equivalent, might be annual (common annual pricing: $20-100/year)
+        // Convert to USD roughly: GBP * 1.3, EUR * 1.1, INR / 83
+        let amountUSD = receiptAmount;
+        if (currency === "GBP") amountUSD = receiptAmount * 1.3;
+        else if (currency === "EUR") amountUSD = receiptAmount * 1.1;
+        else if (currency === "INR") amountUSD = receiptAmount / 83;
+        // If amount suggests annual (>$15) and receipt is >90 days old, likely annual
+        if (amountUSD > 15 && (currentTime - latestReceiptDate) > (90 * 24 * 60 * 60 * 1000)) {
+          inferredYearlyFromAmount = true;
+          console.log(`  💰 Inferred YEARLY from amount: ${receiptAmount} ${currency} (${amountUSD.toFixed(2)} USD) for ${merchantName}`);
+        }
+      }
 
-      // Precedence: explicit monthly text wins; then weekly; then yearly; else AI/patterns
+      // Precedence: explicit monthly text wins; then weekly; then yearly; else AI/patterns; then amount inference
       const billingCycle =
         textualCycle === "monthly" ? "monthly" :
         textualCycle === "weekly" ? "weekly" :
         textualCycle === "yearly" ? "yearly" :
         (detectedCycle === "yearly" || inferredCycle === "yearly") ? "yearly" :
         (detectedCycle === "weekly" || inferredCycle === "weekly") ? "weekly" :
+        inferredYearlyFromAmount ? "yearly" :
         detectedCycle || inferredCycle || "monthly";
 
       // Apply cycle-specific time thresholds

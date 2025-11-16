@@ -405,11 +405,14 @@ export function ScanConsole() {
                       >
                         {isCompleted ? (
                           <Check className="h-4 w-4" />
+                        ) : isCurrent && step === "connect" && isActive && !isScanningState ? (
+                          // Connect step: show checkmark when connected (not scanning)
+                          <Check className="h-4 w-4" />
                         ) : (
                           <StepIcon
                             className={cn(
                               "h-4 w-4",
-                              isCurrent && "animate-spin"
+                              isCurrent && step !== "connect" && "animate-spin"
                             )}
                           />
                         )}
@@ -444,16 +447,14 @@ export function ScanConsole() {
             )}
           </div>
 
-          {/* Progress Block - Only show during Gmail Scan or Parse stages with valid progress */}
+          {/* Progress Block - Only show during Gmail Scan stage with valid progress */}
           {isScanningState && 
-           (currentStep === "gmail_scan" || currentStep === "parse") && 
+           currentStep === "gmail_scan" && 
            progressData.hasValidProgress && (
             <div className="p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
-                  {currentStep === "gmail_scan" 
-                    ? "Collecting emails from your inbox"
-                    : "Working through your emails in batches"}
+                  Collecting emails from your inbox
                 </span>
               </div>
               <Progress value={progressData.percent} className="mb-2" />

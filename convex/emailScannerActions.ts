@@ -535,35 +535,17 @@ export const processNextBatch = internalAction({
         connectionId: firstConnection?._id,
       });
 
-      console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parseResult.parsed} subscriptions detected`);
+      console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parseResult.parsed} receipts parsed`);
 
-      // Update overall progress after parsing (DISABLED scanState to bypass validation bug)
+      // Update overall progress after parsing
       if (firstConnection) {
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,
-          // scanState: `processing_batch_${args.batchNumber}` as any, // DISABLED: Schema validation broken
           currentBatch: args.batchNumber,
           batchProgress: parseResult.count || 0,
           overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 40), // Approx cumulative (40 per batch)
         });
       }
-
-      // Run pattern-based detection
-      console.log(`🎯 Running pattern detection (batch ${args.batchNumber})...`);
-      const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
-        clerkUserId: args.clerkUserId,
-      });
-
-      if (!user) {
-        console.error("❌ User not found during batch processing");
-        return { success: false, error: "User not found" };
-      }
-
-      const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
-        userId: user._id,
-      });
-
-      console.log(`🎯 Detection result (batch ${args.batchNumber}): Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
 
       // Check if more batches needed
       const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
@@ -593,14 +575,51 @@ export const processNextBatch = internalAction({
       } else {
         console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);
 
-        // FIX #2 from audit: Mark scan as complete in state machine
+        // Transition to DETECTING stage
         if (firstConnection) {
           await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
             connectionId: firstConnection._id,
-            scanState: "complete",
+            scanState: "detecting",
             estimatedTimeRemaining: 0,
           });
-          console.log(`📊 Updated scan state to: complete`);
+          console.log(`📊 Updated scan state to: detecting`);
+        }
+
+        // Run pattern-based detection ONCE after all parsing is complete
+        console.log(`🎯 Running final pattern detection after all batches complete...`);
+        const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
+          clerkUserId: args.clerkUserId,
+        });
+
+        if (user) {
+          const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
+            userId: user._id,
+          });
+
+          console.log(`🎯 Final detection result: Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
+
+          // Transition to REVIEWING/COMPLETE stage
+          if (firstConnection) {
+            await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+              connectionId: firstConnection._id,
+              scanState: "reviewing",
+              estimatedTimeRemaining: 0,
+            });
+            console.log(`📊 Updated scan state to: reviewing`);
+
+            // Mark scan and AI processing as complete
+            await ctx.runMutation(internal.emailScanner.updateScanProgress, {
+              connectionId: firstConnection._id,
+              scanStatus: "complete",
+            });
+            await ctx.runMutation(internal.emailScanner.updateAIProgress, {
+              connectionId: firstConnection._id,
+              status: "complete",
+              processed: 0,
+              total: 0,
+            });
+            console.log(`📊 Marked scan as complete`);
+          }
         }
       }
 

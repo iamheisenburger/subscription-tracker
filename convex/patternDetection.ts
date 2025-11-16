@@ -128,10 +128,26 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
           console.log(`  ⏭️  Skipping blocked merchant: ${merchantName}`);
           continue;
         }
-        // Require evidence: at least 2 receipts for the merchant to call it ACTIVE (recent)
-        if (sortedReceipts.length >= 2) {
+        
+        // Allow single receipt if:
+        // 1. Yearly subscription (strong evidence from text)
+        // 2. Trusted merchant (Spotify, PlayStation, X)
+        // 3. Strong subject/body evidence + subscription keywords + charge confirmation
+        const allowSingleForYearly = billingCycle === "yearly" && sortedReceipts.length >= 1;
+        const allowSingleForTrusted = isTrustedMerchantForSingleMonthly(merchantName) && sortedReceipts.length >= 1;
+        const strongSubjectEvidence = hasStrongSubjectEvidence(sortedReceipts, merchantName);
+        const hasSubKeywords = hasSubscriptionKeywords(sortedReceipts);
+        const hasChargeEvidence = hasChargeConfirmationReceipt(sortedReceipts);
+        const allowSingleForMonthly = billingCycle !== "yearly" && 
+          sortedReceipts.length >= 1 &&
+          strongSubjectEvidence && 
+          hasSubKeywords && 
+          hasChargeEvidence;
+        
+        // Require evidence: at least 2 receipts OR single receipt with strong evidence
+        if (sortedReceipts.length >= 2 || allowSingleForYearly || allowSingleForTrusted || allowSingleForMonthly) {
           const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
-          console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
+          console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle}) - ${sortedReceipts.length} receipt(s)`);
 
           activeSubscriptions.push({
             merchantName,
@@ -140,13 +156,13 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
             billingCycle,
             lastReceiptDate: latestReceiptDate,
             receiptCount: sortedReceipts.length,
-            confidence: 0.95,
+            confidence: sortedReceipts.length >= 2 ? 0.95 : 0.85, // Slightly lower confidence for single receipt
             patternType: "recent",
             receiptIds: sortedReceipts.map(r => r._id),
           });
           continue;
         } else {
-          console.log(`  ⏭️  Skipping RECENT with single receipt: ${merchantName}`);
+          console.log(`  ⏭️  Skipping RECENT with single receipt (insufficient evidence): ${merchantName}`);
         }
       }
 

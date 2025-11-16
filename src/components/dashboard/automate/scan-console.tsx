@@ -146,6 +146,11 @@ export function ScanConsole() {
       return "connect";
     }
 
+    // If no scan has ever been run, only show "connect" as completed
+    if (!hasCompletedScan && !isScanningState) {
+      return "connect";
+    }
+
     const scanState = gmailConnection.scanState;
     const scanStatus = gmailConnection.scanStatus;
     const aiStatus = gmailConnection.aiProcessingStatus;
@@ -154,6 +159,11 @@ export function ScanConsole() {
     // always show the final "Review" step regardless of any stale scanState.
     if (scanStatus === "complete" && aiStatus === "complete") {
       return "review";
+    }
+
+    // Only show steps beyond "connect" if scan is actively running
+    if (!isScanningState) {
+      return "connect";
     }
 
     // Map backend states to steps
@@ -177,11 +187,7 @@ export function ScanConsole() {
       return "review";
     }
 
-    // Default: if we have a connection and it's not scanning, we're at review
-    if (hasCompletedScan && !isScanningState) {
-      return "review";
-    }
-
+    // Default fallback
     return "preflight";
   };
 
@@ -438,12 +444,16 @@ export function ScanConsole() {
             )}
           </div>
 
-          {/* Progress Block */}
-          {isScanningState && progressData.hasValidProgress && (
+          {/* Progress Block - Only show during Gmail Scan or Parse stages with valid progress */}
+          {isScanningState && 
+           (currentStep === "gmail_scan" || currentStep === "parse") && 
+           progressData.hasValidProgress && (
             <div className="p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
-                  Working through your emails in batches
+                  {currentStep === "gmail_scan" 
+                    ? "Collecting emails from your inbox"
+                    : "Working through your emails in batches"}
                 </span>
               </div>
               <Progress value={progressData.percent} className="mb-2" />
@@ -453,8 +463,11 @@ export function ScanConsole() {
             </div>
           )}
 
-          {/* Non-numeric active state */}
-          {isScanningState && !progressData.hasValidProgress && (
+          {/* Non-numeric active state - Only show when no valid progress */}
+          {isScanningState && 
+           !progressData.hasValidProgress && 
+           currentStep !== "gmail_scan" && 
+           currentStep !== "parse" && (
             <div className="p-3 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-950/20">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />

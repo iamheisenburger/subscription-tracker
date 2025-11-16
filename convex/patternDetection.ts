@@ -128,27 +128,10 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
           console.log(`  ⏭️  Skipping blocked merchant: ${merchantName}`);
           continue;
         }
-        
-        // Allow single receipt if:
-        // 1. Yearly subscription (strong evidence from text) - requires charge evidence
-        // 2. Trusted merchant (Spotify, PlayStation, X) OR strong subject/body + keywords
-        // 3. Must have charge evidence (or purchase-like for trusted merchants)
-        const allowSingleForYearly = billingCycle === "yearly" && sortedReceipts.length >= 1;
-        const strongSubjectEvidence = hasStrongSubjectEvidence(sortedReceipts, merchantName);
-        const hasSubKeywords = hasSubscriptionKeywords(sortedReceipts);
-        const allowSingleForMonthly = billingCycle !== "yearly" && 
-          sortedReceipts.length >= 1 &&
-          (
-            (strongSubjectEvidence && hasSubKeywords) ||
-            isTrustedMerchantForSingleMonthly(merchantName)
-          );
-        const hasChargeEvidence = hasChargeConfirmationReceipt(sortedReceipts) ||
-          (isTrustedMerchantForSingleMonthly(merchantName) && hasPurchaseLikeEvidence(sortedReceipts));
-        
-        // Require evidence: at least 2 receipts OR single receipt with strong evidence AND charge evidence
-        if ((sortedReceipts.length >= 2 || allowSingleForYearly || allowSingleForMonthly) && hasChargeEvidence) {
+        // Require evidence: at least 2 receipts for the merchant to call it ACTIVE (recent)
+        if (sortedReceipts.length >= 2) {
           const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
-          console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle}) - ${sortedReceipts.length} receipt(s)`);
+          console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
 
           activeSubscriptions.push({
             merchantName,
@@ -157,13 +140,13 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
             billingCycle,
             lastReceiptDate: latestReceiptDate,
             receiptCount: sortedReceipts.length,
-            confidence: sortedReceipts.length >= 2 ? 0.95 : 0.85, // Slightly lower confidence for single receipt
+            confidence: 0.95,
             patternType: "recent",
             receiptIds: sortedReceipts.map(r => r._id),
           });
           continue;
         } else {
-          console.log(`  ⏭️  Skipping RECENT with single receipt (insufficient evidence): ${merchantName}`);
+          console.log(`  ⏭️  Skipping RECENT with single receipt: ${merchantName}`);
         }
       }
 

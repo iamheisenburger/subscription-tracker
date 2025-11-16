@@ -588,6 +588,8 @@ export const updateConnectionData = internalMutation({
   args: {
     connectionId: v.id("emailConnections"),
     lastFullScanAt: v.optional(v.number()),
+    lastScannedInternalDate: v.optional(v.number()),
+    lastSyncedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const updateData: any = {
@@ -596,6 +598,14 @@ export const updateConnectionData = internalMutation({
 
     if (args.lastFullScanAt !== undefined) {
       updateData.lastFullScanAt = args.lastFullScanAt;
+    }
+
+    if (args.lastScannedInternalDate !== undefined) {
+      updateData.lastScannedInternalDate = args.lastScannedInternalDate;
+    }
+
+    if (args.lastSyncedAt !== undefined) {
+      updateData.lastSyncedAt = args.lastSyncedAt;
     }
 
     await ctx.db.patch(args.connectionId, updateData);

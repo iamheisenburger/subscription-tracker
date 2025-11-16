@@ -17,6 +17,43 @@ import { Id } from "./_generated/dataModel";
 import { isSubscriptionEmail } from "./scanning/smartFilter";
 
 /**
+ * Lightweight token preflight to avoid auto-scan failures.
+ */
+export const preflightGmailToken = internalAction({
+  args: {
+    connectionId: v.id("emailConnections"),
+  },
+  handler: async (ctx, args): Promise<{ ok: boolean; status?: number }> => {
+    try {
+      const connection: any = await ctx.runQuery(internal.emailScanner.getConnectionById, {
+        connectionId: args.connectionId,
+      });
+      if (!connection || connection.status !== "active") {
+        return { ok: false };
+      }
+      const resp = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+        headers: { Authorization: `Bearer ${connection.accessToken}` },
+      });
+      if (!resp.ok) {
+        if (resp.status === 401 || resp.status === 403) {
+          await ctx.runMutation(internal.emailScanner.updateConnectionStatus, {
+            connectionId: connection._id,
+            status: "requires_reauth",
+            errorCode: "unauthorized",
+            errorMessage: "Gmail token no longer valid",
+          });
+        }
+        return { ok: false, status: resp.status };
+      }
+      return { ok: true, status: resp.status };
+    } catch (e) {
+      console.error("Preflight token check failed:", e);
+      return { ok: false };
+    }
+  },
+});
+
+/**
  * Scan Gmail for receipts using Gmail API
  * This is an ACTION (not mutation) because it uses fetch()
  */
@@ -24,6 +61,10 @@ export const scanGmailForReceipts = internalAction({
   args: {
     connectionId: v.id("emailConnections"),
     forceFullScan: v.optional(v.boolean()), // Force full inbox scan (ignore incremental mode)
+    // Incremental scan knobs (optional)
+    sinceTs: v.optional(v.number()),
+    capPages: v.optional(v.number()),
+    capMessages: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<{ success: boolean; receiptsFound?: number; totalProcessed?: number; scanComplete?: boolean; hasMorePages?: boolean; totalScanned?: number; totalReceipts?: number; error?: string }> => {
     try {
@@ -88,21 +129,22 @@ export const scanGmailForReceipts = internalAction({
 
       // Build time-range filter for incremental vs full scans
       const hasEverScannedFully = connection.lastFullScanAt && connection.lastFullScanAt > 0;
-      const isIncrementalScan = !args.forceFullScan && hasEverScannedFully && connection.scanStatus === "complete";
+      const lastIncrementalCheckpoint: number | undefined =
+        (typeof args.sinceTs === "number" && args.sinceTs > 0 ? args.sinceTs : undefined) ??
+        (typeof connection.lastScannedInternalDate === "number" ? connection.lastScannedInternalDate : undefined) ??
+        (typeof connection.lastFullScanAt === "number" ? connection.lastFullScanAt : undefined);
+      const isIncrementalScan = !args.forceFullScan && !!lastIncrementalCheckpoint && connection.scanStatus === "complete";
 
       let timeFilter = "";
       if (isIncrementalScan) {
-        // INCREMENTAL: Only scan emails AFTER last full scan (HUGE cost savings!)
-        const lastFullScanDate = Math.floor(connection.lastFullScanAt / 1000);
-        timeFilter = ` after:${lastFullScanDate}`;
-        console.log(`💰 INCREMENTAL SCAN: Only fetching NEW emails after ${new Date(connection.lastFullScanAt).toISOString()}`);
-        console.log(`💰 Expected: ~20-50 new emails (cost: $0.04-0.10)`);
+        const afterSeconds = Math.floor(lastIncrementalCheckpoint! / 1000);
+        timeFilter = ` after:${afterSeconds}`;
+        console.log(`💰 INCREMENTAL SCAN: Only fetching NEW emails after ${new Date(lastIncrementalCheckpoint!).toISOString()}`);
       } else {
         // FULL SCAN: Get subscription emails from last 12 MONTHS (captures annual subscriptions!)
         const twelveMonthsAgo = Math.floor((now - 12 * 30 * 24 * 60 * 60 * 1000) / 1000);
         timeFilter = ` after:${twelveMonthsAgo}`;
         console.log(`📧 FULL INBOX SCAN: Merchant-based search from last 12 MONTHS${args.forceFullScan ? " (FORCED by user)" : ""}`);
-        console.log(`📧 Expected: 200-300 emails (cost: $0.40-0.60) - Captures annual subscriptions!`);
       }
 
       // Split domains into batches of 15 (Gmail limit: ~1,500 chars, <20 OR terms)
@@ -116,8 +158,10 @@ export const scanGmailForReceipts = internalAction({
 
       // Collect all unique message IDs from all batches
       const allMessageIds = new Set<string>();
+      const maxPages = Math.max(1, Math.min(args.capPages ?? 3, domainBatches.length));
+      const maxMessages = Math.max(50, Math.min(args.capMessages ?? 500, 5000));
 
-      for (let batchIndex = 0; batchIndex < domainBatches.length; batchIndex++) {
+      for (let batchIndex = 0; batchIndex < domainBatches.length && batchIndex < maxPages; batchIndex++) {
         const batch = domainBatches[batchIndex];
 
         // Build Gmail query: from:(domain1.com OR domain2.com OR ...)
@@ -147,6 +191,7 @@ export const scanGmailForReceipts = internalAction({
           // Add message IDs to set (automatically deduplicates)
           for (const message of messages) {
             allMessageIds.add(message.id);
+            if (allMessageIds.size >= maxMessages) break;
           }
 
           console.log(`✅ Batch ${batchIndex + 1}: Found ${messages.length} emails (${allMessageIds.size} unique total)`);
@@ -156,8 +201,12 @@ export const scanGmailForReceipts = internalAction({
         }
 
         // Rate limiting: 2 second delay between batches
-        if (batchIndex < domainBatches.length - 1) {
+        if (batchIndex < domainBatches.length - 1 && allMessageIds.size < maxMessages) {
           await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        if (allMessageIds.size >= maxMessages) {
+          console.log(`🛑 Reached capMessages=${maxMessages}. Stopping domain batch loop early.`);
+          break;
         }
       }
 
@@ -167,7 +216,7 @@ export const scanGmailForReceipts = internalAction({
       // FALLBACK: Add payment processor keyword search to catch Stripe, PayPal, etc.
       // This catches subscriptions paid through processors not in merchant list
       // Also catches PlayStation transaction emails which use subdomain @txn-email.playstation.com
-      const fallbackQuery = `(from:stripe.com OR from:paypal.com OR from:paddle.com OR from:substack.com OR from:gumroad.com OR from:txn-email.playstation.com OR from:txn-email03.playstation.com OR subject:"payment receipt" OR subject:"subscription receipt" OR subject:"Thank You For Your Purchase" OR subject:"invoice" subject:"subscription")${timeFilter}`;
+      const fallbackQuery = `(from:stripe.com OR from:paypal.com OR from:paddle.com OR from:substack.com OR from:gumroad.com OR from:txn-email.playstation.com OR from:txn-email03.playstation.com OR from:payments.google.com OR from:google.com OR from:receipt.google.com OR from:email.apple.com OR from:spotify.com OR from:email.spotify.com OR from:no-reply@spotify.com OR subject:"Your invoice from Apple." OR subject:"Google Pay" OR subject:"Google Play" OR subject:"Spotify Premium" OR subject:"Spotify receipt" OR subject:"payment receipt" OR subject:"subscription receipt" OR subject:"Thank You For Your Purchase" OR subject:"invoice" OR subject:"subscription")${timeFilter}`;
       const fallbackUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(fallbackQuery)}&maxResults=500`;
 
       console.log(`🔄 FALLBACK: Searching payment processors and receipt keywords...`);
@@ -201,6 +250,7 @@ export const scanGmailForReceipts = internalAction({
       // For now, we process all messages in one go (no pagination between batches)
       // Future optimization: Could implement pagination if message count exceeds threshold
       const nextPageToken = undefined;
+      let lastInternalDateMax = 0;
 
       if (messages.length === 0) {
         // No messages in this batch - mark scan as complete
@@ -247,6 +297,8 @@ export const scanGmailForReceipts = internalAction({
           const subject = headers.find((h: any) => h.name.toLowerCase() === "subject")?.value || "No Subject";
           const from = headers.find((h: any) => h.name.toLowerCase() === "from")?.value || "Unknown";
           const date = headers.find((h: any) => h.name.toLowerCase() === "date")?.value;
+          const internalDateStr = messageData.internalDate;
+          const internalDate = internalDateStr ? Number(internalDateStr) : undefined;
 
           // Parse date
           let receivedAt = now;
@@ -256,6 +308,10 @@ export const scanGmailForReceipts = internalAction({
               receivedAt = parsedDate.getTime();
             }
           }
+          if (typeof internalDate === "number" && !Number.isNaN(internalDate)) {
+            receivedAt = internalDate;
+          }
+          if (receivedAt > lastInternalDateMax) lastInternalDateMax = receivedAt;
 
           // Extract email body
           let body = "";
@@ -371,6 +427,14 @@ export const scanGmailForReceipts = internalAction({
           });
           console.log(`💰 FULL SCAN COMPLETE - Future scans will be incremental (only NEW emails after ${new Date(now).toISOString()})`);
           console.log(`💰 Cost savings: Next scan will cost ~$0.15 instead of $1.50-2.00`);
+        }
+        if (lastInternalDateMax > 0) {
+          await ctx.runMutation(internal.emailScanner.updateConnectionData, {
+            connectionId: connection._id,
+            lastScannedInternalDate: lastInternalDateMax,
+            lastSyncedAt: now,
+          });
+          console.log(`⏭️ Updated lastScannedInternalDate to ${new Date(lastInternalDateMax).toISOString()}`);
         }
 
         console.log(`✅ Full inbox scan COMPLETE for ${connection.email}`);
@@ -528,22 +592,52 @@ export const processNextBatch = internalAction({
         console.log(`📊 Updated scan state to: ${batchStateName}`);
       }
 
-      // Parse next batch of receipts
-      console.log(`🤖 Parsing receipts (batch ${args.batchNumber})...`);
-      const parseResult = await ctx.runAction(internal.receiptParser.parseUnparsedReceiptsWithAI, {
+      // Parse next batch of receipts using the DUAL-PROVIDER AI parser
+      console.log(`🤖 Parsing receipts (batch ${args.batchNumber}) with dual providers...`);
+
+      // Resolve user for userId
+      const userForBatch = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
         clerkUserId: args.clerkUserId,
-        connectionId: firstConnection?._id,
+      });
+      if (!userForBatch) {
+        console.error("❌ User not found during batch parsing");
+        return { success: false, error: "User not found" };
+      }
+
+      // Get up to 40 unparsed receipts for AI
+      const receiptsToParse: any[] = await ctx.runQuery(internal.receiptParser.getUnparsedReceipts, {
+        userId: userForBatch._id,
+        limit: 40,
       });
 
-      console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parseResult.parsed} receipts parsed`);
+      let parsedCount = 0;
+      if (receiptsToParse.length > 0) {
+        const formattedReceipts = receiptsToParse.map((r: any) => ({
+          _id: r._id,
+          subject: r.subject || "No subject",
+          rawBody: r.rawBody || "",
+          from: r.from || "unknown",
+        }));
 
-      // Update overall progress after parsing
+        const aiResult: any = await ctx.runAction(internal.aiReceiptParser.parseReceiptsWithAI, {
+          receipts: formattedReceipts,
+          connectionId: firstConnection?._id,
+        });
+        parsedCount = aiResult?.processed || formattedReceipts.length;
+      } else {
+        console.log("📋 No unparsed receipts available for this batch");
+      }
+
+      console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parsedCount} receipts processed`);
+
+      // Update overall progress after parsing (DISABLED scanState to bypass validation bug)
       if (firstConnection) {
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,
+          // scanState: `processing_batch_${args.batchNumber}` as any, // DISABLED: Schema validation broken
           currentBatch: args.batchNumber,
-          batchProgress: parseResult.count || 0,
-          overallProgress: (parseResult.count || 0) + ((args.batchNumber - 1) * 40), // Approx cumulative (40 per batch)
+          batchProgress: parsedCount,
+          overallProgress: (parsedCount || 0) + ((args.batchNumber - 1) * 40), // Approx cumulative (40 per batch)
         });
       }
 
@@ -558,11 +652,8 @@ export const processNextBatch = internalAction({
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
         // DUAL PROVIDER: 40 receipts per batch with NO DELAYS (independent rate limits)
-        // Calculate max batches needed: (total receipts / 40) + safety margin
-        // For 188 receipts: 188/40 = 4.7, so 5 batches + 5 safety = 10 max
-        // But allow up to 100 batches for very large inboxes
-        const MAX_BATCHES = 100;
-        if (args.batchNumber < MAX_BATCHES) {
+        // 1000 receipts / 40 per batch = 25 batches max
+        if (args.batchNumber < 50) {
           console.log(`⚡ No delays needed - dual providers have independent rate limits!`);
           await ctx.scheduler.runAfter(
             0, // NO DELAY: Different providers = no rate limit conflicts
@@ -573,90 +664,44 @@ export const processNextBatch = internalAction({
             }
           );
         } else {
-          console.warn(`⚠️  Reached batch limit (${MAX_BATCHES} batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
-          
-          // Even if batch limit hit, still run detection on what we have
-          const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
-            clerkUserId: args.clerkUserId,
-          });
-          
-          if (user && firstConnection) {
-            await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
-              connectionId: firstConnection._id,
-              scanState: "detecting",
-            });
-            
-            const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
-              userId: user._id,
-            });
-            
-            console.log(`🎯 Detection after batch limit: Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
-            
-            await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
-              connectionId: firstConnection._id,
-              scanState: "reviewing",
-            });
-            
-            await ctx.runMutation(internal.emailScanner.updateScanProgress, {
-              connectionId: firstConnection._id,
-              scanStatus: "complete",
-            });
-            await ctx.runMutation(internal.emailScanner.updateAIProgress, {
-              connectionId: firstConnection._id,
-              status: "complete",
-              processed: 0,
-              total: 0,
-            });
-          }
+          console.warn(`⚠️  Reached batch limit (50 batches) - stopping auto-batching. ${remainingResult.count} receipts may remain unprocessed.`);
         }
       } else {
         console.log(`✅ Auto-batching complete! All receipts processed after ${args.batchNumber} batches`);
 
-        // Transition to DETECTING stage
-        if (firstConnection) {
-          await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
-            connectionId: firstConnection._id,
-            scanState: "detecting",
-            estimatedTimeRemaining: 0,
-          });
-          console.log(`📊 Updated scan state to: detecting`);
-        }
-
-        // Run pattern-based detection ONCE after all parsing is complete
-        console.log(`🎯 Running final pattern detection after all batches complete...`);
+        // One-time repair + detection AFTER all parsing completes (snapshot gating)
         const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
           clerkUserId: args.clerkUserId,
         });
+        if (!user) {
+          console.error("❌ User not found during final detection");
+          return { success: false, error: "User not found" };
+        }
 
-        if (user) {
-          const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
+        try {
+          console.log("🧰 Final repair pass before detection...");
+          await ctx.runMutation(internal.repair.repairParsedReceipts, {
             userId: user._id,
+            limit: 800,
           });
+        } catch (e) {
+          console.warn("Repair pass failed (continuing to detection):", e);
+        }
 
-          console.log(`🎯 Final detection result: Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
+        console.log("🎯 Running final pattern detection...");
+        const detectionResult = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
+          userId: user._id,
+        });
+        console.log(`🎯 Final detection: Created: ${detectionResult.created}, Updated: ${detectionResult.updated || 0}, Skipped: ${detectionResult.skipped || 0}`);
 
-          // Transition to REVIEWING/COMPLETE stage
-          if (firstConnection) {
-            await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
-              connectionId: firstConnection._id,
-              scanState: "reviewing",
-              estimatedTimeRemaining: 0,
-            });
-            console.log(`📊 Updated scan state to: reviewing`);
-
-            // Mark scan and AI processing as complete
-            await ctx.runMutation(internal.emailScanner.updateScanProgress, {
-              connectionId: firstConnection._id,
-              scanStatus: "complete",
-            });
-            await ctx.runMutation(internal.emailScanner.updateAIProgress, {
-              connectionId: firstConnection._id,
-              status: "complete",
-              processed: 0,
-              total: 0,
-            });
-            console.log(`📊 Marked scan as complete`);
-          }
+        // FIX #2 from audit: Mark scan as complete in state machine
+        if (firstConnection) {
+          await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+            connectionId: firstConnection._id,
+            scanState: "complete",
+            estimatedTimeRemaining: 0,
+          });
+          console.log(`📊 Updated scan state to: complete`);
         }
       }
 
@@ -670,6 +715,78 @@ export const processNextBatch = internalAction({
         success: false,
         error: error instanceof Error ? error.message : "Batch processing failed"
       };
+    }
+  },
+});
+
+/**
+ * Finalization guard: ensure detection runs after parsing completes.
+ * Retries until no unparsed receipts remain, then runs repair + detection once.
+ */
+export const finalizeAfterParsing = internalAction({
+  args: {
+    clerkUserId: v.string(),
+    attempt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; message?: string }> => {
+    const attempt = args.attempt ?? 1;
+    const MAX_ATTEMPTS = 20;
+    const RETRY_DELAY_MS = 5000;
+
+    try {
+      const user = await ctx.runQuery(internal.emailScanner.getUserByClerkId, {
+        clerkUserId: args.clerkUserId,
+      });
+      if (!user) return { success: false, message: "User not found" };
+
+      // Check remaining unparsed receipts
+      const remaining = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
+        clerkUserId: args.clerkUserId,
+      });
+      if (remaining.count > 0 && attempt < MAX_ATTEMPTS) {
+        console.log(`⏳ finalizeAfterParsing waiting: ${remaining.count} receipts remain (attempt ${attempt}/${MAX_ATTEMPTS})`);
+        await ctx.scheduler.runAfter(RETRY_DELAY_MS, internal.emailScannerActions.finalizeAfterParsing, {
+          clerkUserId: args.clerkUserId,
+          attempt: attempt + 1,
+        });
+        return { success: true, message: "Waiting for parsing to finish" };
+      }
+
+      // Run one-time repair
+      try {
+        console.log("🧰 Final repair pass (finalizeAfterParsing)...");
+        await ctx.runMutation(internal.repair.repairParsedReceipts, {
+          userId: user._id,
+          limit: 800,
+        });
+      } catch (e) {
+        console.warn("Repair pass failed in finalizeAfterParsing:", e);
+      }
+
+      // Run detection
+      console.log("🎯 Final detection (finalizeAfterParsing)...");
+      const det = await ctx.runMutation(internal.patternDetection.runPatternBasedDetection, {
+        userId: user._id,
+      });
+      console.log(`🎯 Final detection complete: Created ${det.created}, Updated ${det.updated || 0}`);
+
+      // Mark connection state complete if available
+      const connections: any[] = await ctx.runQuery(internal.emailScanner.getUserConnectionsInternal, {
+        clerkUserId: args.clerkUserId,
+      });
+      const firstConnection = connections.find((c) => c.status === "active");
+      if (firstConnection) {
+        await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
+          connectionId: firstConnection._id,
+          scanState: "complete",
+          estimatedTimeRemaining: 0,
+        });
+      }
+
+      return { success: true, message: "Final detection executed" };
+    } catch (error) {
+      console.error("❌ finalizeAfterParsing failed:", error);
+      return { success: false, message: "Finalize failed" };
     }
   },
 });
@@ -828,6 +945,16 @@ export const triggerUserEmailScan = action({
 
       console.log(`✅ Scan initiated! Receipts are being analyzed in the background.`);
 
+      // Schedule finalization guard (no-op if parsing keeps going; will retry until done)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emailScannerActions.finalizeAfterParsing,
+        {
+          clerkUserId: args.clerkUserId,
+          attempt: 1,
+        }
+      );
+
       return {
         success: true,
         scannedConnections: results.length,
@@ -842,3 +969,4 @@ export const triggerUserEmailScan = action({
     }
   },
 });
+

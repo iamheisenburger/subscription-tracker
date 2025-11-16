@@ -645,11 +645,13 @@ export const countUnparsedReceipts = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .take(1000);
 
-    const unparsedCount = allReceipts.filter(
-      (receipt) =>
-        !receipt.parsed ||
-        (!receipt.merchantName && !receipt.amount)
-    ).length;
+    // Definition of "unparsed" must match getUnparsedReceipts to avoid
+    // phantom backlog loops in the auto‑batching pipeline.
+    // We intentionally treat only `parsed === false` as unparsed; receipts
+    // that were previously marked parsed but lack merchant/amount are treated
+    // as low‑confidence non‑subscriptions and are not re‑queued here.
+    const unparsedCount = allReceipts.filter((receipt) => !receipt.parsed)
+      .length;
 
     console.log(`📊 Unparsed receipts: ${unparsedCount}/${allReceipts.length} total`);
 
@@ -676,12 +678,9 @@ export const getUnparsedReceipts = internalQuery({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect(); // Get ALL receipts, no limit
 
-    // Filter for unparsed receipts
+    // Filter for unparsed receipts (receipts not yet processed by AI)
     const receiptsToProcess = allReceipts
-      .filter((receipt) =>
-        !receipt.parsed ||
-        (!receipt.merchantName && !receipt.amount)
-      )
+      .filter((receipt) => !receipt.parsed)  // Simple check: only return if NOT marked as parsed
       .slice(0, limit);
 
     // Return full receipt objects for the orchestrator
@@ -768,18 +767,18 @@ function extractMerchant(
   const standardMatch = subject.match(standardPattern);
   if (standardMatch) {
     const merchant = standardMatch[1].trim();
-    if (merchant.length > 2 && merchant.length < 50) {
+    if (!/^your$/i.test(merchant) && merchant.length > 2 && merchant.length < 50) {
       console.log(`✅ Extracted merchant from subject: "${merchant}"`);
       return { name: merchant, confidence: 0.9 };
     }
   }
 
-  // Pattern 3: "[MERCHANT] receipt/invoice"
+  // Pattern 3: "[MERCHANT] receipt/invoice" (avoid "Your receipt")
   const simplePattern = /^([A-Za-z0-9\s]+?)\s+(?:receipt|invoice)/i;
   const simpleMatch = subject.match(simplePattern);
   if (simpleMatch) {
     const merchant = simpleMatch[1].trim();
-    if (merchant.length > 2 && merchant.length < 50) {
+    if (!/^your$/i.test(merchant) && merchant.length > 2 && merchant.length < 50) {
       console.log(`✅ Extracted merchant from subject: "${merchant}"`);
       return { name: merchant, confidence: 0.85 };
     }

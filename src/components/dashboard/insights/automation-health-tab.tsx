@@ -7,11 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Mail, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Mail, ShieldAlert, ShieldCheck, AlertTriangle, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react";
+import { DetectionReviewModal } from "../detection/detection-review-modal";
 
 export function AutomationHealthTab() {
   const { user } = useUser();
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const health = useQuery(
     api.insights.getAutomationHealth,
@@ -41,7 +44,7 @@ export function AutomationHealthTab() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="font-sans">Automation Health</CardTitle>
+          <CardTitle className="font-sans">Email Detection</CardTitle>
           <CardDescription className="font-sans">
             Connect Gmail to start automatic subscription detection.
           </CardDescription>
@@ -76,9 +79,9 @@ export function AutomationHealthTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="space-y-1">
-            <CardTitle className="font-sans">Automation Health</CardTitle>
+            <CardTitle className="font-sans">Email Detection</CardTitle>
             <CardDescription className="font-sans">
-              Status of Gmail connection, scans, and detection queue.
+              Status of Gmail connection, weekly autoscan, and detection queue.
             </CardDescription>
           </div>
           <Badge
@@ -110,6 +113,17 @@ export function AutomationHealthTab() {
             <p className="text-xs text-muted-foreground font-sans">
               {detection.total} total detections so far
             </p>
+            {detection.pending > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-1 font-sans flex items-center gap-1"
+                onClick={() => setReviewOpen(true)}
+              >
+                <Sparkles className="h-4 w-4" />
+                Review detections
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -169,6 +183,8 @@ export function AutomationHealthTab() {
           )}
         </CardContent>
       </Card>
+
+      <DetectionReviewModal open={reviewOpen} onOpenChange={setReviewOpen} />
     </div>
   );
 }

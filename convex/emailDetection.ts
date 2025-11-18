@@ -5,6 +5,7 @@
 
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 
 /**
@@ -115,9 +116,14 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
           });
         }
 
-        // If this is a price change, track it
+        // If this is a price change, track it (event-driven, cost-safe)
         if (existingSubscription.cost !== receipt.amount) {
-          await trackPriceChange(ctx, existingSubscription._id, receipt.amount!, receipt.currency!);
+          await trackPriceChange(
+            ctx,
+            existingSubscription._id as Id<"subscriptions">,
+            receipt.amount!,
+            receipt.currency || existingSubscription.currency
+          );
         }
 
         continue;
@@ -260,7 +266,7 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
  */
 async function trackPriceChange(
   ctx: any,
-  subscriptionId: any,
+  subscriptionId: Id<"subscriptions">,
   newAmount: number,
   currency: string
 ) {
@@ -268,9 +274,35 @@ async function trackPriceChange(
   if (!subscription) return;
 
   const oldAmount = subscription.cost;
-  const percentChange = ((newAmount - oldAmount) / oldAmount) * 100;
+
+  // Ignore tiny differences (< $0.01) and cases where we don't have a stable baseline
+  if (newAmount === undefined || oldAmount === undefined) return;
+  const delta = Math.abs(newAmount - oldAmount);
+  if (delta < 0.01) return;
+
+  // Currency safety: only track when currencies match to avoid FX lookups
+  if (subscription.currency && subscription.currency !== currency) {
+    return;
+  }
 
   const now = Date.now();
+
+  // Deduplicate: skip if we already recorded this exact price within the last 24h
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  const recentHistory = await ctx.db
+    .query("priceHistory")
+    .withIndex("by_subscription_date", (q: any) => q.eq("subscriptionId", subscriptionId))
+    .order("desc")
+    .take(5);
+
+  const alreadyRecorded = recentHistory.some(
+    (entry: any) => entry.newPrice === newAmount && entry.detectedAt >= oneDayAgo
+  );
+  if (alreadyRecorded) {
+    return;
+  }
+
+  const percentChange = ((newAmount - oldAmount) / oldAmount) * 100;
 
   // Create price history entry
   await ctx.db.insert("priceHistory", {
@@ -278,7 +310,7 @@ async function trackPriceChange(
     userId: subscription.userId,
     oldPrice: oldAmount,
     newPrice: newAmount,
-    currency,
+    currency: subscription.currency || currency,
     percentChange,
     detectedAt: now,
     createdAt: now,
@@ -290,11 +322,37 @@ async function trackPriceChange(
     updatedAt: now,
   });
 
-  // TODO: Create notification if price increased (once notifications table is added)
+  // Enqueue notification if price increased and user has alerts enabled
   if (newAmount > oldAmount) {
-    console.log(
-      `Price increased for ${subscription.name}: ${oldAmount} → ${newAmount} ${currency} (+${percentChange.toFixed(1)}%)`
-    );
+    const user = await ctx.db.get(subscription.userId as Id<"users">);
+    if (!user) return;
+
+    const preferences = await ctx.db
+      .query("notificationPreferences")
+      .withIndex("by_user", (q: any) => q.eq("userId", subscription.userId))
+      .unique();
+
+    if (preferences?.priceChangeAlerts && (user.tier === "premium_user" || user.tier === "automate_1")) {
+      await ctx.db.insert("notificationQueue", {
+        userId: subscription.userId,
+        subscriptionId,
+        type: "price_change",
+        emailData: {
+          subject: `Price Change: ${subscription.name}`,
+          template: "price_change",
+          templateData: {
+            subscriptionName: subscription.name,
+            oldPrice: oldAmount,
+            newPrice: newAmount,
+            currency: subscription.currency || "USD",
+          },
+        },
+        scheduledFor: now + 5 * 60 * 1000,
+        attempts: 0,
+        status: "pending",
+        createdAt: now,
+      });
+    }
   }
 }
 

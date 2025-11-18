@@ -15,7 +15,8 @@ import {
   MoreVertical,
   Calendar,
   TrendingUp,
-  HelpCircle
+  HelpCircle,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import { useUserTier } from "@/hooks/use-user-tier";
 import { CancelAssistantModal } from "./cancel-assistant-modal";
 import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
 import Link from "next/link";
+import { getPlaybook } from "@/lib/cancel-playbooks";
 
 interface SubscriptionCardProps {
   subscription: Doc<"subscriptions">;
@@ -134,6 +136,8 @@ export function SubscriptionCard({
 
   // Format cost with user's preferred currency
   const formattedCost = formatCurrency(subscription.cost, subscription.currency);
+
+  const cancellationPlaybook = getPlaybook(subscription.name);
 
   // Determine which feature badges to show (only for Automate users)
   const isAutomate = tier === "automate_1";
@@ -252,12 +256,24 @@ export function SubscriptionCard({
                     <Calendar className="mr-2 h-4 w-4" />
                     Export to Calendar
                   </DropdownMenuItem>
+                  {cancellationPlaybook?.cancellationUrl && (
+                    <DropdownMenuItem
+                      className="font-sans"
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        window.open(cancellationPlaybook.cancellationUrl, "_blank", "noopener,noreferrer");
+                      }}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Manage on {cancellationPlaybook.service}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     className="font-sans"
                     onSelect={() => setShowCancelDialog(true)}
                   >
                     <HelpCircle className="mr-2 h-4 w-4" />
-                    Cancel Subscription
+                    Need cancellation help
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>

@@ -18,7 +18,7 @@ function InsightsContent() {
     "activity",
     "savings",
     "price-history",
-    "automation-health",
+    "email-detection",
   ]);
   const defaultTab = validTabs.has(requestedTab) ? requestedTab : "activity";
   const subscriptionId = searchParams.get("sub");
@@ -53,8 +53,8 @@ function InsightsContent() {
           <TabsTrigger value="price-history" className="font-sans">
             Price History
           </TabsTrigger>
-          <TabsTrigger value="automation-health" className="font-sans">
-            Automation Health
+          <TabsTrigger value="email-detection" className="font-sans">
+            Email Detection
           </TabsTrigger>
         </TabsList>
 
@@ -71,7 +71,7 @@ function InsightsContent() {
         <TabsContent value="price-history" className="space-y-4">
           <PriceHistoryChart subscriptionId={subscriptionId} />
         </TabsContent>
-        <TabsContent value="automation-health" className="space-y-4">
+        <TabsContent value="email-detection" className="space-y-4">
           <AutomationHealthTab />
         </TabsContent>
       </Tabs>

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, action, type DatabaseWriter } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 // Currency conversion logic embedded directly in Convex (no external imports)
 interface CurrencyConversionResult {

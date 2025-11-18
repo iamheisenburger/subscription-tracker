@@ -1,23 +1,26 @@
 "use client";
 
-/**
- * Insights Page - Central hub for automation features
- * Shows activity feed, price history, predictions, and alerts
- */
-
 import { Suspense } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/dashboard/insights/activity-feed";
 import { PriceHistoryChart } from "@/components/dashboard/insights/price-history-chart";
-import { PredictionsList } from "@/components/dashboard/insights/predictions-list";
 import { AlertsTab } from "@/components/dashboard/insights/alerts-tab";
+import { SavingsTab } from "@/components/dashboard/insights/savings-tab";
+import { AutomationHealthTab } from "@/components/dashboard/insights/automation-health-tab";
 import { useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles } from "lucide-react";
 
 function InsightsContent() {
   const searchParams = useSearchParams();
-  const defaultTab = searchParams.get("tab") || "activity";
+  const requestedTab = searchParams.get("tab") || "activity";
+  const validTabs = new Set([
+    "activity",
+    "savings",
+    "price-history",
+    "automation-health",
+  ]);
+  const defaultTab = validTabs.has(requestedTab) ? requestedTab : "activity";
   const subscriptionId = searchParams.get("sub");
 
   return (
@@ -32,7 +35,8 @@ function InsightsContent() {
             Insights & Activity
           </h1>
           <p className="text-muted-foreground font-sans mt-1">
-            Track your subscription automation, price changes, and predictions
+            See what SubWise has detected, how prices changed, and how your
+            email automation is performing.
           </p>
         </div>
       </div>
@@ -41,33 +45,34 @@ function InsightsContent() {
       <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="activity" className="font-sans">
-            Activity Feed
+            Activity
+          </TabsTrigger>
+          <TabsTrigger value="savings" className="font-sans">
+            Savings
           </TabsTrigger>
           <TabsTrigger value="price-history" className="font-sans">
             Price History
           </TabsTrigger>
-          <TabsTrigger value="predictions" className="font-sans">
-            Predictions
-          </TabsTrigger>
-          <TabsTrigger value="alerts" className="font-sans">
-            Alerts
+          <TabsTrigger value="automation-health" className="font-sans">
+            Automation Health
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="activity" className="space-y-4">
           <ActivityFeed />
+          {/* De-emphasized alerts section to keep notifications accessible */}
+          <AlertsTab />
+        </TabsContent>
+
+        <TabsContent value="savings" className="space-y-4">
+          <SavingsTab />
         </TabsContent>
 
         <TabsContent value="price-history" className="space-y-4">
           <PriceHistoryChart subscriptionId={subscriptionId} />
         </TabsContent>
-
-        <TabsContent value="predictions" className="space-y-4">
-          <PredictionsList />
-        </TabsContent>
-
-        <TabsContent value="alerts" className="space-y-4">
-          <AlertsTab />
+        <TabsContent value="automation-health" className="space-y-4">
+          <AutomationHealthTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -71,7 +71,7 @@ export const confirmSubscriptionRenewal = mutation({
         nextBillingDate = currentBillingDate + (7 * 24 * 60 * 60 * 1000);
       }
 
-      // Update subscription as renewed
+      // Update subscription as renewed (cost changes are handled by subscriptions.updateSubscription for price history)
       await ctx.db.patch(args.subscriptionId, {
         nextBillingDate,
         cost: args.newCost || subscription.cost,

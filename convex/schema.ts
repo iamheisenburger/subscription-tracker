@@ -74,6 +74,8 @@ export default defineSchema({
     predictionLastUpdated: v.optional(v.number()), // When prediction was last calculated
     createdAt: v.number(),
     updatedAt: v.number(),
+    // When the subscription was explicitly cancelled by the user (not just paused)
+    cancelledAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_active", ["userId", "isActive"])

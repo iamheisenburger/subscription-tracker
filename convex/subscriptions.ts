@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query, action } from "./_generated/server";
+import { mutation, query, action, type DatabaseWriter } from "./_generated/server";
 
 // Currency conversion logic embedded directly in Convex (no external imports)
 interface CurrencyConversionResult {
@@ -127,6 +127,33 @@ async function convertMultipleCurrencies(
   }
   
   return results;
+}
+
+async function recordPriceChange(
+  db: DatabaseWriter,
+  args: {
+    subscriptionId: Id<"subscriptions">;
+    userId: Id<"users">;
+    oldPrice: number;
+    newPrice: number;
+    currency: string;
+    detectedAt: number;
+  }
+) {
+  if (args.oldPrice === args.newPrice) return;
+  const percentChange =
+    args.oldPrice === 0 ? 0 : ((args.newPrice - args.oldPrice) / args.oldPrice) * 100;
+
+  await db.insert("priceHistory", {
+    subscriptionId: args.subscriptionId,
+    userId: args.userId,
+    oldPrice: args.oldPrice,
+    newPrice: args.newPrice,
+    currency: args.currency,
+    percentChange,
+    detectedAt: args.detectedAt,
+    createdAt: args.detectedAt,
+  });
 }
 
 // Create new subscription
@@ -290,8 +317,9 @@ export const updateSubscription = mutation({
       throw new Error("Unauthorized");
     }
 
+    const now = Date.now();
     const updateData: any = {
-      updatedAt: Date.now(),
+      updatedAt: now,
     };
 
     // CRITICAL FIX: Check free tier limit when unpausing (reactivating) a subscription
@@ -322,10 +350,28 @@ export const updateSubscription = mutation({
     if (args.description !== undefined) updateData.description = args.description;
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
+    // Track explicit cancellations coming through updateSubscription (not pauses)
+    if (args.isActive === false && subscription.isActive === true) {
+      updateData.cancelledAt = now;
+      // Keep renewalStatus in sync when we know this is a confirmed cancellation
+      if (!subscription.renewalStatus) {
+        updateData.renewalStatus = "confirmed_cancelled";
+      }
+    }
+
     await ctx.db.patch(args.subscriptionId, updateData);
 
-    // If price changed, queue price change alert for premium users
+    // If price changed, record price history and queue price change alert for premium users
     if (priceChanged && newCost !== undefined) {
+      await recordPriceChange(ctx.db, {
+        subscriptionId: args.subscriptionId,
+        userId: subscription.userId,
+        oldPrice: oldCost,
+        newPrice: newCost,
+        currency: args.currency ?? subscription.currency,
+        detectedAt: updateData.updatedAt,
+      });
+
       // Get user's notification preferences
       const preferences = await ctx.db
         .query("notificationPreferences")

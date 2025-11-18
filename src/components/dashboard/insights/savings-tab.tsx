@@ -181,10 +181,12 @@ export function SavingsTab() {
                       {item.billingCycle}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground font-sans">
-                    Cancelled{" "}
-                    {format(item.cancelledAt, "MMM dd, yyyy")}
-                  </p>
+                  {item.cancelledAt && (
+                    <p className="text-xs text-muted-foreground font-sans">
+                      Cancelled{" "}
+                      {format(item.cancelledAt, "MMM dd, yyyy")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col sm:items-end gap-1 text-sm font-sans">
                   <div className="flex items-center gap-2">

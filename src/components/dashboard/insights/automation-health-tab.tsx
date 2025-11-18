@@ -70,7 +70,6 @@ export function AutomationHealthTab() {
 
   const gmail = health.gmail;
   const detection = health.detection;
-  const safety = health.safety;
 
   return (
     <div className="space-y-4">
@@ -111,19 +110,6 @@ export function AutomationHealthTab() {
             <p className="text-xs text-muted-foreground font-sans">
               {detection.total} total detections so far
             </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-sans">Safety</p>
-            <p className="text-sm font-sans">
-              {safety.safeMode
-                ? "Safe Mode is currently enabled for background jobs."
-                : "Safe Mode is off. Scans and detection are allowed."}
-            </p>
-            {safety.safeModeReason && (
-              <p className="text-xs text-muted-foreground font-sans">
-                Reason: {safety.safeModeReason}
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>

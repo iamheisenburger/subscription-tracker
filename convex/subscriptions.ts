@@ -157,6 +157,40 @@ async function recordPriceChange(
   });
 }
 
+// Explicitly mark a subscription as cancelled by the user (not just paused).
+export const markSubscriptionCancelled = mutation({
+  args: {
+    clerkId: v.string(),
+    subscriptionId: v.id("subscriptions"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const subscription = await ctx.db.get(args.subscriptionId);
+    if (!subscription || subscription.userId !== user._id) {
+      throw new Error("Subscription not found or access denied");
+    }
+
+    const now = Date.now();
+
+    await ctx.db.patch(args.subscriptionId, {
+      isActive: false,
+      cancelledAt: now,
+      renewalStatus: subscription.renewalStatus ?? "confirmed_cancelled",
+      updatedAt: now,
+    });
+
+    return { success: true, cancelledAt: now };
+  },
+});
+
 // Create new subscription
 export const createSubscription = mutation({
   args: {

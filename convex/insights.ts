@@ -338,17 +338,17 @@ export const getSavingsSummary = query({
 
     const since = args.since ?? 0;
 
-    // Get all subscriptions for the user; filter to cancelled ones
+    // Get all subscriptions for the user; filter to ones the user explicitly marked as cancelled
     const allSubs = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
     const cancelled = allSubs.filter((sub) => {
-      if (sub.isActive) return false;
+      // Only count subscriptions where we have an explicit cancellation timestamp.
+      if (!sub.cancelledAt) return false;
 
-      const effectiveCancelledAt = sub.cancelledAt ?? sub.updatedAt ?? sub.createdAt;
-      if (since > 0 && effectiveCancelledAt < since) return false;
+      if (since > 0 && sub.cancelledAt < since) return false;
 
       return true;
     });
@@ -374,7 +374,7 @@ export const getSavingsSummary = query({
         originalCost: sub.cost,
         monthlySavings,
         yearlySavings,
-        cancelledAt: sub.cancelledAt ?? sub.updatedAt ?? sub.createdAt,
+        cancelledAt: sub.cancelledAt,
       };
     });
 

@@ -98,10 +98,11 @@ export const confirmSubscriptionRenewal = mutation({
       };
 
     } else {
-      // Mark as cancelled
+      // Mark as cancelled (user explicitly confirmed cancellation)
       await ctx.db.patch(args.subscriptionId, {
         isActive: false,
         renewalStatus: "confirmed_cancelled",
+        cancelledAt: now,
         updatedAt: now,
       });
 

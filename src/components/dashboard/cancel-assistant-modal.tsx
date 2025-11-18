@@ -6,6 +6,9 @@
  */
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +25,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getPlaybook, getGenericCancellationTips } from "@/lib/cancel-playbooks";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
 
 interface CancelAssistantModalProps {
   subscription: Doc<"subscriptions">;
@@ -36,6 +40,8 @@ export function CancelAssistantModal({
   onOpenChange,
 }: CancelAssistantModalProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const { user } = useUser();
+  const markCancelled = useMutation(api.subscriptions.markSubscriptionCancelled);
 
   const playbook = getPlaybook(subscription.name);
   const genericTips = !playbook ? getGenericCancellationTips() : null;
@@ -62,6 +68,24 @@ export function CancelAssistantModal({
         return "bg-red-500/10 text-red-700 border-red-500/20";
       default:
         return "bg-gray-500/10 text-gray-700 border-gray-500/20";
+    }
+  };
+
+  const handleMarkCancelled = async () => {
+    if (!user?.id) {
+      toast.error("You need to be signed in to update this subscription.");
+      return;
+    }
+    try {
+      await markCancelled({
+        clerkId: user.id,
+        subscriptionId: subscription._id as Id<"subscriptions">,
+      });
+      toast.success("Marked as cancelled in SubWise. We’ll include this in your savings.");
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error marking subscription as cancelled:", error);
+      toast.error("Failed to mark subscription as cancelled. Please try again.");
     }
   };
 
@@ -261,18 +285,27 @@ export function CancelAssistantModal({
 
         <Separator />
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-          {playbook?.cancellationUrl && (
-            <Button asChild>
-              <a href={playbook.cancellationUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Start Cancellation
-              </a>
+        <div className="flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
+          <div className="text-xs text-muted-foreground font-sans">
+            Once you&apos;ve completed these steps, you can mark this subscription as cancelled in
+            SubWise to track your savings.
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
             </Button>
-          )}
+            <Button variant="secondary" onClick={handleMarkCancelled}>
+              I&apos;ve cancelled this
+            </Button>
+            {playbook?.cancellationUrl && (
+              <Button asChild>
+                <a href={playbook.cancellationUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Start Cancellation
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

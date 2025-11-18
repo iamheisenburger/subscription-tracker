@@ -202,6 +202,8 @@ export const updateCheckpoint = internalMutation({
       emailsCollected: v.number(),
       receiptsProcessed: v.number(),
       candidatesCreated: v.number(),
+      // Optional list of processed receipt IDs for loop-safety and crash recovery
+      processedReceiptIds: v.optional(v.array(v.id("emailReceipts"))),
     }),
   },
   handler: async (ctx, args) => {

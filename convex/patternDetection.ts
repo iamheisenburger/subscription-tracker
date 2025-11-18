@@ -36,11 +36,6 @@ const NEGATIVE_MERCHANTS = new Set([
   "receipt",
   "invoice",
   "payment",
-  // Generic words that appear in subject lines but aren't merchants
-  "final", // "Final invoice bill" - not a merchant name
-  "last", // "Last invoice" - not a merchant name
-  "new", // "New invoice" - not a merchant name
-  "recent", // "Recent transaction" - not a merchant name
 ]);
 
 /**
@@ -544,34 +539,15 @@ export const runPatternBasedDetection = internalMutation({
       const inferredCycle = inferBillingCycle(sortedReceipts);
       const detectedCycle = latestReceipt.billingCycle; // From AI parsing
       const textualCycle = inferCycleFromText(sortedReceipts);
-      
-      // For single receipts: Infer yearly from amount pattern if no explicit cycle
-      // Annual subscriptions often have higher amounts (e.g., £26.95/year vs £9.99/month)
-      let inferredYearlyFromAmount = false;
-      if (sortedReceipts.length === 1 && !textualCycle && !detectedCycle && !inferredCycle) {
-        const receiptAmount = receiptWithAmount.amount || 0;
-        const currency = receiptWithAmount.currency || "USD";
-        // If amount > $15 equivalent, might be annual (common annual pricing: $20-100/year)
-        // Convert to USD roughly: GBP * 1.3, EUR * 1.1, INR / 83
-        let amountUSD = receiptAmount;
-        if (currency === "GBP") amountUSD = receiptAmount * 1.3;
-        else if (currency === "EUR") amountUSD = receiptAmount * 1.1;
-        else if (currency === "INR") amountUSD = receiptAmount / 83;
-        // If amount suggests annual (>$15) and receipt is >90 days old, likely annual
-        if (amountUSD > 15 && (currentTime - latestReceiptDate) > (90 * 24 * 60 * 60 * 1000)) {
-          inferredYearlyFromAmount = true;
-          console.log(`  💰 Inferred YEARLY from amount: ${receiptAmount} ${currency} (${amountUSD.toFixed(2)} USD) for ${merchantName}`);
-        }
-      }
+      const hasAnnualDateEvidence = hasNextBillingDateEvidence(sortedReceipts, latestReceiptDate, merchantName);
 
-      // Precedence: explicit monthly text wins; then weekly; then yearly; else AI/patterns; then amount inference
+      // Precedence: explicit monthly text wins; then weekly; then yearly; else AI/patterns
       const billingCycle =
         textualCycle === "monthly" ? "monthly" :
         textualCycle === "weekly" ? "weekly" :
-        textualCycle === "yearly" ? "yearly" :
+        textualCycle === "yearly" || hasAnnualDateEvidence ? "yearly" :
         (detectedCycle === "yearly" || inferredCycle === "yearly") ? "yearly" :
         (detectedCycle === "weekly" || inferredCycle === "weekly") ? "weekly" :
-        inferredYearlyFromAmount ? "yearly" :
         detectedCycle || inferredCycle || "monthly";
 
       // Apply cycle-specific time thresholds
@@ -605,39 +581,6 @@ export const runPatternBasedDetection = internalMutation({
         if (NEGATIVE_MERCHANTS.has(norm)) {
           console.log(`  ⏭️  Skipping blocked merchant: ${merchantName}`);
           continue;
-        }
-        
-        // Filter out one-time invoices/purchases - require evidence of recurring pattern
-        // For single receipts, check if they indicate one-time vs recurring
-        if (sortedReceipts.length === 1) {
-          const receipt = sortedReceipts[0];
-          const subject: string = (receipt as any).subject || "";
-          const body: string = (receipt as any).rawBody || "";
-          const text = `${subject}\n${body}`.toLowerCase();
-          
-          // One-time invoice/purchase indicators (general patterns)
-          const oneTimeIndicators = [
-            /(?:final|last|closing)\s+invoice/i, // "Final invoice", "Last invoice", "Closing invoice"
-            /invoice\s+(?:for|#)\s+\w+.*(?:final|last|one[-\s]?time)/i, // "Invoice for X - Final"
-            /\bone[-\s]?time\s+(?:payment|purchase|invoice|charge)/i, // "One-time payment"
-            /\bsingle\s+(?:payment|purchase|invoice)/i, // "Single payment"
-            /\bnon[-\s]?recurring/i, // "Non-recurring"
-            /\bfinal\s+bill/i, // "Final bill"
-          ];
-          
-          // Check if receipt indicates one-time purchase
-          const isOneTimeInvoice = oneTimeIndicators.some(pattern => pattern.test(text));
-          
-          // Require subscription/recurring evidence for single receipts
-          const hasRecurringEvidence = 
-            /\b(?:recurring|subscription|auto[\s-]?renew|renewal|billing\s+cycle|next\s+(?:payment|charge|billing))/i.test(text) ||
-            /\b(?:monthly|yearly|annual|weekly)\s+(?:subscription|plan|billing)/i.test(text);
-          
-          // If it's a one-time invoice AND lacks recurring evidence, skip it
-          if (isOneTimeInvoice && !hasRecurringEvidence) {
-            console.log(`  ⏭️  Skipping one-time invoice: ${merchantName} - One-time purchase pattern detected without recurring evidence`);
-            continue;
-          }
         }
         // Allow single recent receipt for YEARLY plans.
         // By the time we label something YEARLY we already have strong textual
@@ -972,7 +915,16 @@ function normalizeForCancellation(name: string): string {
  */
 function isTrustedMerchantForSingleMonthly(merchantName: string): boolean {
   const norm = normalizeMerchantName(merchantName);
-  return norm === "playstation" || norm === "spotify" || norm === "x";
+  // Allow-list merchants where a single recent charge is reliable subscription evidence.
+  // These are providers with consistent templates and low false-positive risk.
+  return (
+    norm === "playstation" ||
+    norm === "spotify" ||
+    norm === "x" ||
+    // Fortect: license-style product with clear ongoing access period; safe to treat
+    // as a subscription-like charge even when we only see one recent receipt.
+    norm === "fortect"
+  );
 }
 
 /**
@@ -1045,9 +997,12 @@ function hasNextBillingDateEvidence(
     const body: string = (r as any).rawBody || "";
     const combined = `${subject}\n${body}`;
 
-    // Look for renewal wording ("renews", "next billing", etc.) near a date.
-    // Supports Apple's \"Renews 13 August 2026\" format (no \"on\").
-    const windowRegex = /(renews\b|next\s+(?:billing|payment|charge)|will\s+renew\s+on|renewal\s+date)[\s\S]{0,120}?/i;
+    // Look for renewal/expiry wording near a date.
+    // Supports patterns like:
+    // - "Renews 13 August 2026"
+    // - "Next billing date: <date>"
+    // - "License Expiration Date: <date>"
+    const windowRegex = /(renews\b|next\s+(?:billing|payment|charge)|will\s+renew\s+on|renewal\s+date|expires\s+on|expiration\s+date|expiry\s+date|license\s+expiration\s+date)[\s\S]{0,160}?/i;
     const windowMatch = combined.match(windowRegex);
     if (windowMatch) {
       const snippetStart = Math.max(0, windowMatch.index!);
@@ -1057,9 +1012,10 @@ function hasNextBillingDateEvidence(
         continue;
       }
       // Prefer explicit yearly phrasing if present, but do not require it.
-      // Some Apple invoices show only "Renews <date>" without "yearly/annual".
-      // Require charge confirmation words to avoid newsletters/promotions without a real charge
-      if (!/\b(charged?|paid|billed?|invoice|receipt)\b/i.test(snippet)) {
+      // Some providers show only a future expiry/renewal date (e.g. "License Expiration Date")
+      // without the word "yearly/annual". Require charge-related words to avoid pure
+      // marketing emails.
+      if (!/\b(charged?|paid|billed?|invoice|receipt|order|price|amount|total)\b/i.test(snippet)) {
         continue;
       }
       for (const p of datePatterns) {
@@ -1092,23 +1048,14 @@ function hasNextBillingDateEvidence(
 function hasChargeConfirmationReceipt(
   receipts: Array<{ [key: string]: any }>
 ): boolean {
-  // Charge confirmation patterns: explicit charge words OR purchase confirmation patterns
-  const chargeWords = /\b(charged?|paid|billed?|invoice|receipt|order\s+#?|purchase|transaction)\b/i;
-  const purchaseConfirmation = /\b(thank\s+you\s+for\s+your\s+purchase|purchase\s+confirmation|transaction\s+(id|#)|order\s+confirmation)\b/i;
-  
+  const chargeWords = /\b(charged?|paid|billed?|invoice|receipt|order\s+#?)\b/i;
   for (const r of receipts) {
     if (isCreditOrTopUp(r)) continue;
     if (r.amount === null || r.amount === undefined || r.amount <= 0) continue;
     const subject: string = (r as any).subject || "";
     const body: string = (r as any).rawBody || "";
     const text = `${subject}\n${body}`;
-    
-    // Check for charge words OR purchase confirmation patterns
-    const hasChargeWords = chargeWords.test(text);
-    const hasPurchaseConfirmation = purchaseConfirmation.test(text);
-    const isRefund = /\b(refund|refunded|reversal|credited)\b/i.test(text);
-    
-    if ((hasChargeWords || hasPurchaseConfirmation) && !isRefund) {
+    if (chargeWords.test(text) && !/\b(refund|refunded|reversal|credited)\b/i.test(text)) {
       return true;
     }
   }

@@ -25,31 +25,23 @@ export const repairParsedReceipts = internalMutation({
       .filter((q) => q.eq(q.field("parsed"), true))
       .collect();
 
-    // Consider a receipt "broken" if it is missing merchant/amount OR has a generic aggregator merchant
-    // OR if merchant name doesn't match subject pattern (mislabeled receipts)
+    // Consider a receipt "broken" if it is missing merchant/amount, has a generic
+    // aggregator merchant, or matches a known mislabel pattern.
     const AGGREGATOR_NAMES = new Set(["apple", "stripe", "paypal", "google", "paddle"]);
     const brokenAll = parsed.filter((r: any) => {
       const hasMissing = r.merchantName == null || r.amount == null;
-      if (hasMissing) return true;
       // If merchant exists but is an aggregator, attempt service extraction to unify clusters
       const normalized = normalizeMerchantName(r.merchantName || "");
-      if (AGGREGATOR_NAMES.has(normalized)) return true;
-      
-      // Check for mislabeled merchants: subject contains merchant name that doesn't match current merchant
-      // Pattern: "Fortect Premium: Thank You For Your Purchase" but merchant is "PlayStation"
-      const subject = (r as any).subject || "";
-      const subjectMerchantPattern = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You\s+for\s+Your\s+Purchase/i;
-      const subjectMatch = subject.match(subjectMerchantPattern);
-      if (subjectMatch && subjectMatch[1]) {
-        const subjectMerchant = normalizeMerchantName(subjectMatch[1].replace(/\s+(Premium|Pro|Plus|Basic|Standard)$/i, "").trim());
-        const currentMerchant = normalized;
-        // If subject merchant doesn't match current merchant, this is mislabeled
-        if (subjectMerchant && subjectMerchant !== currentMerchant && subjectMerchant.length > 2) {
-          return true; // Mark as broken to repair
-        }
-      }
-      
-      return false;
+
+      const subject = (r.subject || "").toLowerCase();
+      const from = (r.from || "").toLowerCase();
+      const looksLikeFortect =
+        subject.includes("fortect") ||
+        from.includes("fortect.com");
+      const isFortectMislabel =
+        looksLikeFortect && normalized === "playstation";
+
+      return hasMissing || AGGREGATOR_NAMES.has(normalized) || isFortectMislabel;
     });
     // Process newest broken receipts first for determinism across scans
     const broken = brokenAll
@@ -67,62 +59,47 @@ export const repairParsedReceipts = internalMutation({
       const subject = (r as any).subject || "";
       const from = (r as any).from || "";
       const body = (r as any).rawBody || "";
+      const lowerSubject = subject.toLowerCase();
+      const lowerFrom = from.toLowerCase();
 
       // 1) Merchant salvage
       // Try to extract a specific service when merchant is missing OR a generic aggregator
-      // OR when merchant is mislabeled (doesn't match subject pattern)
-      const normalizedCurrent = normalizeMerchantName(newMerchant || "");
       const merchantNeedsRepair =
         !newMerchant ||
-        AGGREGATOR_NAMES.has(normalizedCurrent) ||
+        AGGREGATOR_NAMES.has(normalizeMerchantName(newMerchant)) ||
         // Generic placeholders that should be replaced with the real product
         /^system$/i.test(String(newMerchant)) ||
         /^g\d+.*invoice\s+date/i.test(String(newMerchant)) ||
         /^g40ps\s+gbr/i.test(String(newMerchant));
-      
-      // Check for mislabeled merchants FIRST (before other repairs)
-      // Pattern: "Fortect Premium: Thank You For Your Purchase" but merchant is "PlayStation"
-      // More flexible: "Merchant Name: Thank You" (with or without "For Your Purchase")
-      const subjectMerchantPattern = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You/i;
-      const subjectMerchantMatch = subject.match(subjectMerchantPattern);
-      if (subjectMerchantMatch && subjectMerchantMatch[1]) {
-        const extracted = subjectMerchantMatch[1].trim();
-        const cleaned = extracted.replace(/\s+(Premium|Pro|Plus|Basic|Standard)$/i, "").trim();
-        const normalizedSubject = normalizeMerchantName(cleaned);
-        // If subject merchant doesn't match current merchant, fix it
-        if (normalizedSubject && normalizedSubject !== normalizedCurrent && normalizedSubject.length > 2) {
-          newMerchant = cleaned;
-          console.log(`🔧 REPAIR: Fixed mislabeled merchant "${r.merchantName}" → "${newMerchant}" from subject pattern`);
-          // Save immediately - don't wait for other repairs
-          const normalized = normalizeMerchantName(newMerchant);
-          if (normalized && normalized !== "apple" && normalized !== "your" && newMerchant) {
-            await ctx.db.patch(r._id, { merchantName: newMerchant, parsingConfidence: Math.max(r.parsingConfidence ?? 0.6, 0.8) });
-            fixedMerchant++;
-            continue; // Skip other repairs, already fixed
-          }
-        }
+
+      // Fortect-specific fix: some older AI parses mislabeled Fortect as PlayStation.
+      // If the email clearly comes from Fortect but merchant is PlayStation, relabel
+      // deterministically to Fortect. This is narrow and won't affect real PlayStation receipts.
+      const looksLikeFortect =
+        lowerSubject.includes("fortect") ||
+        lowerFrom.includes("fortect.com");
+      if (
+        looksLikeFortect &&
+        newMerchant &&
+        normalizeMerchantName(newMerchant) === "playstation"
+      ) {
+        newMerchant = "Fortect";
+        await ctx.db.patch(r._id, {
+          merchantName: newMerchant,
+          parsingConfidence: Math.max(r.parsingConfidence ?? 0.6, 0.9),
+          // Clear detectionCandidateId so detection can create a dedicated Fortect candidate
+          detectionCandidateId: undefined,
+        });
+        fixedMerchant++;
       }
-      
-      if (merchantNeedsRepair && !newMerchant) {
+      if (merchantNeedsRepair) {
         // Subject patterns
         const fromMatch = subject.match(/(?:receipt|invoice)\s+from\s+([^#\n]+?)(?:\s*#|\s*$)/i);
         const yourPattern = subject.match(/your\s+([A-Za-z0-9\s]+?)\s+(?:receipt|invoice|payment|subscription)/i);
-        // Pattern: "Final invoice bill for Snaptinker" → extract "Snaptinker"
-        const finalInvoicePattern = /(?:final|last|new|recent)\s+(?:invoice|bill|receipt|payment)\s+(?:bill\s+)?for\s+([A-Za-z0-9\s&]+?)(?:\s*$|\s*#|\s*\(|\s*:)/i;
-        const finalInvoiceMatch = subject.match(finalInvoicePattern);
         const simplePattern = subject.match(/^([A-Za-z0-9\s]+?)\s+(?:receipt|invoice)/i);
 
         if (fromMatch) {
           newMerchant = cleanMerchant(fromMatch[1]);
-        } else if (finalInvoiceMatch && finalInvoiceMatch[1]) {
-          // Extract merchant from "Final invoice bill for Snaptinker" pattern
-          const candidate = cleanMerchant(finalInvoiceMatch[1]);
-          const normalized = normalizeMerchantName(candidate);
-          // Don't use generic words as merchant names
-          if (candidate && normalized !== "final" && normalized !== "last" && normalized !== "new" && normalized !== "recent" && normalized !== "your" && normalized.length > 2) {
-            newMerchant = candidate;
-            console.log(`🔧 REPAIR: Fixed "Final invoice" pattern: "${r.merchantName}" → "${newMerchant}"`);
-          }
         } else if (yourPattern) {
           const candidate = cleanMerchant(yourPattern[1]);
           if (candidate && candidate.toLowerCase() !== "your") newMerchant = candidate;
@@ -189,36 +166,19 @@ export const repairParsedReceipts = internalMutation({
           if (svc) newMerchant = svc;
         }
 
-        // Additional subject pattern extraction (if not already fixed above)
-        // Pattern: "Fortect Premium: Thank You For Your Purchase" → "Fortect"
-        if (!newMerchant || normalizeMerchantName(newMerchant) === normalizedCurrent) {
-          const subjectMerchantPattern2 = /^([A-Za-z0-9\s&]+?):\s*Thank\s+You\s+for\s+Your\s+Purchase/i;
-          const subjectMerchantMatch2 = subject.match(subjectMerchantPattern2);
-          if (subjectMerchantMatch2 && subjectMerchantMatch2[1]) {
-            const extracted = subjectMerchantMatch2[1].trim();
-            const cleaned = extracted.replace(/\s+(Premium|Pro|Plus|Basic|Standard)$/i, "").trim();
-            if (cleaned.length > 2 && cleaned.length < 50) {
-              newMerchant = cleaned;
-            }
-          }
-        }
-
         // PlayStation receipts ("Thank You For Your Purchase") salvage
         // Many PlayStation emails are purchases/renewals sent from txn domains and lack explicit "receipt/invoice" phrasing.
         // When the sender matches PlayStation transaction domains or subject matches their template, assign merchant and try to pull amount.
-        // NOTE: Only apply if merchant wasn't already extracted from subject pattern above
-        if (!newMerchant || normalizeMerchantName(newMerchant) === "your") {
-          const fromLower = from.toLowerCase();
-          const isPlayStationSender =
-            fromLower.includes("txn-email.playstation.com") ||
-            fromLower.includes("txn-email03.playstation.com") ||
-            fromLower.includes("playstation");
-          const looksLikePlayStationTemplate =
-            /thank\s+you\s+for\s+your\s+purchase/i.test(subject) ||
-            /your\s+playstation\s+store\s+transaction\s+was\s+successful/i.test(body || "");
-          if (isPlayStationSender || looksLikePlayStationTemplate) {
-            newMerchant = "PlayStation";
-          }
+        const fromLower = from.toLowerCase();
+        const isPlayStationSender =
+          fromLower.includes("txn-email.playstation.com") ||
+          fromLower.includes("txn-email03.playstation.com") ||
+          fromLower.includes("playstation");
+        const looksLikePlayStationTemplate =
+          /thank\s+you\s+for\s+your\s+purchase/i.test(subject) ||
+          /your\s+playstation\s+store\s+transaction\s+was\s+successful/i.test(body || "");
+        if ((!newMerchant || normalizeMerchantName(newMerchant) === "your") && (isPlayStationSender || looksLikePlayStationTemplate)) {
+          newMerchant = "PlayStation";
         }
 
         if (newMerchant) {

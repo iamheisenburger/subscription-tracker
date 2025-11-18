@@ -244,10 +244,6 @@ export function ScanConsole() {
         });
         return;
       }
-      toast.success("Scan started", {
-        description: "We're analyzing your inbox for subscription receipts. This runs in the background.",
-        duration: 6000,
-      });
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -368,25 +364,27 @@ export function ScanConsole() {
                       Weekly incremental enabled
                     </Badge>
                   )}
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleFirstScan}
-                    disabled={isScanning || isScanningState}
-                    className="font-sans"
-                  >
-                    {isScanning || isScanningState ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Scanning...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        {hasCompletedScan ? "Scan Now" : "Run first scan"}
-                      </>
-                    )}
-                  </Button>
+                  {!hasCompletedScan && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleFirstScan}
+                      disabled={isScanning || isScanningState}
+                      className="font-sans"
+                    >
+                      {isScanning || isScanningState ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Scanning...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Run first scan
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </>
               ) : null}
             </div>

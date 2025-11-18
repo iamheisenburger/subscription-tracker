@@ -6,6 +6,7 @@ import { LockManager } from "../core/distributedLock";
 import { ScanState, calculateProgress, getStateInfo } from "../core/stateMachine";
 import { categorizeError, ErrorRecovery, CircuitBreaker } from "../core/errorHandler";
 import { projectScanCost } from "../monitoring/costTracker";
+import { api as publicApi } from "../_generated/api";
 
 /**
  * SCAN ORCHESTRATOR
@@ -24,6 +25,23 @@ import { projectScanCost } from "../monitoring/costTracker";
 // Circuit breaker for external services
 const circuitBreaker = new CircuitBreaker();
 
+// ===== Helper: Global Safe Mode =====
+async function isSafeModeEnabled(ctx: any): Promise<boolean> {
+  // Env-level kill switch
+  const envFlag =
+    (process.env.SUBWISE_DISABLE_CRONS || process.env.SUBWISE_SAFE_MODE || "").trim().toLowerCase();
+  if (envFlag === "true" || envFlag === "1" || envFlag === "yes") return true;
+
+  // DB-level kill switch
+  try {
+    const settings = await ctx.runQuery(publicApi.adminControl.getSafeModeStatus, {});
+    return Boolean(settings?.safeMode || settings?.cronsDisabled);
+  } catch {
+    // If control API missing, default to not blocked
+    return false;
+  }
+}
+
 /**
  * Main entry point: Start a new scan for a user
  */
@@ -31,8 +49,17 @@ export const startScan = mutation({
   args: {
     clerkUserId: v.string(),
     forceFullScan: v.optional(v.boolean()),
+    overrideManualCooldown: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<any> => {
+    // Behavior in Safe Mode:
+    // - Background crons remain blocked by guards in cron handlers.
+    // - Manual scans are allowed to proceed, under existing per-phase caps and idempotent logic,
+    //   so we can run controlled scans without ever toggling the global kill switch.
+    const safeMode = await isSafeModeEnabled(ctx);
+    if (safeMode) {
+      console.log("⚠️ SAFE MODE: Proceeding with controlled manual scan. Crons remain disabled; caps and idempotency apply.");
+    }
     console.log(`🚀 Starting scan for user: ${args.clerkUserId}`);
 
     // Get user
@@ -75,7 +102,19 @@ export const startScan = mutation({
 
     // Create scan sessions for each connection
     const sessions = [];
+    const now = Date.now();
     for (const connection of connections) {
+      // Manual scan abuse control: enforce 24h cooldown unless overridden
+      const cooldownActive =
+        !args.overrideManualCooldown &&
+        typeof connection.nextEligibleManualScanAt === "number" &&
+        now < connection.nextEligibleManualScanAt;
+      if (cooldownActive) {
+        const nextEligible = connection.nextEligibleManualScanAt as number;
+        const retryInMs = nextEligible - now;
+        console.log(`⏳ Cooldown active for ${connection.email}. Retry in ${Math.ceil(retryInMs / 60000)} min.`);
+        continue;
+      }
       // Determine scan type
       const hasCompletedScan = connection.lastFullScanAt && connection.lastFullScanAt > 0;
       const scanType = args.forceFullScan || !hasCompletedScan ? "full" : "incremental";
@@ -98,6 +137,13 @@ export const startScan = mutation({
       // Schedule the scan action
       await ctx.scheduler.runAfter(0, internal.scanning.orchestrator.executeScan, {
         sessionId,
+      });
+
+      // Set next eligible time for manual scans (24h cooldown)
+      await ctx.runMutation(internal.emailScanner.updateConnectionData, {
+        connectionId: connection._id,
+        lastManualScanAt: now,
+        nextEligibleManualScanAt: now + 24 * 60 * 60 * 1000,
       });
 
       sessions.push({
@@ -125,6 +171,11 @@ export const executeScan = internalAction({
     sessionId: v.id("scanSessions"),
   },
   handler: async (ctx, args) => {
+    // In Safe Mode, we still allow this manual, one-shot execution path.
+    // Background crons remain blocked by their own guards.
+    if (await isSafeModeEnabled(ctx)) {
+      console.log("⚠️ SAFE MODE: executeScan proceeding (manual path). Crons remain disabled.");
+    }
     const session = await ctx.runQuery(
       internal.scanning.orchestrator.getSessionDetails,
       { sessionId: args.sessionId }
@@ -143,8 +194,16 @@ export const executeScan = internalAction({
     );
 
     try {
-      // Acquire distributed lock
-      const lockAcquired = await lockManager.acquire(10 * 60 * 1000); // 10 minute timeout
+      // Acquire distributed lock with backoff retries (short TTL)
+      let lockAcquired = false;
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        lockAcquired = await lockManager.acquire(2 * 60 * 1000);
+        if (lockAcquired) break;
+        const backoffMs = attempt * 750 + Math.floor(Math.random() * 250);
+        console.log(`🔒 Lock attempt ${attempt}/${maxAttempts} failed. Retrying in ${backoffMs}ms...`);
+        await new Promise((r) => setTimeout(r, backoffMs));
+      }
       if (!lockAcquired) {
         console.log(`🔒 Could not acquire lock for connection ${session.connectionId}`);
         await ctx.runMutation(internal.core.stateMachine.transitionState, {
@@ -238,6 +297,13 @@ async function executeScanPhases(ctx: any, session: any, sessionId: Id<"scanSess
       {
         connectionId: session.connectionId,
         forceFullScan: session.type === "full",
+        sinceTs: session.type === "incremental"
+          ? (typeof connection.lastScannedInternalDate === "number"
+              ? connection.lastScannedInternalDate
+              : (typeof connection.lastFullScanAt === "number" ? connection.lastFullScanAt : undefined))
+          : undefined,
+        capPages: 3,
+        capMessages: 500,
       }
     );
 
@@ -288,70 +354,177 @@ async function executeScanPhases(ctx: any, session: any, sessionId: Id<"scanSess
     newState: ScanState.PARSING,
   });
 
-  // Process receipts with AI in batches
-  const batchSize = 40;
-  let processedCount = 0;
-  let totalTokens = 0;
-  let totalCost = 0;
+  // Log total receipts to process
+  console.log(`📋 Starting batch parsing: ${unparsedReceipts.length} total receipts to process`);
 
-  for (let i = 0; i < unparsedReceipts.length; i += batchSize) {
-    const batch = unparsedReceipts.slice(i, i + batchSize);
+  // Schedule first parsing batch (will chain subsequent batches)
+  // Once all batches complete, the batch processor will continue to DETECTING phase
+  await ctx.scheduler.runAfter(0, internal.scanning.orchestrator.processParsingBatch, {
+    sessionId,
+    totalEmailsCollected,
+    startTime,
+  });
+
+  // Note: Remaining phases (DETECTING, REVIEWING, COMPLETE) are handled
+  // by the batch processor after all parsing batches finish
+  console.log(`📋 Parsing batches scheduled - scan will continue asynchronously`);
+}
+
+/**
+ * Process a single batch of receipts for parsing
+ * Called recursively until all receipts are parsed
+ */
+export const processParsingBatch = internalAction({
+  args: {
+    sessionId: v.id("scanSessions"),
+    totalEmailsCollected: v.number(),
+    startTime: v.number(),
+    iteration: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Guard against runaway loops
+    const currentIteration = (args.iteration ?? 1);
+    const MAX_ITERATIONS = 20;
+    if (currentIteration > MAX_ITERATIONS) {
+      console.warn(`🛑 MAX_ITERATIONS reached for parsing (>${MAX_ITERATIONS}). Aborting parsing phase.`);
+      await ctx.runMutation(internal.core.stateMachine.transitionState, {
+        sessionId: args.sessionId,
+        newState: ScanState.FAILED,
+        error: {
+          type: "transient",
+          message: "Parsing exceeded max iterations safeguard",
+          code: "MAX_ITERATIONS_EXCEEDED",
+        },
+      });
+      return;
+    }
+
+    const session = await ctx.runQuery(internal.scanning.orchestrator.getSessionDetails, {
+      sessionId: args.sessionId,
+    });
+
+    if (!session) {
+      console.error(`❌ Session not found: ${args.sessionId}`);
+      return;
+    }
+
+    // Get ALL unparsed receipts - parallel AI processing handles them efficiently
+    const unparsedReceipts = await ctx.runQuery(
+      internal.receiptParser.getUnparsedReceipts,
+      {
+        userId: session.userId,
+        limit: 1000, // Process all receipts at once with parallel AI
+      }
+    );
+
+    // If no more receipts to parse, move to DETECTING phase
+    if (unparsedReceipts.length === 0) {
+      console.log(`✅ All receipts parsed! Moving to DETECTING phase...`);
+      await completeParsingPhase(ctx, args.sessionId, args.totalEmailsCollected, session, args.startTime);
+      return;
+    }
+
+    console.log(`🤖 Processing batch: ${unparsedReceipts.length} receipts`);
 
     try {
-      // Use circuit breaker for AI calls
+      // Parse this batch with AI
       const parseResult = await circuitBreaker.execute(
         "AI_PARSING",
         async () => {
           return await ctx.runAction(
             internal.aiReceiptParser.parseReceiptsWithAI,
             {
-              receiptIds: batch.map((r: any) => r._id),
-              provider: "dual", // Use both Claude and OpenAI
+              receipts: unparsedReceipts.map((r: any) => ({
+                _id: r._id,
+                from: r.from,
+                subject: r.subject,
+                rawBody: r.rawBody || null,
+              })),
             }
           );
         }
       );
 
-      processedCount += parseResult.processed || batch.length;
-      totalTokens += parseResult.tokensUsed || 0;
-      totalCost += parseResult.cost || 0;
+      const processedCount = (session.checkpoint?.receiptsProcessed || 0) + (parseResult.processed || unparsedReceipts.length);
 
       // Update checkpoint
+      const prevProcessedIds = session.checkpoint?.processedReceiptIds || [];
+      const newProcessedIds = unparsedReceipts.map((r: any) => r._id);
+      const mergedProcessedIds = Array.from(new Set([...prevProcessedIds, ...newProcessedIds]));
       await ctx.runMutation(internal.core.stateMachine.updateCheckpoint, {
-        sessionId,
+        sessionId: args.sessionId,
         checkpoint: {
-          emailsCollected: totalEmailsCollected,
+          emailsCollected: args.totalEmailsCollected,
           receiptsProcessed: processedCount,
           candidatesCreated: 0,
-          lastProcessedReceiptId: batch[batch.length - 1]._id,
+          lastProcessedReceiptId: unparsedReceipts[unparsedReceipts.length - 1]._id,
+          processedReceiptIds: mergedProcessedIds,
         },
       });
 
       // Record API costs
       if (parseResult.cost) {
         await ctx.runMutation(internal.monitoring.costTracker.recordAPICall, {
-          sessionId,
+          sessionId: args.sessionId,
           provider: "AI_AGGREGATE",
           model: "mixed",
           inputTokens: parseResult.tokensUsed || 0,
           outputTokens: 0,
-          duration: Date.now() - startTime,
+          duration: Date.now() - args.startTime,
           success: true,
         });
       }
 
-      console.log(`✅ Processed batch ${Math.floor(i / batchSize) + 1}: ${batch.length} receipts`);
-    } catch (error) {
-      console.error(`❌ Failed to process batch ${Math.floor(i / batchSize) + 1}:`, error);
-      // Continue with next batch on partial failure
-    }
-  }
+      console.log(`✅ Batch complete: ${unparsedReceipts.length} receipts parsed (${processedCount} total)`);
 
+      // Schedule next batch
+      await ctx.scheduler.runAfter(0, internal.scanning.orchestrator.processParsingBatch, {
+        sessionId: args.sessionId,
+        totalEmailsCollected: args.totalEmailsCollected,
+        startTime: args.startTime,
+        iteration: currentIteration + 1,
+      });
+
+    } catch (error) {
+      console.error(`❌ Batch parsing failed:`, error);
+
+      // Schedule retry of same batch after delay
+      await ctx.scheduler.runAfter(5000, internal.scanning.orchestrator.processParsingBatch, {
+        sessionId: args.sessionId,
+        totalEmailsCollected: args.totalEmailsCollected,
+        startTime: args.startTime,
+        iteration: currentIteration + 1,
+      });
+    }
+  },
+});
+
+/**
+ * Complete parsing phase and continue to DETECTING/REVIEWING/COMPLETE
+ */
+async function completeParsingPhase(
+  ctx: any,
+  sessionId: Id<"scanSessions">,
+  totalEmailsCollected: number,
+  session: any,
+  startTime: number
+) {
   // Phase 5: DETECTING
   await ctx.runMutation(internal.core.stateMachine.transitionState, {
     sessionId,
     newState: ScanState.DETECTING,
   });
+
+  // Optional non-AI repair pass to normalize aggregator receipts and fill missing fields
+  try {
+    await ctx.runMutation(internal.repair.repairParsedReceipts, {
+      userId: session.userId,
+      limit: 800,
+    });
+    console.log("🧰 Repair pass complete before pattern detection.");
+  } catch (e) {
+    console.warn("Repair pass failed (continuing to detection):", e);
+  }
 
   // Run pattern-based detection
   const detectionResult = await ctx.runMutation(
@@ -362,13 +535,14 @@ async function executeScanPhases(ctx: any, session: any, sessionId: Id<"scanSess
   );
 
   const candidatesCreated = detectionResult.candidatesCreated || 0;
+  const receiptsProcessed = session.checkpoint?.receiptsProcessed || 0;
 
   // Update final checkpoint
   await ctx.runMutation(internal.core.stateMachine.updateCheckpoint, {
     sessionId,
     checkpoint: {
       emailsCollected: totalEmailsCollected,
-      receiptsProcessed: processedCount,
+      receiptsProcessed,
       candidatesCreated,
     },
   });
@@ -381,14 +555,18 @@ async function executeScanPhases(ctx: any, session: any, sessionId: Id<"scanSess
 
   // Update session stats
   const endTime = Date.now();
+  const parsedCountTotal = receiptsProcessed;
+  const estimatedCostPerReceipt = 0.0004;
+  const apiCostEstimated = Math.max(0, Math.round(parsedCountTotal * estimatedCostPerReceipt * 1e6) / 1e6);
+  const tokensPerReceiptEstimate = 1;
   await ctx.runMutation(internal.core.stateMachine.updateStats, {
     sessionId,
     stats: {
       totalEmailsFound: totalEmailsCollected,
-      receiptsIdentified: totalReceiptsCollected,
+      receiptsIdentified: totalEmailsCollected, // Use collected count
       subscriptionsDetected: candidatesCreated,
-      tokensUsed: totalTokens,
-      apiCost: totalCost,
+      tokensUsed: tokensPerReceiptEstimate * parsedCountTotal,
+      apiCost: apiCostEstimated,
       processingTimeMs: endTime - startTime,
     },
   });
@@ -405,11 +583,15 @@ async function executeScanPhases(ctx: any, session: any, sessionId: Id<"scanSess
       connectionId: session.connectionId,
       lastFullScanAt: Date.now(),
     });
+  } else if (session.type === "incremental") {
+    await ctx.runMutation(internal.emailScanner.updateConnectionData, {
+      connectionId: session.connectionId,
+      lastSyncedAt: Date.now(),
+    });
   }
 
   console.log(`🎉 Scan completed successfully!`);
-  console.log(`📊 Results: ${totalEmailsCollected} emails → ${totalReceiptsCollected} receipts → ${candidatesCreated} subscriptions detected`);
-  console.log(`💰 Cost: $${totalCost.toFixed(4)} for ${totalTokens} tokens`);
+  console.log(`📊 Results: ${totalEmailsCollected} emails → ${receiptsProcessed} receipts parsed → ${candidatesCreated} subscriptions detected`);
   console.log(`⏱️ Duration: ${((endTime - startTime) / 1000).toFixed(1)}s`);
 }
 

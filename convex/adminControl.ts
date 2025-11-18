@@ -70,6 +70,7 @@ export const setSafeMode = internalMutation({
     if (!settings) {
       // Create settings if they don't exist
       await ctx.db.insert("systemSettings", {
+        key: "global",
         safeModeEnabled: args.enabled,
         safeModeReason: args.reason || undefined,
         safeModeMessage: args.message || undefined,

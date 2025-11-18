@@ -590,6 +590,9 @@ export const updateConnectionData = internalMutation({
     lastFullScanAt: v.optional(v.number()),
     lastScannedInternalDate: v.optional(v.number()),
     lastSyncedAt: v.optional(v.number()),
+    // Manual scan cooldown tracking
+    lastManualScanAt: v.optional(v.number()),
+    nextEligibleManualScanAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const updateData: any = {
@@ -606,6 +609,14 @@ export const updateConnectionData = internalMutation({
 
     if (args.lastSyncedAt !== undefined) {
       updateData.lastSyncedAt = args.lastSyncedAt;
+    }
+
+    if (args.lastManualScanAt !== undefined) {
+      updateData.lastManualScanAt = args.lastManualScanAt;
+    }
+
+    if (args.nextEligibleManualScanAt !== undefined) {
+      updateData.nextEligibleManualScanAt = args.nextEligibleManualScanAt;
     }
 
     await ctx.db.patch(args.connectionId, updateData);

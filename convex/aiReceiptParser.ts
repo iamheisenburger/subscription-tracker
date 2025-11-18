@@ -445,7 +445,15 @@ export const parseReceiptsWithAI = internalAction({
     console.log(`      - Filtered Out: ${filteredCount} (${Math.round((filteredCount/aiResultsWithHashes.length)*100)}%)`);
     console.log(`   💵 Cost Savings: $${(cachedCount * 0.002).toFixed(4)} (${Math.round((cachedCount/allResults.length)*100)}% reduction)`);
 
-    return { results: allResults };
+    // NOTE: For now we don't track exact token usage or API cost here.
+    // Downstream callers (orchestrator and emailScannerActions) expect a
+    // lightweight summary object with processed/count estimates.
+    return {
+      results: allResults,
+      processed: allResults.length,
+      tokensUsed: 0,
+      cost: 0,
+    };
   },
 });
 

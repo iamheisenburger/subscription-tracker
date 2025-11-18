@@ -295,7 +295,7 @@ export function extractAppleServiceName(subject: string, htmlBody: string): stri
   }
 
   // Fallback 3b: Quoted product name near subscription terms
-  const quotedNearSub = textOnly.match(/[""']\s*([A-Z][A-Za-z0-9 :.&()\/-]{2,80})\s*[""']\s+(?:subscription|plan|membership|annual|monthly)/i);
+  const quotedNearSub = textOnly.match(/[“"']\s*([A-Z][A-Za-z0-9 :.&()\/-]{2,80})\s*[”"']\s+(?:subscription|plan|membership|annual|monthly)/i);
   if (quotedNearSub && quotedNearSub[1]) {
     const candidate = quotedNearSub[1].trim();
     const lower = candidate.toLowerCase();
@@ -452,4 +452,3 @@ export function extractGooglePayServiceName(subject: string, body: string): stri
   }
   return null;
 }
-

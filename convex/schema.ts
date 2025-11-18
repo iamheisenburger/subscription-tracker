@@ -205,9 +205,14 @@ export default defineSchema({
     proposedNextBilling: v.number(),
     confidence: v.number(), // 0-1
     detectionReason: v.string(), // Human-readable explanation
-    // Optional evidence metadata used by pattern-based detection
-    evidenceSnippet: v.optional(v.string()),
-    evidenceType: v.optional(v.string()),
+    // Evidence for auditability/debug
+    evidenceSnippet: v.optional(v.string()), // <=240 chars text from subject/body/pattern reason
+    evidenceType: v.optional(v.union(
+      v.literal("subject"),
+      v.literal("body"),
+      v.literal("descriptor"),
+      v.literal("pattern")
+    )),
     status: v.union(
       v.literal("pending"),
       v.literal("accepted"),
@@ -318,12 +323,17 @@ export default defineSchema({
       v.literal("active"),
       v.literal("disconnected"),
       v.literal("error"),
-      v.literal("requires_reauth")
+      v.literal("requires_reauth"),
+      // Incremental scans: explicit token states for scheduling/guard rails
+      v.literal("expired"),
+      v.literal("revoked")
     ),
     lastSyncedAt: v.optional(v.number()), // Last time we scanned emails
     syncCursor: v.optional(v.string()), // Timestamp for incremental scans
     lastFullScanAt: v.optional(v.number()), // When last FULL inbox scan completed (for incremental mode)
-    lastScannedInternalDate: v.optional(v.number()), // Gmail internalDate of last scanned message
+    // Incremental scan checkpoints
+    lastScannedInternalDate: v.optional(v.number()), // Gmail internalDate of newest processed message (ms)
+    lastHistoryId: v.optional(v.string()), // Optional Gmail historyId checkpoint
     // Full inbox scan pagination (Phase 3)
     scanStatus: v.optional(v.union(
       v.literal("not_started"),  // Never scanned before
@@ -334,6 +344,9 @@ export default defineSchema({
     pageToken: v.optional(v.string()), // Gmail API nextPageToken for pagination
     totalEmailsScanned: v.optional(v.number()), // Progress tracking
     totalReceiptsFound: v.optional(v.number()), // Progress tracking
+    // Manual scan cooldown controls
+    lastManualScanAt: v.optional(v.number()),
+    nextEligibleManualScanAt: v.optional(v.number()),
     // AI processing progress (for real-time UI updates)
     aiProcessingStatus: v.optional(v.union(
       v.literal("not_started"),
@@ -395,6 +408,7 @@ export default defineSchema({
       v.literal("trial_started"),       // Free trial started
       v.literal("trial_ending"),        // Trial ending soon
       v.literal("payment_failed"),      // Payment method issue
+      v.literal("payment"),             // General payment receipt
       v.literal("unknown")              // Could not classify
     )),
     // NEW: SHA-256 content hashing for deduplication (prevents duplicate AI processing)
@@ -412,31 +426,6 @@ export default defineSchema({
     .index("by_content_hash", ["contentHash"]), // NEW: For SHA-256 cache lookups
 
   // Distributed locking system for preventing concurrent operations
-  systemSettings: defineTable({
-    // Safe Mode / Kill Switch (new schema)
-    safeModeEnabled: v.optional(v.boolean()), // Optional for backward compatibility
-    safeModeReason: v.optional(v.string()),
-    safeModeMessage: v.optional(v.string()),
-    safeModeEnabledAt: v.optional(v.number()),
-    // Legacy fields (for backward compatibility)
-    safeMode: v.optional(v.boolean()), // Old field name
-    cronsDisabled: v.optional(v.boolean()), // Old field name
-    autoKillAt: v.optional(v.number()),
-    autoKillReason: v.optional(v.string()),
-    detectionCountStreak: v.optional(v.number()),
-    lastDetectionCount: v.optional(v.number()),
-    lastHeuristicsUpdateAt: v.optional(v.number()),
-    key: v.optional(v.string()),
-    // Debug query throttling
-    debugQueriesDisabled: v.boolean(),
-    minDebugPollIntervalMs: v.number(),
-    // Detection queue monitoring
-    lastDetectionQueueSize: v.optional(v.number()),
-    lastDetectionQueueCheck: v.optional(v.number()),
-    consecutiveUnchangedRuns: v.optional(v.number()),
-  })
-    .index("by_safe_mode", ["safeModeEnabled"]),
-
   distributedLocks: defineTable({
     resourceType: v.string(), // e.g., "emailConnection", "userScan"
     resourceId: v.string(),   // e.g., connection ID, user ID
@@ -512,5 +501,31 @@ export default defineSchema({
     .index("by_connection", ["connectionId"])
     .index("by_status", ["status"])
     .index("by_user_status", ["userId", "status"]),
+
+  // Global runtime settings and safety flags
+  systemSettings: defineTable({
+    key: v.string(), // "global"
+    // Safety controls
+    safeMode: v.optional(v.boolean()),
+    // Newer, more descriptive safe-mode flags (for admin UI)
+    safeModeEnabled: v.optional(v.boolean()),
+    safeModeReason: v.optional(v.string()),
+    safeModeMessage: v.optional(v.string()),
+    safeModeEnabledAt: v.optional(v.number()),
+    cronsDisabled: v.optional(v.boolean()),
+    autoKillReason: v.optional(v.string()),
+    autoKillAt: v.optional(v.number()),
+    // Heuristics state
+    lastDetectionCount: v.optional(v.number()),
+    detectionCountStreak: v.optional(v.number()),
+    lastHeuristicsUpdateAt: v.optional(v.number()),
+    // Additional heuristics tracking for queue stability
+    lastDetectionQueueSize: v.optional(v.number()),
+    lastDetectionQueueCheck: v.optional(v.number()),
+    consecutiveUnchangedRuns: v.optional(v.number()),
+    // Debug/query safeguards
+    debugQueriesDisabled: v.optional(v.boolean()), // If true, read-only debug endpoints return minimal responses
+    minDebugPollIntervalMs: v.optional(v.number()), // Minimum allowed poll interval for debug/status endpoints
+  }).index("by_key", ["key"]),
 });
 

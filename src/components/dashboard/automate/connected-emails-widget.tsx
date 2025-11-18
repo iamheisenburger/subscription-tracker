@@ -58,12 +58,6 @@ export function ConnectedEmailsWidget() {
     setIsScanning(true);
     try {
       await triggerScan({ clerkUserId: user.id });
-      toast.success("Scan started", {
-        description: isFirstScan
-          ? "We’re analyzing your inbox for subscription receipts. This runs in the background."
-          : "Scanning new emails since your last run. This runs in the background.",
-        duration: 6000,
-      });
     } catch (error) {
       toast.error("Scan failed", {
         description: "Failed to start email scan. Please try again.",

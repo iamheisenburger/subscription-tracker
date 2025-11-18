@@ -21,74 +21,6 @@ export const getAllUsers = query({
 });
 
 /**
- * Find Fortect receipts for debugging
- */
-export const findFortectReceipts = query({
-  args: {
-    clerkUserId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
-      .first();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const allReceipts = await ctx.db
-      .query("emailReceipts")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
-
-    const fortectReceipts = allReceipts.filter((r) => 
-      (r.subject && r.subject.toLowerCase().includes("fortect")) ||
-      (r.merchantName && r.merchantName.toLowerCase().includes("fortect")) ||
-      (r.from && r.from.toLowerCase().includes("fortect"))
-    );
-
-    return fortectReceipts.map((r) => ({
-      _id: r._id,
-      merchantName: r.merchantName,
-      subject: r.subject?.substring(0, 100),
-      from: r.from,
-      amount: r.amount,
-      parsed: r.parsed,
-      receivedAt: r.receivedAt,
-    }));
-  },
-});
-
-/**
- * Get detection queue stats (for monitoring)
- * Per COST_SAFETY_AND_UNIT_ECONOMICS.md
- */
-export const getDetectionQueueStats = query({
-  args: {},
-  handler: async (ctx) => {
-    // Count receipts needing detection (not linked to subscriptions or candidates)
-    const queueSize = await ctx.db
-      .query("emailReceipts")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("parsed"), true),
-          q.eq(q.field("subscriptionId"), undefined),
-          q.eq(q.field("detectionCandidateId"), undefined),
-          q.gte(q.field("parsingConfidence"), 0.6)
-        )
-      )
-      .collect();
-
-    return {
-      queueSize: queueSize.length,
-      timestamp: Date.now(),
-      warning: queueSize.length >= 150 ? "Queue size exceeds threshold (150) - safe mode should trigger" : null,
-    };
-  },
-});
-
-/**
  * Get all email receipts for a user (for debugging)
  */
 export const getUserEmailReceipts = query({
@@ -269,6 +201,96 @@ export const getDbStats = query({
       subscriptions: {
         total: allSubscriptions.length,
       },
+    };
+  },
+});
+
+/**
+ * Detection queue stats (receipts still needing detection)
+ */
+export const getDetectionQueueStats = query({
+  handler: async (ctx) => {
+    const queue = await ctx.db
+      .query("emailReceipts")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("parsed"), true),
+          q.eq(q.field("detectionCandidateId"), undefined),
+          q.eq(q.field("subscriptionId"), undefined),
+          q.gte(q.field("parsingConfidence"), 0.6)
+        )
+      )
+      .take(500);
+
+    const byUser = new Map<string, number>();
+    for (const r of queue) {
+      const key = String(r.userId);
+      byUser.set(key, (byUser.get(key) || 0) + 1);
+    }
+
+    return {
+      totalNeedingDetection: queue.length,
+      users: Array.from(byUser.entries()).map(([userId, count]) => ({ userId, count })),
+      sample: queue.slice(0, 5).map((r) => ({
+        _id: r._id,
+        userId: r.userId,
+        merchantName: r.merchantName,
+        amount: r.amount,
+        parsingConfidence: r.parsingConfidence,
+      })),
+    };
+  },
+});
+
+/**
+ * Get user scan stats: cooldowns, connection health, and recent costs
+ */
+export const getUserScanStats = query({
+  args: {
+    clerkUserId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+    if (!user) {
+      return null;
+    }
+    const connections = await ctx.db
+      .query("emailConnections")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const connectionStats = connections.map((c) => ({
+      connectionId: c._id,
+      email: c.email,
+      status: c.status,
+      lastSyncedAt: c.lastSyncedAt,
+      lastScannedInternalDate: c.lastScannedInternalDate,
+      lastManualScanAt: c.lastManualScanAt,
+      nextEligibleManualScanAt: c.nextEligibleManualScanAt,
+    }));
+    const rawSessions = await ctx.db
+      .query("scanSessions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const sessions = rawSessions
+      .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0))
+      .slice(0, Math.min(args.limit ?? 10, 50))
+      .map((s) => ({
+        sessionId: s._id,
+        type: s.type,
+        status: s.status,
+        startedAt: s.startedAt,
+        completedAt: s.completedAt,
+        tokensUsed: s.stats?.tokensUsed ?? 0,
+        apiCost: s.stats?.apiCost ?? 0,
+        processingTimeMs: s.stats?.processingTimeMs ?? 0,
+      }));
+    return {
+      connections: connectionStats,
+      sessions,
     };
   },
 });

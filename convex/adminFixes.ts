@@ -188,3 +188,32 @@ export const runRepairAndDetection = action({
     };
   },
 });
+
+/**
+ * Enable global automation (crons) by clearing safeMode/cronsDisabled flags.
+ * Use this when you're confident the pipeline is healthy and want weekly
+ * incremental scans to run again.
+ */
+export const enableGlobalAutomation = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (q) => q.eq("key", "global"))
+      .first();
+
+    if (!existing) {
+      // If no settings row exists yet, nothing to change.
+      return { success: true, created: false };
+    }
+
+    await ctx.db.patch(existing._id, {
+      safeMode: false,
+      cronsDisabled: false,
+    });
+
+    console.log("🟢 Global automation enabled: safeMode=false, cronsDisabled=false");
+
+    return { success: true, created: false };
+  },
+});

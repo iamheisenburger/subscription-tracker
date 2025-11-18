@@ -564,44 +564,12 @@ export const processNextBatch = internalAction({
   args: {
     clerkUserId: v.string(),
     batchNumber: v.number(),
-    allowDuringSafeMode: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{
     success: boolean;
     error?: string;
     hasMoreBatches?: boolean;
   }> => {
-    const allowDuringSafeMode = args.allowDuringSafeMode ?? false;
-
-    // SAFE MODE CHECK: Block BACKGROUND batch processing if safe mode enabled
-    // Manual scans explicitly pass allowDuringSafeMode=true so users can finish scans even in safe mode.
-    const safeModeEnabled = await ctx.runQuery(internal.adminControl.isSafeModeEnabled, {});
-    if (!allowDuringSafeMode && safeModeEnabled) {
-      console.log(
-        `🔴 SAFE MODE: Batch ${args.batchNumber} skipped - safe mode enabled (background processing blocked)`
-      );
-
-      // Update scan state machine so UI can show paused status
-      try {
-        const connections: any[] = await ctx.runQuery(internal.emailScanner.getUserConnectionsInternal, {
-          clerkUserId: args.clerkUserId,
-        });
-        const firstConnection = connections.find((c) => c.status === "active");
-        if (firstConnection) {
-          await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
-            connectionId: firstConnection._id,
-            scanState: "paused_safe_mode",
-            estimatedTimeRemaining: undefined,
-            currentBatch: args.batchNumber,
-          });
-        }
-      } catch (stateError) {
-        console.error("Failed to mark scan as paused due to safe mode:", stateError);
-      }
-
-      return { success: false, error: "Safe mode enabled - background batch processing stopped" };
-    }
-
     try {
       console.log(`🔄 Auto-batching: Processing batch ${args.batchNumber} for user ${args.clerkUserId}`);
 
@@ -636,11 +604,10 @@ export const processNextBatch = internalAction({
         return { success: false, error: "User not found" };
       }
 
-      // Get up to 80 unparsed receipts for AI (increased for speed - 40 per provider in parallel)
-      // Larger batches = fewer API calls = faster overall processing
+      // Get up to 40 unparsed receipts for AI
       const receiptsToParse: any[] = await ctx.runQuery(internal.receiptParser.getUnparsedReceipts, {
         userId: userForBatch._id,
-        limit: 80,
+        limit: 40,
       });
 
       let parsedCount = 0;
@@ -663,37 +630,29 @@ export const processNextBatch = internalAction({
 
       console.log(`🤖 Parse result (batch ${args.batchNumber}): ${parsedCount} receipts processed`);
 
-      // Check if more batches needed - fetch remaining count
-      const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
-        clerkUserId: args.clerkUserId,
-      });
-
       // Update overall progress after parsing (DISABLED scanState to bypass validation bug)
       if (firstConnection) {
-        // Recalculate total batches based on remaining receipts to keep UI accurate
-        const BATCH_SIZE = 80; // Match the limit above
-        const processedSoFar = (args.batchNumber - 1) * BATCH_SIZE + parsedCount;
-        const estimatedTotal = processedSoFar + remainingResult.count;
-        const updatedTotalBatches = Math.ceil(estimatedTotal / BATCH_SIZE);
-        
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,
           // scanState: `processing_batch_${args.batchNumber}` as any, // DISABLED: Schema validation broken
           currentBatch: args.batchNumber,
-          totalBatches: updatedTotalBatches, // Update total batches dynamically
           batchProgress: parsedCount,
-          overallProgress: processedSoFar,
-          overallTotal: estimatedTotal,
+          overallProgress: (parsedCount || 0) + ((args.batchNumber - 1) * 40), // Approx cumulative (40 per batch)
         });
       }
+
+      // Check if more batches needed
+      const remainingResult = await ctx.runMutation(internal.receiptParser.countUnparsedReceipts, {
+        clerkUserId: args.clerkUserId,
+      });
 
       const hasMoreBatches = remainingResult.count > 0;
 
       if (hasMoreBatches) {
         console.log(`📊 ${remainingResult.count} receipts remain - scheduling batch ${args.batchNumber + 1}`);
 
-        // DUAL PROVIDER: 80 receipts per batch with NO DELAYS (independent rate limits)
-        // Increased batch size for faster processing (40 Claude + 40 OpenAI in parallel)
+        // DUAL PROVIDER: 40 receipts per batch with NO DELAYS (independent rate limits)
+        // 1000 receipts / 40 per batch = 25 batches max
         if (args.batchNumber < 50) {
           console.log(`⚡ No delays needed - dual providers have independent rate limits!`);
           await ctx.scheduler.runAfter(
@@ -702,7 +661,6 @@ export const processNextBatch = internalAction({
             {
               clerkUserId: args.clerkUserId,
               batchNumber: args.batchNumber + 1,
-              allowDuringSafeMode,
             }
           );
         } else {
@@ -846,9 +804,6 @@ export const triggerUserEmailScan = action({
     scannedConnections?: number;
     results?: any[];
   }> => {
-    // NOTE: Manual scans are NOT blocked by safe mode
-    // Safe mode only blocks BACKGROUND cron jobs (per COST_SAFETY_AND_UNIT_ECONOMICS.md)
-    // Manual scans respect 24h cooldown but are allowed even when safe mode is active
     try {
       console.log(`🚀 triggerUserEmailScan called for clerkUserId: ${args.clerkUserId}`);
 
@@ -953,11 +908,11 @@ export const triggerUserEmailScan = action({
       const firstConnection = connections.find((c) => c.status === "active");
 
       if (firstConnection) {
-        // DUAL PROVIDER: 80 receipts per batch (40 Claude + 40 OpenAI in parallel)
-        const BATCH_SIZE = 80; // 40 receipts per provider, processed in parallel for faster scans
+        // DUAL PROVIDER FIX: 40 receipts per batch (20 Claude + 20 OpenAI in parallel)
+        const BATCH_SIZE = 40; // 20 receipts per provider, processed in parallel
         const totalBatches = Math.ceil(totalReceipts / BATCH_SIZE);
-        // DYNAMIC TIME ESTIMATE: 80 receipts in parallel = ~60-90 seconds per batch
-        const estimatedTime = Math.ceil(totalBatches * 0.75); // 45 seconds per batch (optimized parallel processing)
+        // DYNAMIC TIME ESTIMATE: 40 receipts in parallel = ~30-60 seconds per batch
+        const estimatedTime = Math.ceil(totalBatches * 1); // 1 minute per batch (fast parallel processing)
 
         await ctx.runMutation(internal.emailScanner.updateScanStateMachine, {
           connectionId: firstConnection._id,
@@ -978,15 +933,13 @@ export const triggerUserEmailScan = action({
       }
 
       // Schedule AI parsing + detection immediately (runs in background)
-      // Sequential batch processing - batches process one after another
       console.log(`🔄 Scheduling AI parsing in background...`);
       await ctx.scheduler.runAfter(
-        0,
+        0, // Start immediately
         internal.emailScannerActions.processNextBatch,
         {
           clerkUserId: args.clerkUserId,
-          batchNumber: 1,
-          allowDuringSafeMode: true,
+          batchNumber: 1, // This is the first parsing batch
         }
       );
 
@@ -1016,5 +969,4 @@ export const triggerUserEmailScan = action({
     }
   },
 });
-
 

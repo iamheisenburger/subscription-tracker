@@ -74,11 +74,17 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
     activeOnly: false, // Get all, filter client-side
   });
 
+  // Notification history for duplicate protection badge gating
+  const notifications = useQuery(api.insights.getNotificationHistory, {
+    clerkUserId: userId,
+    limit: 200,
+  });
+
   // Client-side filtering for better performance
   const subscriptions = useMemo(() => {
     if (!allSubscriptions) return undefined;
-    
-    return allSubscriptions.filter(sub => {
+
+    return allSubscriptions.filter((sub) => {
       // Status filter
       if (activeFilter === "active" && !sub.isActive) return false;
       if (activeFilter === "inactive" && sub.isActive) return false;
@@ -100,6 +106,24 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
       return true;
     });
   }, [allSubscriptions, activeFilter, search, category, categoryFilter, billingCycle, billing, categories]);
+
+  // Map of subscriptionId -> has unread duplicate alert
+  const duplicateAlertMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (!notifications) return map;
+
+    notifications.forEach((n) => {
+      if (!n.read && typeof n.type === "string" && n.type.includes("duplicate")) {
+        const meta = n.metadata as { subscriptionId?: string } | undefined;
+        const subId = meta?.subscriptionId;
+        if (subId) {
+          map.set(subId, true);
+        }
+      }
+    });
+
+    return map;
+  }, [notifications]);
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
   const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 
@@ -176,6 +200,7 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
                 subscription={subscription}
                 showCategory={true}
                 currency="USD" // Will be replaced with user preference later
+                hasDuplicateAlert={duplicateAlertMap.get(subscription._id) === true}
               />
             ))}
           </div>

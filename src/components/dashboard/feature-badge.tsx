@@ -45,8 +45,8 @@ const FEATURE_BADGE_CONFIG: Record<FeatureBadgeType, FeatureBadgeConfig> = {
   },
   "duplicate-alert": {
     icon: AlertCircle,
-    label: "Duplicate alert",
-    tooltip: "Actively monitoring for duplicate charges",
+    label: "Duplicate protection",
+    tooltip: "Watching for potential duplicate charges across similar subscriptions",
     variant: "secondary",
     className: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
   },

@@ -5,6 +5,7 @@
  * Notification center showing all alerts (price changes, duplicates, renewals, detections)
  */
 
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -14,13 +15,27 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bell, TrendingUp, AlertTriangle, Sparkles, Calendar, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useSearchParams } from "next/navigation";
 
 export function AlertsTab() {
   const { user } = useUser();
+  const searchParams = useSearchParams();
+  const subscriptionFilter = searchParams.get("sub");
   const notifications = useQuery(
     api.insights.getNotificationHistory,
     user?.id ? { clerkUserId: user.id, limit: 100 } : "skip"
   );
+
+  const filteredNotifications = useMemo(() => {
+    if (!notifications) return [];
+    if (!subscriptionFilter) return notifications;
+
+    return notifications.filter((n) => {
+      const meta = n.metadata as { subscriptionId?: string } | undefined;
+      const subId = meta?.subscriptionId;
+      return subId && String(subId) === subscriptionFilter;
+    });
+  }, [notifications, subscriptionFilter]);
 
   if (notifications === undefined) {
     return (
@@ -32,7 +47,7 @@ export function AlertsTab() {
     );
   }
 
-  if (notifications.length === 0) {
+  if (filteredNotifications.length === 0) {
     return (
       <Card>
         <CardContent className="py-16">
@@ -54,8 +69,8 @@ export function AlertsTab() {
   }
 
   // Group notifications by read/unread
-  const unread = notifications.filter((n) => !n.read);
-  const read = notifications.filter((n) => n.read);
+  const unread = filteredNotifications.filter((n) => !n.read);
+  const read = filteredNotifications.filter((n) => n.read);
 
   return (
     <div className="space-y-6">
@@ -66,8 +81,10 @@ export function AlertsTab() {
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-2xl font-bold font-sans">{notifications.length}</p>
-                <p className="text-xs text-muted-foreground font-sans">Total Alerts</p>
+                <p className="text-2xl font-bold font-sans">{filteredNotifications.length}</p>
+                <p className="text-xs text-muted-foreground font-sans">
+                  {subscriptionFilter ? "Alerts for this subscription" : "Total Alerts"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -116,7 +133,7 @@ export function AlertsTab() {
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all" className="font-sans">
-            All ({notifications.length})
+            All ({filteredNotifications.length})
           </TabsTrigger>
           <TabsTrigger value="unread" className="font-sans">
             Unread ({unread.length})
@@ -127,7 +144,7 @@ export function AlertsTab() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-3">
-          {notifications.map((notification) => (
+          {filteredNotifications.map((notification) => (
             <NotificationCard key={notification._id} notification={notification} />
           ))}
         </TabsContent>
@@ -173,6 +190,7 @@ interface Notification {
   message: string;
   read: boolean;
   createdAt: number;
+  metadata?: Record<string, unknown>;
 }
 
 interface NotificationCardProps {

@@ -53,12 +53,14 @@ interface SubscriptionCardProps {
   subscription: Doc<"subscriptions">;
   showCategory?: boolean;
   currency?: string;
+  hasDuplicateAlert?: boolean;
 }
 
 export function SubscriptionCard({
   subscription,
   showCategory = true,
-  currency = 'USD'
+  currency = "USD",
+  hasDuplicateAlert,
 }: SubscriptionCardProps) {
   const { user } = useUser();
   const { tier } = useUserTier();
@@ -142,13 +144,13 @@ export function SubscriptionCard({
   // Determine which feature badges to show (only for Automate users)
   const isAutomate = tier === "automate_1";
   const isManual = subscription.source === "manual" || !subscription.source;
-  const showFeatureBadges = isAutomate && (
-    subscription.source === "detected" ||
-    subscription.detectionConfidence ||
-    subscription.predictedCadence ||
-    subscription.predictionConfidence ||
-    isManual // Show price tracking badge for manual entries
-  );
+  const showFeatureBadges =
+    isAutomate &&
+    (subscription.source === "detected" ||
+      subscription.detectionConfidence ||
+      subscription.predictedCadence ||
+      subscription.predictionConfidence ||
+      isManual); // Show price tracking badge for manual entries
 
   return (
     <>
@@ -200,9 +202,9 @@ export function SubscriptionCard({
                   </Link>
                 )}
 
-                {/* Duplicate alert - only for detected subscriptions */}
-                {isAutomate && subscription.source === "detected" && (
-                  <Link href={`/dashboard/insights?tab=alerts`}>
+                {/* Duplicate protection - only when we have an unread duplicate alert for this subscription */}
+                {isAutomate && hasDuplicateAlert && (
+                  <Link href={`/dashboard/insights?tab=alerts&sub=${subscription._id}`}>
                     <FeatureBadge type="duplicate-alert" clickable />
                   </Link>
                 )}

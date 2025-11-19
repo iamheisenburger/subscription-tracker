@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,27 @@ interface RecentSubscriptionsProps {
 
 export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
+  const notifications = useQuery(api.insights.getNotificationHistory, {
+    clerkUserId: userId,
+    limit: 200,
+  });
+
+  const duplicateAlertMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (!notifications) return map;
+
+    notifications.forEach((n) => {
+      if (!n.read && typeof n.type === "string" && n.type.includes("duplicate")) {
+        const meta = n.metadata as { subscriptionId?: string } | undefined;
+        const subId = meta?.subscriptionId;
+        if (subId) {
+          map.set(subId, true);
+        }
+      }
+    });
+
+    return map;
+  }, [notifications]);
 
   if (subscriptions === undefined) {
     return (
@@ -96,6 +118,7 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
               subscription={subscription}
               showCategory={true}
               currency="USD" // Will be replaced with user preference later
+              hasDuplicateAlert={duplicateAlertMap.get(subscription._id) === true}
             />
           ))}
         </div>

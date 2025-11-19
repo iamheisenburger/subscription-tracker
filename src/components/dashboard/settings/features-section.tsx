@@ -175,18 +175,10 @@ export function FeaturesSection() {
                   {feature.description}
                 </p>
               </div>
-              <div className="flex-shrink-0 text-right space-y-1">
-                <span className={`block text-xs font-medium font-sans ${getStatusColor(feature.status)}`}>
+              <div className="flex-shrink-0 text-right">
+                <span className={`text-xs font-medium font-sans ${getStatusColor(feature.status)}`}>
                   {feature.statusLabel}
                 </span>
-                {feature.status === "requires-email" && (
-                  <Link
-                    href="/dashboard/settings?tab=preferences&sub=integrations"
-                    className="block text-[11px] text-primary font-sans underline underline-offset-2"
-                  >
-                    Connect email in Integrations
-                  </Link>
-                )}
               </div>
             </div>
           );

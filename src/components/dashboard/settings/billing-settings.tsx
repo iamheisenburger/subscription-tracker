@@ -169,17 +169,15 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
 
             <Separator />
 
-            {/* Manage Subscription via Clerk */}
+            {/* Manage Subscription copy only - single primary CTA lives on Account tab */}
             <div className="space-y-4">
               <h4 className="font-medium font-sans">Manage subscription &amp; billing</h4>
               <p className="text-sm text-muted-foreground font-sans">
-                All plan changes, payment methods, and cancellations are managed securely through your Clerk account portal.
+                To change or cancel your plan or update payment details, use the{" "}
+                <span className="font-medium">Manage account &amp; billing</span> button
+                in the Account tab. All actions are handled securely through your Clerk
+                account portal.
               </p>
-              <Link href="/user-profile">
-                <Button className="font-sans">
-                  Open account &amp; billing portal
-                </Button>
-              </Link>
             </div>
           </>
         )}

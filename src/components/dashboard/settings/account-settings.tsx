@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Mail } from "lucide-react";
 import { FeaturesSection } from "./features-section";
+import Link from "next/link";
 import { format } from "date-fns";
 
 interface AccountSettingsProps {
@@ -111,9 +112,11 @@ export function AccountSettings({ user }: AccountSettingsProps) {
           </div>
 
           <div className="flex justify-end">
-            <Button variant="outline" className="font-sans">
-              Manage Account
-            </Button>
+            <Link href="/user-profile">
+              <Button variant="outline" className="font-sans">
+                Manage account &amp; billing
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

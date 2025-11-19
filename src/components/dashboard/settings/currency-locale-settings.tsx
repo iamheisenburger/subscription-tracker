@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { getLastRatesUpdate, refreshExchangeRates } from "@/lib/currency";
+import { useTheme } from "next-themes";
 
 export function CurrencyLocaleSettings() {
   const [currency, setCurrency] = useState("USD");
   const [lastUpdatedTs, setLastUpdatedTs] = useState<number | null>(null);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -46,7 +48,8 @@ export function CurrencyLocaleSettings() {
           Configure how amounts are displayed across your dashboard.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
+        {/* Currency */}
         <div className="space-y-2">
           <Label htmlFor="default-currency" className="font-sans">
             Default currency
@@ -79,6 +82,26 @@ export function CurrencyLocaleSettings() {
               Refresh rates
             </Button>
           </div>
+        </div>
+
+        {/* Appearance / Theme */}
+        <div className="space-y-2">
+          <Label htmlFor="theme-preference" className="font-sans">
+            Theme
+          </Label>
+          <select
+            id="theme-preference"
+            className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-sans"
+            value={theme || "system"}
+            onChange={(e) => setTheme(e.target.value)}
+          >
+            <option value="system">System default</option>
+            <option value="light">Light mode</option>
+            <option value="dark">Dark mode</option>
+          </select>
+          <p className="text-xs text-muted-foreground font-sans">
+            Your preference is remembered on this device and used across dashboard pages.
+          </p>
         </div>
       </CardContent>
     </Card>

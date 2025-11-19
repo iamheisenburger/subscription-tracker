@@ -129,7 +129,7 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
           <>
             <Separator />
 
-            {/* Billing History */}
+            {/* Billing History (sample) */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium font-sans">Billing History</h4>
@@ -169,20 +169,17 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
 
             <Separator />
 
-            {/* Manage Subscription */}
+            {/* Manage Subscription via Clerk */}
             <div className="space-y-4">
-              <h4 className="font-medium font-sans">Manage Subscription</h4>
-              <div className="flex gap-2">
-                <Button variant="outline" className="font-sans">
-                  Update Payment Method
+              <h4 className="font-medium font-sans">Manage subscription &amp; billing</h4>
+              <p className="text-sm text-muted-foreground font-sans">
+                All plan changes, payment methods, and cancellations are managed securely through your Clerk account portal.
+              </p>
+              <Link href="/user-profile">
+                <Button className="font-sans">
+                  Open account &amp; billing portal
                 </Button>
-                <Button variant="outline" className="font-sans">
-                  Change Plan
-                </Button>
-                <Button variant="outline" className="text-destructive hover:text-destructive font-sans">
-                  Cancel Subscription
-                </Button>
-              </div>
+              </Link>
             </div>
           </>
         )}

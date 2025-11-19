@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Mail } from "lucide-react";
-import { FeaturesSection } from "./features-section";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -120,8 +119,6 @@ export function AccountSettings({ user }: AccountSettingsProps) {
           </div>
         </CardContent>
       </Card>
-
-      <FeaturesSection />
     </div>
   );
 }

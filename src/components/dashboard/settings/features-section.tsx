@@ -12,7 +12,6 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { CheckCircle2, Circle, Lock, Sparkles, Mail, Calendar, HelpCircle, FileText, TrendingUp } from "lucide-react";
-import Link from "next/link";
 
 interface FeatureItem {
   icon: React.ElementType;
@@ -184,29 +183,6 @@ export function FeaturesSection() {
           );
         })}
       </div>
-
-      {/* Call to action based on user state */}
-      {!isAutomate && (
-        <div className="mt-4 p-4 border border-primary/20 rounded-lg bg-primary/5">
-          <p className="text-sm font-sans mb-2">
-            Want automatic subscription detection from your email?
-          </p>
-          <Link href="/dashboard/upgrade">
-            <button className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-sans transition-colors">
-              Upgrade to Automate
-            </button>
-          </Link>
-        </div>
-      )}
-
-      {isAutomate && hasEmailConnected && (
-        <div className="mt-4 p-4 border border-green-500/20 rounded-lg bg-green-500/5">
-          <p className="text-sm text-green-700 dark:text-green-400 font-sans flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            All automation features are active and monitoring your email for subscriptions.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

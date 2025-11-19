@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Settings, CreditCard, AlertTriangle } from "lucide-react";
-import { AccountSettings } from "./account-settings";
-import { PreferencesTabs } from "./preferences-tabs";
+import { User, Sparkles, CreditCard, AlertTriangle } from "lucide-react";
+import { GeneralSettings } from "./general-settings";
+import { AutomationSettings } from "./automation-settings";
 import { BillingSettings } from "./billing-settings";
 import { DangerZone } from "./danger-zone";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -23,29 +23,29 @@ interface SettingsTabsProps {
 }
 
 export function SettingsTabs({ user, userId }: SettingsTabsProps) {
-  const [activeTab, setActiveTab] = useState("account");
+  const [activeTab, setActiveTab] = useState("general");
   const searchParams = useSearchParams();
 
   // Read tab from URL params on mount
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['account', 'preferences', 'billing', 'danger'].includes(tabParam)) {
+    if (tabParam && ['general', 'automation', 'billing', 'danger'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
 
   const tabs = [
     {
-      id: "account",
-      label: "Account",
+      id: "general",
+      label: "General",
       icon: User,
-      component: <AccountSettings user={user} />
+      component: <GeneralSettings user={user} />
     },
     {
-      id: "preferences",
-      label: "Preferences", 
-      icon: Settings,
-      component: <PreferencesTabs />
+      id: "automation",
+      label: "Automation", 
+      icon: Sparkles,
+      component: <AutomationSettings />
     },
     {
       id: "billing",
@@ -93,7 +93,7 @@ export function SettingsTabs({ user, userId }: SettingsTabsProps) {
                 <button 
                   onClick={resetError}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
-                >
+                  >
                   Try Again
                 </button>
               </div>

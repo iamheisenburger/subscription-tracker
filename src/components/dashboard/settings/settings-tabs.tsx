@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Settings, CreditCard, AlertTriangle } from "lucide-react";
 import { AccountSettings } from "./account-settings";
-import { PreferencesSettings } from "./preferences-settings";
+import { PreferencesTabs } from "./preferences-tabs";
 import { BillingSettings } from "./billing-settings";
 import { DangerZone } from "./danger-zone";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -45,7 +45,7 @@ export function SettingsTabs({ user, userId }: SettingsTabsProps) {
       id: "preferences",
       label: "Preferences", 
       icon: Settings,
-      component: <PreferencesSettings />
+      component: <PreferencesTabs />
     },
     {
       id: "billing",

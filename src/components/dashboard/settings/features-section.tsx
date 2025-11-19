@@ -199,17 +199,6 @@ export function FeaturesSection() {
         </div>
       )}
 
-      {isAutomate && !hasEmailConnected && connections !== undefined && (
-        <div className="mt-4 p-4 border border-orange-500/20 rounded-lg bg-orange-500/5">
-          <p className="text-sm font-sans mb-2">
-            Connect Gmail to unlock email detection, smart parsing, and automatic price tracking.
-          </p>
-          <p className="text-xs text-muted-foreground font-sans">
-            Scroll up to the Email Detection section to get started.
-          </p>
-        </div>
-      )}
-
       {isAutomate && hasEmailConnected && (
         <div className="mt-4 p-4 border border-green-500/20 rounded-lg bg-green-500/5">
           <p className="text-sm text-green-700 dark:text-green-400 font-sans flex items-center gap-2">

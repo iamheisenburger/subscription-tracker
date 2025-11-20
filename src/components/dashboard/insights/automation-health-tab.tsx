@@ -110,20 +110,22 @@ export function AutomationHealthTab() {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="space-y-1">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between space-y-0 pb-4">
+          <div className="space-y-1 w-full">
             <CardTitle className="font-sans">Email Detection</CardTitle>
             <CardDescription className="font-sans">
               Status of Gmail connection, weekly autoscan, and detection queue.
             </CardDescription>
           </div>
-          <Badge
-            variant={health.status === "ok" ? "default" : health.status === "warning" ? "secondary" : "destructive"}
-            className="flex items-center gap-1 font-sans"
-          >
-            {statusIcon}
-            <span>{statusLabel}</span>
-          </Badge>
+          <div className="w-full sm:w-auto flex justify-start sm:justify-end">
+            <Badge
+              variant={health.status === "ok" ? "default" : health.status === "warning" ? "secondary" : "destructive"}
+              className="flex items-center gap-1 font-sans w-full sm:w-auto justify-center sm:justify-start"
+            >
+              {statusIcon}
+              <span>{statusLabel}</span>
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">

@@ -122,7 +122,7 @@ export function EmailConnectionSettings() {
       <CardContent className="space-y-4">
         {/* Gmail Connection */}
         <div className="border rounded-lg p-4">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-3 flex-1">
               <div className="rounded-full bg-muted p-2">
                 <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none">
@@ -184,31 +184,31 @@ export function EmailConnectionSettings() {
               </div>
             </div>
 
-            <div className="flex-shrink-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               {hasGmailConnected ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDisconnect(gmailConnection._id)}
-                  className="font-sans"
+                  className="font-sans w-full sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Disconnect
                 </Button>
               ) : requiresUpgrade ? (
-                <Link href="/dashboard/upgrade">
-                  <Button variant="outline" className="font-sans">
+                <Link href="/dashboard/upgrade" className="w-full sm:w-auto">
+                  <Button variant="outline" className="font-sans w-full sm:w-auto">
                     <Lock className="h-4 w-4 mr-2" />
                     Upgrade to Connect
                   </Button>
                 </Link>
               ) : !canAddConnection ? (
-                <Button disabled className="font-sans">
+                <Button disabled className="font-sans w-full sm:w-auto">
                   <Lock className="h-4 w-4 mr-2" />
                   Limit Reached (1/1)
                 </Button>
               ) : (
-                <Button onClick={handleConnectGmail} className="font-sans">
+                <Button onClick={handleConnectGmail} className="font-sans w-full sm:w-auto">
                   <Mail className="h-4 w-4 mr-2" />
                   Connect Gmail
                 </Button>

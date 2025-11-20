@@ -35,13 +35,14 @@ export const createGmailConnection = mutation({
     const now = Date.now();
     const tokenExpiresAt = now + args.expiresIn * 1000;
 
-    // Check if connection already exists
-    const existing = await ctx.db
+    // Fetch current connections for this user (needed for limit + reconnection logic)
+    const userConnections = await ctx.db
       .query("emailConnections")
-      .withIndex("by_user_provider", (q) =>
-        q.eq("userId", user._id).eq("provider", "gmail")
-      )
-      .first();
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    // Check if connection already exists
+    const existing = userConnections.find((conn) => conn.provider === "gmail");
 
     if (existing) {
       console.log(`🔄 Updating existing connection for ${args.email}`);
@@ -65,6 +66,7 @@ export const createGmailConnection = mutation({
     // Check LIFETIME connection limit to prevent exploitation
     // Users cannot game the system by disconnecting/reconnecting different emails
     const lifetimeConnections = user.emailConnectionsUsedLifetime || 0;
+    const currentConnectionsCount = userConnections.length;
 
     // Tier-based limit check
     const userTier = user.tier || "free_user";
@@ -82,12 +84,16 @@ export const createGmailConnection = mutation({
       throw new Error("Email detection is available on the Automate plan. Upgrade to Automate to connect Gmail.");
     }
 
-    if (lifetimeConnections >= connectionLimit) {
+    const hasAvailableSlot =
+      lifetimeConnections < connectionLimit || currentConnectionsCount === 0;
+
+    if (!hasAvailableSlot) {
       console.error(`❌ LIMIT EXCEEDED: ${lifetimeConnections} >= ${connectionLimit}`);
       throw new Error(
         `Email connection limit reached. Your ${userTier} tier allows ${connectionLimit} unique email connections (lifetime). You've already connected ${lifetimeConnections} email${lifetimeConnections !== 1 ? 's' : ''}. Disconnecting does not reset this limit.`
       );
     }
+    const shouldIncrementLifetime = lifetimeConnections < connectionLimit;
 
     // Create new connection
     const connectionId = await ctx.db.insert("emailConnections", {
@@ -103,9 +109,11 @@ export const createGmailConnection = mutation({
     });
 
     // Increment lifetime connection counter (NEVER decrements - prevents exploitation)
-    await ctx.db.patch(user._id, {
-      emailConnectionsUsedLifetime: lifetimeConnections + 1,
-    });
+    if (shouldIncrementLifetime) {
+      await ctx.db.patch(user._id, {
+        emailConnectionsUsedLifetime: lifetimeConnections + 1,
+      });
+    }
 
     return { connectionId, updated: false };
   },

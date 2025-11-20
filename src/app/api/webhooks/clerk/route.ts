@@ -5,6 +5,7 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { api } from '../../../../../convex/_generated/api';
 import { fetchMutation } from 'convex/nextjs';
 import { detectTierFromClerkUser, logTierDetection } from '@/lib/tier-detection';
+import { plusPlanId, automatePlanId } from '@/lib/clerk-plan-ids';
 
 export const runtime = 'nodejs';
 
@@ -177,9 +178,6 @@ async function handleSubscriptionEvent(
  * Determine tier from plan ID
  */
 function getTierFromPlanId(planId: string): 'plus' | 'automate_1' {
-  const plusPlanId = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID;
-  const automatePlanId = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID;
-
   if (planId === automatePlanId) return 'automate_1';
   if (planId === plusPlanId) return 'plus';
 
@@ -207,8 +205,6 @@ function detectPremiumSubscription(subscription: {
 
   // Rule 1: Check against configured plan IDs (Plus and Automate)
   if (plan_id) {
-    const plusPlanId = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID;
-    const automatePlanId = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID;
     const legacyPremiumId = process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID; // Backward compat
 
     if (plan_id === plusPlanId || plan_id === automatePlanId || plan_id === legacyPremiumId) {

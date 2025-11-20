@@ -4,7 +4,9 @@ import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
+import type { CommerceSubscriptionPlanPeriod } from "@clerk/types";
 import { Button } from "@/components/ui/button";
+import { plusPlanId, automatePlanId } from "@/lib/clerk-plan-ids";
 
 // Force dynamic rendering (no static generation)
 export const dynamic = 'force-dynamic';
@@ -20,13 +22,10 @@ function CheckoutContent() {
   const billing = searchParams.get('billing') || 'annual';
   const plan = searchParams.get('plan') || 'plus'; // Default to plus
 
-  // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
-  const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
-  const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
-
-  // Determine which plan ID to use
-  const planId = plan === 'automate' ? AUTOMATE_PLAN_ID : PLUS_PLAN_ID;
+  const planId = plan === 'automate' ? automatePlanId : plusPlanId;
   const planName = plan === 'automate' ? 'Automate' : 'Plus';
+  const planPeriodValue = billing === 'monthly' ? 'month' : 'year';
+  const clerkPlanPeriod = planPeriodValue as unknown as CommerceSubscriptionPlanPeriod;
 
   // If no user, redirect to sign-up
   useEffect(() => {
@@ -61,7 +60,7 @@ function CheckoutContent() {
         <SignedIn>
           <CheckoutButton
             planId={planId}
-            planPeriod={billing === 'monthly' ? 'month' : 'annual'}
+            planPeriod={clerkPlanPeriod}
             onSubscriptionComplete={() => {
               // Force redirect to dashboard
               window.location.href = '/dashboard';

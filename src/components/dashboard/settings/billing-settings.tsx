@@ -53,9 +53,9 @@ export function BillingSettings({ userId }: BillingSettingsProps) {
               </div>
               <p className="text-sm text-muted-foreground font-sans">
                 {isAutomate
-                  ? "Automated bank sync + subscription detection"
+                  ? "Gmail-powered detection, duplicate alerts, and automation controls"
                   : isPlus
-                    ? "Unlimited subscriptions with advanced features"
+                    ? "Unlimited subscriptions with analytics and exports"
                     : "Up to 3 subscriptions with basic features"
                 }
               </p>

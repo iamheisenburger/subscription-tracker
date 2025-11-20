@@ -5,16 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import Link from "next/link";
-import { useUser, SignedIn, SignedOut } from "@clerk/nextjs";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
+import type { CommerceSubscriptionPlanPeriod } from "@clerk/types";
+import { plusPlanId, automatePlanId } from "@/lib/clerk-plan-ids";
 
 export const CustomPricingV2 = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
-
-  // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
-  const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
-  const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
-  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'annual';
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
+  const clerkPlanPeriod = planPeriodValue as unknown as CommerceSubscriptionPlanPeriod;
 
   const freePlan = {
     name: "Free - Track",
@@ -40,9 +39,9 @@ export const CustomPricingV2 = () => {
     annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
     features: [
       "Unlimited manual subscriptions",
-      "Multi-currency analytics",
-      "CSV/PDF export",
-      "Custom categories & smart alerts",
+      "Analytics & CSV/PDF export",
+      "Custom categories & reminders",
+      "Smart alerts (manual detections)",
       "Priority email support"
     ],
     cta: "Start 7-day free trial",
@@ -52,20 +51,19 @@ export const CustomPricingV2 = () => {
 
   const automatePlan = {
     name: "Automate",
-    description: "Everything in Plus + automated bank sync, subscription detection, price change alerts, and cancel assistant.",
+    description: "Everything in Plus + Gmail-powered detection, price change alerts, and cancel assistant.",
     price: billingCycle === 'monthly' ? "$9.00" : "$6.50",
     period: billingCycle === 'monthly' ? "/month" : "/month",
     originalPrice: billingCycle === 'annual' ? "$9.00" : null,
     annualNote: billingCycle === 'annual' ? "Billed annually ($78.00/year)" : "Billed monthly",
     features: [
       "Everything in Plus",
-      "1 bank connection (up to 3 accounts)",
+      "1 Gmail connection (lifetime)",
       "Auto subscription detection",
       "Price change & duplicate alerts",
       "Email receipt parsing",
       "Cancel Assistant (self-serve)",
-      "Calendar export + Push/SMS",
-      "Daily sync & renewal prediction"
+      "Weekly autoscan & duplicate protection"
     ],
     cta: "Start 7-day free trial",
     ctaLink: `/sign-up?plan=automate&billing=${billingCycle}`,
@@ -192,8 +190,8 @@ export const CustomPricingV2 = () => {
               {/* For signed-in users: Use CheckoutButton to open checkout drawer */}
               <SignedIn>
                 <CheckoutButton
-                  planId={PLUS_PLAN_ID}
-                  planPeriod={planPeriodValue}
+                  planId={plusPlanId}
+                  planPeriod={clerkPlanPeriod}
                   onSubscriptionComplete={() => {
                     // Force redirect to dashboard
                     window.location.href = '/dashboard';
@@ -266,8 +264,8 @@ export const CustomPricingV2 = () => {
               {/* For signed-in users: Use CheckoutButton to open checkout drawer */}
               <SignedIn>
                 <CheckoutButton
-                  planId={AUTOMATE_PLAN_ID}
-                  planPeriod={planPeriodValue}
+                  planId={automatePlanId}
+                  planPeriod={clerkPlanPeriod}
                   onSubscriptionComplete={() => {
                     // Force redirect to dashboard
                     window.location.href = '/dashboard';

@@ -35,12 +35,12 @@ export function UpgradeBanner() {
                   Upgrade to Automate
                 </h3>
                 <p className="text-sm text-muted-foreground font-sans">
-                  Connect your bank and let AI automatically detect subscriptions for you.
+                  Connect Gmail and let SubWise auto-detect subscriptions, duplicate charges, and reminders.
                 </p>
                 <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Shield className="h-3 w-3" />
-                    <span className="font-sans">Bank sync</span>
+                    <span className="font-sans">Secure Gmail OAuth</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <BarChart3 className="h-3 w-3" />
@@ -48,7 +48,7 @@ export function UpgradeBanner() {
                   </div>
                   <div className="flex items-center space-x-1">
                     <Bell className="h-3 w-3" />
-                    <span className="font-sans">Price alerts</span>
+                    <span className="font-sans">Duplicate & price alerts</span>
                   </div>
                 </div>
               </div>

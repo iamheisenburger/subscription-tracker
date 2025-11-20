@@ -116,7 +116,7 @@ export function AutomateDetectionQueue() {
                   </Badge>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground font-sans mt-1">
-                  Review and approve detected subscriptions from your bank transactions
+                  Review and approve subscriptions detected from your Gmail receipts
                 </p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export function AutomateDetectionQueue() {
           <div className="flex items-center gap-2 mt-4 pt-4 border-t text-sm text-muted-foreground">
             <TrendingUp className="h-4 w-4" />
             <span className="font-sans">
-              {count > 3 ? "Multiple subscriptions detected" : "New subscription detected"} from your recent transactions
+              {count > 3 ? "Multiple subscriptions detected" : "New subscription detected"} from your recent Gmail scans
             </span>
           </div>
         </CardContent>

@@ -25,7 +25,7 @@ const FEATURE_BADGE_CONFIG: Record<FeatureBadgeType, FeatureBadgeConfig> = {
   "auto-detected": {
     icon: Sparkles,
     label: "Auto-detected",
-    tooltip: "Automatically discovered from your bank transactions",
+    tooltip: "Automatically discovered from Gmail receipts",
     variant: "secondary",
     className: "bg-primary/10 text-primary border-primary/20",
   },

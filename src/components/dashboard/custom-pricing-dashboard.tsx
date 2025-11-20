@@ -6,7 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Check } from "lucide-react";
 import { SignedIn } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
+import type { CommerceSubscriptionPlanPeriod } from "@clerk/types";
 import { useUserTier } from "@/hooks/use-user-tier";
+import { plusPlanId, automatePlanId } from "@/lib/clerk-plan-ids";
 
 /**
  * Custom Pricing Table for Dashboard Upgrade Page
@@ -14,12 +16,10 @@ import { useUserTier } from "@/hooks/use-user-tier";
  */
 export const CustomPricingDashboard = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
-  const { tier, subscriptionType, isPlus, isAutomate } = useUserTier();
+  const { subscriptionType, isPlus, isAutomate } = useUserTier();
   const normalizedInterval = subscriptionType === 'annual' ? 'annual' : 'monthly';
-
-  // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
-  const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
-  const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
+  const clerkPlanPeriod = planPeriodValue as unknown as CommerceSubscriptionPlanPeriod;
 
   type PlanCTA = { label: string; showCheckout: boolean };
 
@@ -67,8 +67,6 @@ export const CustomPricingDashboard = () => {
     };
   })();
 
-  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'annual';
-
   const freePlan = {
     name: "Free - Track",
     description: "Perfect for getting started with subscription tracking. Track up to 3 subscriptions with essential features.",
@@ -93,9 +91,9 @@ export const CustomPricingDashboard = () => {
     annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
     features: [
       "Unlimited manual subscriptions",
-      "Multi-currency analytics",
-      "CSV/PDF export",
-      "Custom categories & smart alerts",
+      "Analytics & CSV/PDF export",
+      "Custom categories & reminders",
+      "Smart alerts (manual detections)",
       "Priority email support"
     ],
     badge: !isPlus && !isAutomate ? "7-day free trial" : undefined,
@@ -103,20 +101,19 @@ export const CustomPricingDashboard = () => {
 
   const automatePlan = {
     name: "Automate",
-    description: "Everything in Plus + automated bank sync, subscription detection, price change alerts, and cancel assistant.",
+    description: "Everything in Plus + Gmail-powered detection, price change alerts, and cancel assistant.",
     price: billingCycle === 'monthly' ? "$9.00" : "$6.50",
     period: billingCycle === 'monthly' ? "/month" : "/month",
     originalPrice: billingCycle === 'annual' ? "$9.00" : null,
     annualNote: billingCycle === 'annual' ? "Billed annually ($78.00/year)" : "Billed monthly",
     features: [
       "Everything in Plus",
-      "1 bank connection (up to 3 accounts)",
+      "1 Gmail connection (lifetime)",
       "Auto subscription detection",
       "Price change & duplicate alerts",
       "Email receipt parsing",
       "Cancel Assistant (self-serve)",
-      "Calendar export + Push/SMS",
-      "Daily sync & renewal prediction"
+      "Weekly autoscan & duplicate protection"
     ],
     badge: !isAutomate ? "Most Popular" : undefined,
   };
@@ -228,8 +225,8 @@ export const CustomPricingDashboard = () => {
               {plusPlanCTA.showCheckout ? (
                 <SignedIn>
                   <CheckoutButton
-                    planId={PLUS_PLAN_ID}
-                    planPeriod={planPeriodValue}
+                    planId={plusPlanId}
+                    planPeriod={clerkPlanPeriod}
                     onSubscriptionComplete={() => {
                       window.location.href = '/dashboard';
                     }}
@@ -294,8 +291,8 @@ export const CustomPricingDashboard = () => {
               {automatePlanCTA.showCheckout ? (
                 <SignedIn>
                   <CheckoutButton
-                    planId={AUTOMATE_PLAN_ID}
-                    planPeriod={planPeriodValue}
+                    planId={automatePlanId}
+                    planPeriod={clerkPlanPeriod}
                     onSubscriptionComplete={() => {
                       window.location.href = '/dashboard';
                     }}

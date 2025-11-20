@@ -28,7 +28,6 @@ import { toast } from "sonner";
 import { DetectionReviewModal } from "../detection/detection-review-modal";
 import { cn } from "@/lib/utils";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { AutomateUpgradeCard } from "./automate-upgrade-card";
 
 type ScanStep = "connect" | "preflight" | "gmail_scan" | "parse" | "detect" | "review";
 
@@ -115,17 +114,7 @@ export function ScanConsole() {
   }
 
   if (!isAutomate) {
-    return (
-      <AutomateUpgradeCard
-        title="Email detection lives on Automate"
-        description="Automate connects Gmail, auto-detects subscriptions, and routes detections into your dashboard."
-        features={[
-          "Secure Gmail OAuth with scoped access",
-          "Detection queue to approve or dismiss finds",
-          "Duplicate + price change alerts routed to Insights",
-        ]}
-      />
-    );
+    return null;
   }
 
   // Loading state

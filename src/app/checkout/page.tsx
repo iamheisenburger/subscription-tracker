@@ -24,7 +24,7 @@ function CheckoutContent() {
 
   const planId = plan === 'automate' ? automatePlanId : plusPlanId;
   const planName = plan === 'automate' ? 'Automate' : 'Plus';
-  const planPeriodValue = billing === 'monthly' ? 'month' : 'year';
+  const planPeriodValue = billing === 'monthly' ? 'month' : 'annual';
   const clerkPlanPeriod = planPeriodValue as unknown as CommerceSubscriptionPlanPeriod;
 
   // If no user, redirect to sign-up

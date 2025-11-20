@@ -18,7 +18,7 @@ export const CustomPricingDashboard = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const { subscriptionType, isPlus, isAutomate } = useUserTier();
   const normalizedInterval = subscriptionType === 'annual' ? 'annual' : 'monthly';
-  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'annual';
   const clerkPlanPeriod = planPeriodValue as unknown as CommerceSubscriptionPlanPeriod;
 
   type PlanCTA = { label: string; showCheckout: boolean };

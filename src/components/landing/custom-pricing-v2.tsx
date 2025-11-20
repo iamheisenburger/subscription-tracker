@@ -12,7 +12,7 @@ import { plusPlanId, automatePlanId } from "@/lib/clerk-plan-ids";
 
 export const CustomPricingV2 = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
-  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'annual';
   const clerkPlanPeriod = planPeriodValue as unknown as CommerceSubscriptionPlanPeriod;
 
   const freePlan = {

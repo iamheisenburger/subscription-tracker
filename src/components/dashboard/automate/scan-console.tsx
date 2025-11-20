@@ -286,7 +286,7 @@ export function ScanConsole() {
     return (
       <Card className="border-dashed">
         <CardContent className="py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-primary/10 p-2">
                 <Mail className="h-5 w-5 text-primary" />
@@ -298,7 +298,11 @@ export function ScanConsole() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleConnectGmail} size="sm" className="font-sans">
+            <Button
+              onClick={handleConnectGmail}
+              size="sm"
+              className="font-sans w-full sm:w-auto"
+            >
               <Mail className="h-4 w-4 mr-2" />
               Connect Gmail
             </Button>
@@ -321,7 +325,7 @@ export function ScanConsole() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="rounded-full bg-primary/10 p-2 flex-shrink-0">
                 <Mail className="h-5 w-5 text-primary" />
@@ -363,13 +367,13 @@ export function ScanConsole() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full sm:w-auto">
               {requiresReauth ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleConnectGmail}
-                  className="font-sans"
+                  className="font-sans w-full sm:w-auto"
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Reconnect
@@ -387,7 +391,7 @@ export function ScanConsole() {
                       size="sm"
                       onClick={handleFirstScan}
                       disabled={isScanning || isScanningState}
-                      className="font-sans"
+                      className="font-sans w-full sm:w-auto"
                     >
                       {isScanning || isScanningState ? (
                         <>

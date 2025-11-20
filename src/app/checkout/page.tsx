@@ -20,9 +20,9 @@ function CheckoutContent() {
   const billing = searchParams.get('billing') || 'annual';
   const plan = searchParams.get('plan') || 'plus'; // Default to plus
 
-  // Clerk Plan IDs
-  const PLUS_PLAN_ID = "cplan_33b_oku0vc4d1";
-  const AUTOMATE_PLAN_ID = "cplan_349_aaGMut0q1";
+  // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
+  const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
+  const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
 
   // Determine which plan ID to use
   const planId = plan === 'automate' ? AUTOMATE_PLAN_ID : PLUS_PLAN_ID;
@@ -61,7 +61,7 @@ function CheckoutContent() {
         <SignedIn>
           <CheckoutButton
             planId={planId}
-            planPeriod={billing === 'monthly' ? 'month' : 'annual'}
+            planPeriod={billing === 'monthly' ? 'month' : 'year'}
             onSubscriptionComplete={() => {
               // Force redirect to dashboard
               window.location.href = '/dashboard';

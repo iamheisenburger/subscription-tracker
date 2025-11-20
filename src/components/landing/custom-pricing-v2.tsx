@@ -11,9 +11,10 @@ import { CheckoutButton } from "@clerk/nextjs/experimental";
 export const CustomPricingV2 = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
 
-  // Clerk Plan IDs
-  const PLUS_PLAN_ID = "cplan_33b_oku0vc4d1";
-  const AUTOMATE_PLAN_ID = "cplan_349_aaGMut0q1";
+  // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
+  const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
+  const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
 
   const freePlan = {
     name: "Free - Track",
@@ -192,7 +193,7 @@ export const CustomPricingV2 = () => {
               <SignedIn>
                 <CheckoutButton
                   planId={PLUS_PLAN_ID}
-                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
+                  planPeriod={planPeriodValue}
                   onSubscriptionComplete={() => {
                     // Force redirect to dashboard
                     window.location.href = '/dashboard';
@@ -266,7 +267,7 @@ export const CustomPricingV2 = () => {
               <SignedIn>
                 <CheckoutButton
                   planId={AUTOMATE_PLAN_ID}
-                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
+                  planPeriod={planPeriodValue}
                   onSubscriptionComplete={() => {
                     // Force redirect to dashboard
                     window.location.href = '/dashboard';

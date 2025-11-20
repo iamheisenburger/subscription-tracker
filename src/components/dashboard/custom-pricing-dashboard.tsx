@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Check } from "lucide-react";
 import { SignedIn } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 /**
  * Custom Pricing Table for Dashboard Upgrade Page
@@ -13,10 +14,60 @@ import { CheckoutButton } from "@clerk/nextjs/experimental";
  */
 export const CustomPricingDashboard = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const { tier, subscriptionType, isPlus, isAutomate } = useUserTier();
+  const normalizedInterval = subscriptionType === 'annual' ? 'annual' : 'monthly';
 
-  // Clerk Plan IDs
-  const PLUS_PLAN_ID = "cplan_33b_oku0vc4d1";
-  const AUTOMATE_PLAN_ID = "cplan_349_aaGMut0q1";
+  // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
+  const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
+  const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
+
+  type PlanCTA = { label: string; showCheckout: boolean };
+
+  const plusPlanCTA: PlanCTA = (() => {
+    if (isAutomate) {
+      return { label: "Included in Automate", showCheckout: false };
+    }
+    if (isPlus) {
+      const matchesCurrentInterval =
+        (billingCycle === 'annual' && normalizedInterval === 'annual') ||
+        (billingCycle === 'monthly' && normalizedInterval === 'monthly');
+
+      if (matchesCurrentInterval) {
+        return { label: "Current plan", showCheckout: false };
+      }
+
+      return {
+        label: billingCycle === 'annual' ? "Switch to annual" : "Switch to monthly",
+        showCheckout: true,
+      };
+    }
+
+    return { label: "Start 7-day free trial", showCheckout: true };
+  })();
+
+  const automatePlanCTA: PlanCTA = (() => {
+    if (isAutomate) {
+      const matchesCurrentInterval =
+        (billingCycle === 'annual' && normalizedInterval === 'annual') ||
+        (billingCycle === 'monthly' && normalizedInterval === 'monthly');
+
+      if (matchesCurrentInterval) {
+        return { label: "Current plan", showCheckout: false };
+      }
+
+      return {
+        label: billingCycle === 'annual' ? "Switch to annual" : "Switch to monthly",
+        showCheckout: true,
+      };
+    }
+
+    return {
+      label: isPlus ? "Upgrade to Automate" : "Start 7-day free trial",
+      showCheckout: true,
+    };
+  })();
+
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
 
   const freePlan = {
     name: "Free - Track",
@@ -47,8 +98,7 @@ export const CustomPricingDashboard = () => {
       "Custom categories & smart alerts",
       "Priority email support"
     ],
-    cta: "Start 7-day free trial",
-    badge: "7-day free trial"
+    badge: !isPlus && !isAutomate ? "7-day free trial" : undefined,
   };
 
   const automatePlan = {
@@ -68,8 +118,7 @@ export const CustomPricingDashboard = () => {
       "Calendar export + Push/SMS",
       "Daily sync & renewal prediction"
     ],
-    cta: "Start 7-day free trial",
-    badge: "Most Popular"
+    badge: !isAutomate ? "Most Popular" : undefined,
   };
 
 
@@ -176,30 +225,33 @@ export const CustomPricingDashboard = () => {
                   </li>
                 ))}
               </ul>
-              {/* Clerk CheckoutButton - Opens checkout drawer */}
-              <SignedIn>
-                <CheckoutButton
-                  planId={PLUS_PLAN_ID}
-                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
-                  onSubscriptionComplete={() => {
-                    // Force redirect to dashboard
-                    window.location.href = '/dashboard';
-                  }}
-                  newSubscriptionRedirectUrl="/dashboard"
-                  checkoutProps={{
-                    appearance: {
-                      elements: {
-                        // ONLY override the submit button color - everything else stays Clerk default
-                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
+              {plusPlanCTA.showCheckout ? (
+                <SignedIn>
+                  <CheckoutButton
+                    planId={PLUS_PLAN_ID}
+                    planPeriod={planPeriodValue}
+                    onSubscriptionComplete={() => {
+                      window.location.href = '/dashboard';
+                    }}
+                    newSubscriptionRedirectUrl="/dashboard"
+                    checkoutProps={{
+                      appearance: {
+                        elements: {
+                          formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
+                        }
                       }
-                    }
-                  }}
-                >
-                  <Button className="w-full font-sans mt-6">
-                    {plusPlan.cta}
-                  </Button>
-                </CheckoutButton>
-              </SignedIn>
+                    }}
+                  >
+                    <Button className="w-full font-sans mt-6">
+                      {plusPlanCTA.label}
+                    </Button>
+                  </CheckoutButton>
+                </SignedIn>
+              ) : (
+                <Button className="w-full font-sans mt-6" variant="outline" disabled>
+                  {plusPlanCTA.label}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -239,30 +291,33 @@ export const CustomPricingDashboard = () => {
                   </li>
                 ))}
               </ul>
-              {/* Clerk CheckoutButton - Opens checkout drawer */}
-              <SignedIn>
-                <CheckoutButton
-                  planId={AUTOMATE_PLAN_ID}
-                  planPeriod={billingCycle === 'monthly' ? 'month' : 'annual'}
-                  onSubscriptionComplete={() => {
-                    // Force redirect to dashboard
-                    window.location.href = '/dashboard';
-                  }}
-                  newSubscriptionRedirectUrl="/dashboard"
-                  checkoutProps={{
-                    appearance: {
-                      elements: {
-                        // ONLY override the submit button color - everything else stays Clerk default
-                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
+              {automatePlanCTA.showCheckout ? (
+                <SignedIn>
+                  <CheckoutButton
+                    planId={AUTOMATE_PLAN_ID}
+                    planPeriod={planPeriodValue}
+                    onSubscriptionComplete={() => {
+                      window.location.href = '/dashboard';
+                    }}
+                    newSubscriptionRedirectUrl="/dashboard"
+                    checkoutProps={{
+                      appearance: {
+                        elements: {
+                          formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
+                        }
                       }
-                    }
-                  }}
-                >
-                  <Button className="w-full font-sans mt-6">
-                    {automatePlan.cta}
-                  </Button>
-                </CheckoutButton>
-              </SignedIn>
+                    }}
+                  >
+                    <Button className="w-full font-sans mt-6">
+                      {automatePlanCTA.label}
+                    </Button>
+                  </CheckoutButton>
+                </SignedIn>
+              ) : (
+                <Button className="w-full font-sans mt-6" variant="outline" disabled>
+                  {automatePlanCTA.label}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

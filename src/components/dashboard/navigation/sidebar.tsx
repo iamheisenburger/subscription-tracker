@@ -20,8 +20,11 @@ const navigation = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const { tier, isLoading, isPremium, isMonthlyPremium, isAnnualPremium, isMonthlyOrUnknownPremium } = useUserTier();
+  const { tier, isLoading, isPaid, subscriptionType } = useUserTier();
   const isAutomate = tier === "automate_1";
+  const subscriptionInterval = subscriptionType === "annual" ? "annual" : "monthly";
+  const shouldShowAnnualSavings = !isLoading && isPaid && subscriptionInterval !== "annual";
+  const shouldShowUpgrade = !isLoading && !isPaid;
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
@@ -84,45 +87,43 @@ export function DashboardSidebar() {
 
       {/* Upgrade CTA (smart) */}
       <div className="p-4">
-        {!isLoading && (
-          isAnnualPremium ? null : (
-            (isMonthlyPremium || isMonthlyOrUnknownPremium) ? (
-              <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Crown className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground font-sans">
-                    Save with Annual Billing
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground font-sans mb-3">
-                  Switch to annual and save 2 months ($18/year)
-                </p>
-                <Link href="/dashboard/upgrade">
-                  <Button size="sm" className="w-full font-sans">
-                    Switch to Annual
-                  </Button>
-                </Link>
+        {shouldShowAnnualSavings ? (
+          <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground font-sans">
+                Save with Annual Billing
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground font-sans mb-3">
+              {isAutomate
+                ? "Switch to annual and save $30/year (billed $78/year)"
+                : "Switch to annual and save $18/year (billed $42/year)"}
+            </p>
+            <Link href="/dashboard/upgrade">
+              <Button size="sm" className="w-full font-sans">
+                {isAutomate ? "Switch Automate to Annual" : "Switch Plus to Annual"}
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          shouldShowUpgrade && (
+            <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground font-sans">
+                  Upgrade your plan
+                </span>
               </div>
-            ) : (
-              !isPremium && (
-                <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Crown className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-foreground font-sans">
-                      Upgrade to Premium
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground font-sans mb-3">
-                    Unlimited subscriptions & advanced analytics
-                  </p>
-                  <Link href="/dashboard/upgrade">
-                    <Button size="sm" className="w-full font-sans">
-                      Start Free Trial
-                    </Button>
-                  </Link>
-                </div>
-              )
-            )
+              <p className="text-xs text-muted-foreground font-sans mb-3">
+                Unlock Plus analytics or Automate detection whenever you need them.
+              </p>
+              <Link href="/dashboard/upgrade">
+                <Button size="sm" className="w-full font-sans">
+                  View Plans
+                </Button>
+              </Link>
+            </div>
           )
         )}
       </div>

@@ -158,8 +158,22 @@ export const scanGmailForReceipts = internalAction({
 
       // Collect all unique message IDs from all batches
       const allMessageIds = new Set<string>();
-      const maxPages = Math.max(1, Math.min(args.capPages ?? 3, domainBatches.length));
-      const maxMessages = Math.max(50, Math.min(args.capMessages ?? 500, 5000));
+      // For a user's FIRST (full) scan we should hit a much larger portion of the domain list
+      // so we don't miss mainstream merchants (Apple, Spotify, etc.). Incremental scans keep
+      // the aggressive cap for cost control.
+      const isFullScan = !isIncrementalScan;
+      const defaultFullScanPages = 12; // 12 * 15 = 180 domains (~35% of catalogue, ~5 min scan)
+      const maxPages = isFullScan
+        ? Math.max(
+            1,
+            Math.min(args.capPages ?? defaultFullScanPages, domainBatches.length)
+          )
+        : Math.max(1, Math.min(args.capPages ?? 3, domainBatches.length));
+
+      const defaultFullScanMessages = 2000;
+      const maxMessages = isFullScan
+        ? Math.max(200, Math.min(args.capMessages ?? defaultFullScanMessages, 5000))
+        : Math.max(50, Math.min(args.capMessages ?? 500, 5000));
 
       for (let batchIndex = 0; batchIndex < domainBatches.length && batchIndex < maxPages; batchIndex++) {
         const batch = domainBatches[batchIndex];

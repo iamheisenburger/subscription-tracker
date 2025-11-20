@@ -61,7 +61,7 @@ function CheckoutContent() {
         <SignedIn>
           <CheckoutButton
             planId={planId}
-            planPeriod={billing === 'monthly' ? 'month' : 'year'}
+            planPeriod={billing === 'monthly' ? 'month' : 'annual'}
             onSubscriptionComplete={() => {
               // Force redirect to dashboard
               window.location.href = '/dashboard';

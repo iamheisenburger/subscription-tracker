@@ -14,7 +14,7 @@ export const CustomPricingV2 = () => {
   // Clerk Plan IDs (fallback to latest known IDs if env vars missing)
   const PLUS_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLUS_PLAN_ID ?? "cplan_33DAB0ChNOO9L2vRGzokuOvc4dl";
   const AUTOMATE_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_AUTOMATE_PLAN_ID ?? "cplan_349QpNnD3FxIFL9snoaaGMutOq1";
-  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'annual';
 
   const freePlan = {
     name: "Free - Track",

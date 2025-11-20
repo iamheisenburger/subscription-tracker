@@ -67,7 +67,7 @@ export const CustomPricingDashboard = () => {
     };
   })();
 
-  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'year';
+  const planPeriodValue = billingCycle === 'monthly' ? 'month' : 'annual';
 
   const freePlan = {
     name: "Free - Track",

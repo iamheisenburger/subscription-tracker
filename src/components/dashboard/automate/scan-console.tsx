@@ -27,6 +27,8 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { DetectionReviewModal } from "../detection/detection-review-modal";
 import { cn } from "@/lib/utils";
+import { useUserTier } from "@/hooks/use-user-tier";
+import { AutomateUpgradeCard } from "./automate-upgrade-card";
 
 type ScanStep = "connect" | "preflight" | "gmail_scan" | "parse" | "detect" | "review";
 
@@ -82,23 +84,49 @@ export function ScanConsole() {
   const { user } = useUser();
   const [isScanning, setIsScanning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const { tier, isLoading: isTierLoading } = useUserTier();
+  const isAutomate = tier === "automate_1";
 
   const connections = useQuery(
     api.emailConnections.getUserConnections,
-    user?.id ? { clerkUserId: user.id } : "skip"
+    user?.id && isAutomate ? { clerkUserId: user.id } : "skip"
   );
 
   const scanStats = useQuery(
     api.emailScanner.getUserScanStats,
-    user?.id ? { clerkUserId: user.id } : "skip"
+    user?.id && isAutomate ? { clerkUserId: user.id } : "skip"
   );
 
   const detectionStats = useQuery(
     api.emailDetection.getEmailDetectionStats,
-    user?.id ? { clerkUserId: user.id } : "skip"
+    user?.id && isAutomate ? { clerkUserId: user.id } : "skip"
   );
 
   const triggerScan = useAction(api.emailScannerActions.triggerUserEmailScan);
+
+  if (isTierLoading) {
+    return (
+      <Card>
+        <CardContent className="py-4">
+          <Skeleton className="h-12 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isAutomate) {
+    return (
+      <AutomateUpgradeCard
+        title="Email detection lives on Automate"
+        description="Automate connects Gmail, auto-detects subscriptions, and routes detections into your dashboard."
+        features={[
+          "Secure Gmail OAuth with scoped access",
+          "Detection queue to approve or dismiss finds",
+          "Duplicate + price change alerts routed to Insights",
+        ]}
+      />
+    );
+  }
 
   // Loading state
   if (connections === undefined || scanStats === undefined || detectionStats === undefined) {
@@ -451,10 +479,10 @@ export function ScanConsole() {
                 );
               })}
             </div>
-            {/* Safe mode pause notice */}
+            {/* Temporary pause notice (internal safety details are hidden from users) */}
             {isPausedBySafeMode && (
               <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200 text-center font-sans">
-                Scan paused by Safe Mode to prevent unexpected costs. Resume automatically once Safe Mode is turned off.
+                Scanning is temporarily paused. We’ll resume automatically when it’s ready.
               </div>
             )}
 

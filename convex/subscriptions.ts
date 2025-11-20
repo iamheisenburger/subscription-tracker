@@ -216,13 +216,13 @@ export const createSubscription = mutation({
 
         // Check subscription limits for free tier - CHECK TOTAL (active + paused)
         if (user.tier === "free_user") {
-          const allUserSubs = await ctx.db
+          const activeSubs = await ctx.db
             .query("subscriptions")
-            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
             .collect();
 
-          if (allUserSubs.length >= 3) {
-            throw new Error("Free plan allows maximum 3 subscriptions. Upgrade to Premium for unlimited subscriptions.");
+          if (activeSubs.length >= 3) {
+            throw new Error("Free plan allows tracking up to 3 active subscriptions. Upgrade for unlimited tracking.");
           }
         }
 
@@ -413,8 +413,15 @@ export const updateSubscription = mutation({
         .withIndex("by_user", (q) => q.eq("userId", user._id))
         .unique();
 
-      // Only send if user has price change alerts enabled (premium feature)
-      if (preferences?.priceChangeAlerts && user.tier === "premium_user") {
+      const normalizedTier =
+        user.tier === "premium_user"
+          ? "plus"
+          : user.tier === "automate"
+            ? "automate_1"
+            : user.tier;
+
+      // Only send if user has price change alerts enabled (Automate feature)
+      if (preferences?.priceChangeAlerts && normalizedTier === "automate_1") {
         await ctx.db.insert("notificationQueue", {
           userId: user._id,
           type: "price_change",

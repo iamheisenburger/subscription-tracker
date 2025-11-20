@@ -45,8 +45,8 @@ export function AutoTierSync() {
           console.log('🔍 AutoTierSync: Checking if sync needed for user');
           const response = await fetch('/api/sync/tier', { method: 'POST' });
           const result = await response.json();
-          if (result.success && result.tier === 'premium_user') {
-            console.log('✅ AutoTierSync: Upgraded user to premium tier');
+          if (result.success && result.tier === 'plus') {
+            console.log('✅ AutoTierSync: Upgraded user to Plus tier');
             setTimeout(() => { window.location.reload(); }, 1000);
           } else if (!result.success && result.confidence === 'low') {
             console.log('ℹ️ AutoTierSync: User confirmed as free tier');

@@ -42,6 +42,23 @@ export default function TermsOfServicePage() {
             </section>
 
             <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4 font-sans">3. Email Integrations</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Certain features of the Service allow you to connect a third-party email account, such as
+                Gmail, so that SubWise can automatically detect subscription-related transactions and
+                notifications. When you connect an email account, you authorize us to access and process
+                subscription-related messages for the limited purpose of extracting structured data
+                (for example, merchant name, amount, billing cadence, and renewal dates) to provide the
+                Service. We do not use this access to read or store the content of your personal emails.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mt-4">
+                You may disconnect your email integration at any time through your account settings. Our use
+                of data obtained from Google APIs is further described in our Privacy Policy and complies with
+                the Google API Services User Data Policy, including the Limited Use requirements.
+              </p>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4 font-sans">3. User Accounts</h2>
               
               <h3 className="text-xl font-semibold mb-3 font-sans">3.1 Account Registration</h3>

@@ -8,11 +8,14 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, AlertCircle, CheckCircle2, XCircle, Bell, ArrowUpRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUserTier } from "@/hooks/use-user-tier";
 
 interface DetectionData {
   proposedName: string;
@@ -43,6 +46,8 @@ interface ActivityItem {
 
 export function ActivityFeed() {
   const { user } = useUser();
+  const { tier } = useUserTier();
+  const isAutomate = tier === "automate_1";
   const feed = useQuery(
     api.insights.getActivityFeed,
     user?.id ? { clerkUserId: user.id, limit: 50 } : "skip"
@@ -80,9 +85,25 @@ export function ActivityFeed() {
           </div>
           <h3 className="font-semibold text-lg mb-2 font-sans">No automation activity yet</h3>
           <p className="text-sm text-muted-foreground text-center max-w-md font-sans">
-            Connect Gmail and start accepting detections to see how SubWise has been working for
-            you over time.
+            {isAutomate
+              ? "Connect Gmail and start accepting detections to see how SubWise has been working for you over time."
+              : "Upgrade to Automate to connect Gmail, detect subscriptions automatically, and see activity here."}
           </p>
+          <div className="mt-4 flex flex-wrap gap-3 justify-center">
+            {isAutomate ? (
+              <Link href="/dashboard/settings?tab=automation">
+                <Button size="sm" className="font-sans">
+                  Connect Gmail
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/dashboard/upgrade">
+                <Button size="sm" className="font-sans">
+                  Upgrade to Automate
+                </Button>
+              </Link>
+            )}
+          </div>
         </CardContent>
       </Card>
     );

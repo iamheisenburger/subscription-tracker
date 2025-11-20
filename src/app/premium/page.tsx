@@ -9,7 +9,10 @@ import { TrendingUp, FileText, Bell, Tags, Zap, HeadphonesIcon } from 'lucide-re
 export default async function PremiumPage() {
   const { has } = await auth()
   
-  const hasPremiumPlan = has({ plan: 'premium_user' })
+  const hasPremiumPlan =
+    has({ plan: 'plus' }) ||
+    has({ plan: 'automate_1' }) ||
+    has({ plan: 'premium_user' })
   
   if (!hasPremiumPlan) {
     return (

@@ -8,6 +8,11 @@
  * @module
  */
 
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 import type * as admin from "../admin.js";
 import type * as adminAIParse from "../adminAIParse.js";
 import type * as adminCleanup from "../adminCleanup.js";
@@ -15,11 +20,11 @@ import type * as adminControl from "../adminControl.js";
 import type * as adminFixes from "../adminFixes.js";
 import type * as adminQueries from "../adminQueries.js";
 import type * as adminReset from "../adminReset.js";
+import type * as ai_cache from "../ai/cache.js";
+import type * as ai_optimizer from "../ai/optimizer.js";
 import type * as aiAdmin from "../aiAdmin.js";
 import type * as aiReceiptAnalyzer from "../aiReceiptAnalyzer.js";
 import type * as aiReceiptParser from "../aiReceiptParser.js";
-import type * as ai_cache from "../ai/cache.js";
-import type * as ai_optimizer from "../ai/optimizer.js";
 import type * as auditLogs from "../auditLogs.js";
 import type * as categories from "../categories.js";
 import type * as clearAllReceipts from "../clearAllReceipts.js";
@@ -56,12 +61,14 @@ import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
-
+/**
+ * A utility for referencing Convex functions in your app's API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminAIParse: typeof adminAIParse;
@@ -70,11 +77,11 @@ declare const fullApi: ApiFromModules<{
   adminFixes: typeof adminFixes;
   adminQueries: typeof adminQueries;
   adminReset: typeof adminReset;
+  "ai/cache": typeof ai_cache;
+  "ai/optimizer": typeof ai_optimizer;
   aiAdmin: typeof aiAdmin;
   aiReceiptAnalyzer: typeof aiReceiptAnalyzer;
   aiReceiptParser: typeof aiReceiptParser;
-  "ai/cache": typeof ai_cache;
-  "ai/optimizer": typeof ai_optimizer;
   auditLogs: typeof auditLogs;
   categories: typeof categories;
   clearAllReceipts: typeof clearAllReceipts;
@@ -111,31 +118,11 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   utils: typeof utils;
 }>;
-
-/**
- * A utility for referencing Convex functions in your app's public API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
-
-/**
- * A utility for referencing Convex functions in your app's internal API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = internal.myModule.myFunction;
- * ```
- */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">
 >;
-
-export declare const components: {};

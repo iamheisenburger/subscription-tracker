@@ -344,7 +344,14 @@ export const canAddSubscription = query({
       throw new Error("User not found");
     }
 
-    if (user.tier === "premium_user") {
+    const normalizedTier =
+      user.tier === "premium_user"
+        ? "plus"
+        : user.tier === "automate"
+          ? "automate_1"
+          : user.tier;
+
+    if (normalizedTier === "plus" || normalizedTier === "automate_1") {
       return { canAdd: true, limit: -1, current: 0 };
     }
 
@@ -361,6 +368,60 @@ export const canAddSubscription = query({
       limit: user.subscriptionLimit,
       current: currentSubs.length,
     };
+  },
+});
+
+async function deleteByUserIndex(
+  ctx: any,
+  table: string,
+  indexName: string,
+  userId: Id<"users">
+) {
+  while (true) {
+    const records = await ctx.db
+      .query(table as any)
+      .withIndex(indexName, (q: any) => q.eq("userId", userId))
+      .take(100);
+
+    if (records.length === 0) {
+      break;
+    }
+
+    for (const record of records) {
+      await ctx.db.delete(record._id);
+    }
+  }
+}
+
+export const deleteUserData = mutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (!user) {
+      return { deleted: false, reason: "not_found" };
+    }
+
+    const userId = user._id;
+
+    await deleteByUserIndex(ctx, "emailConnections", "by_user", userId);
+    await deleteByUserIndex(ctx, "emailReceipts", "by_user", userId);
+    await deleteByUserIndex(ctx, "detectionCandidates", "by_user", userId);
+    await deleteByUserIndex(ctx, "notificationQueue", "by_user", userId);
+    await deleteByUserIndex(ctx, "notificationHistory", "by_user", userId);
+    await deleteByUserIndex(ctx, "notificationPreferences", "by_user", userId);
+    await deleteByUserIndex(ctx, "subscriptions", "by_user", userId);
+    await deleteByUserIndex(ctx, "priceHistory", "by_user", userId);
+    await deleteByUserIndex(ctx, "categories", "by_user", userId);
+    await deleteByUserIndex(ctx, "usageMeters", "by_user", userId);
+    await deleteByUserIndex(ctx, "auditLogs", "by_user", userId);
+
+    await ctx.db.delete(userId);
+
+    return { deleted: true };
   },
 });
 

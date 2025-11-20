@@ -2,6 +2,39 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
+type KnownTier =
+  | "free_user"
+  | "plus"
+  | "automate_1"
+  | "premium_user"
+  | "premium"
+  | "automate";
+
+function normalizeTier(tier?: string): "free_user" | "plus" | "automate_1" {
+  switch (tier as KnownTier | undefined) {
+    case "plus":
+      return "plus";
+    case "automate_1":
+      return "automate_1";
+    case "premium_user":
+    case "premium":
+      return "plus";
+    case "automate":
+      return "automate_1";
+    default:
+      return "free_user";
+  }
+}
+
+function hasPlusFeatures(tier?: string) {
+  const normalized = normalizeTier(tier);
+  return normalized === "plus" || normalized === "automate_1";
+}
+
+function hasAutomateFeatures(tier?: string) {
+  return normalizeTier(tier) === "automate_1";
+}
+
 // Get user's notification preferences
 export const getNotificationPreferences = query({
   args: { clerkId: v.string() },
@@ -20,20 +53,33 @@ export const getNotificationPreferences = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
+    const canCustomizeReminders = hasPlusFeatures(user.tier);
+    const hasSmartAlerts = hasAutomateFeatures(user.tier);
+
     // Return default preferences if none exist
     if (!preferences) {
       return {
         emailEnabled: true,
         pushEnabled: true,
         renewalReminders: true,
-        priceChangeAlerts: user.tier === "premium_user", // Premium only
-        spendingAlerts: user.tier === "premium_user", // Premium only
-        reminderDays: [7, 3, 1],
+        priceChangeAlerts: hasSmartAlerts,
+        spendingAlerts: hasSmartAlerts,
+        reminderDays: canCustomizeReminders ? [7, 3, 1] : [3],
         spendingThreshold: undefined,
       };
     }
 
-    return preferences;
+    const sanitized = { ...preferences };
+    if (!canCustomizeReminders) {
+      sanitized.reminderDays = [3];
+    }
+    if (!hasSmartAlerts) {
+      sanitized.priceChangeAlerts = false;
+      sanitized.spendingAlerts = false;
+      sanitized.spendingThreshold = undefined;
+    }
+
+    return sanitized;
   },
 });
 
@@ -66,6 +112,9 @@ export const updateNotificationPreferences = mutation({
 
     const now = Date.now();
     
+    const canCustomizeReminders = hasPlusFeatures(user.tier);
+    const hasSmartAlerts = hasAutomateFeatures(user.tier);
+
     // Prepare update data
     const updateData: Record<string, unknown> = {
       userId: user._id,
@@ -76,19 +125,21 @@ export const updateNotificationPreferences = mutation({
     if (args.pushEnabled !== undefined) updateData.pushEnabled = args.pushEnabled;
     if (args.renewalReminders !== undefined) updateData.renewalReminders = args.renewalReminders;
     
-    // Premium-only features - enforce gating
-    if (user.tier === "premium_user") {
+    if (hasSmartAlerts) {
       if (args.priceChangeAlerts !== undefined) updateData.priceChangeAlerts = args.priceChangeAlerts;
       if (args.spendingAlerts !== undefined) updateData.spendingAlerts = args.spendingAlerts;
       if (args.spendingThreshold !== undefined) updateData.spendingThreshold = args.spendingThreshold;
-      // Premium users can customize reminder days
-      if (args.reminderDays !== undefined) updateData.reminderDays = args.reminderDays;
     } else {
-      // Force disable premium features for free users
       updateData.priceChangeAlerts = false;
       updateData.spendingAlerts = false;
       updateData.spendingThreshold = undefined;
-      // Force free users to use only 3-day reminders
+    }
+
+    if (canCustomizeReminders) {
+      if (args.reminderDays !== undefined) {
+        updateData.reminderDays = args.reminderDays;
+      }
+    } else {
       updateData.reminderDays = [3];
     }
 
@@ -103,10 +154,10 @@ export const updateNotificationPreferences = mutation({
         emailEnabled: (updateData.emailEnabled as boolean) ?? true,
         pushEnabled: (updateData.pushEnabled as boolean) ?? true,
         renewalReminders: (updateData.renewalReminders as boolean) ?? true,
-        priceChangeAlerts: (updateData.priceChangeAlerts as boolean) ?? false,
-        spendingAlerts: (updateData.spendingAlerts as boolean) ?? false,
-        reminderDays: (updateData.reminderDays as number[]) ?? [7, 3, 1],
-        spendingThreshold: updateData.spendingThreshold as number | undefined,
+          priceChangeAlerts: (updateData.priceChangeAlerts as boolean) ?? hasSmartAlerts,
+          spendingAlerts: (updateData.spendingAlerts as boolean) ?? hasSmartAlerts,
+          reminderDays: (updateData.reminderDays as number[]) ?? (canCustomizeReminders ? [7, 3, 1] : [3]),
+          spendingThreshold: hasSmartAlerts ? (updateData.spendingThreshold as number | undefined) : undefined,
         createdAt: now,
         updatedAt: now,
       });
@@ -139,16 +190,17 @@ export const initializeNotificationPreferences = mutation({
     }
 
     const now = Date.now();
-    const isPremium = user.tier === "premium_user";
+    const canCustomizeReminders = hasPlusFeatures(user.tier);
+    const hasSmartAlerts = hasAutomateFeatures(user.tier);
 
     const preferencesId = await ctx.db.insert("notificationPreferences", {
       userId: user._id,
       emailEnabled: true,
       pushEnabled: true,
       renewalReminders: true,
-      priceChangeAlerts: isPremium, // Premium only
-      spendingAlerts: isPremium, // Premium only
-      reminderDays: [7, 3, 1],
+      priceChangeAlerts: hasSmartAlerts,
+      spendingAlerts: hasSmartAlerts,
+      reminderDays: canCustomizeReminders ? [7, 3, 1] : [3],
       spendingThreshold: undefined,
       createdAt: now,
       updatedAt: now,
@@ -365,6 +417,10 @@ export const generateRenewalReminders = internalMutation({
           .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("isActive", true))
           .collect();
         
+        const reminderDays = hasPlusFeatures(user.tier)
+          ? preferences.reminderDays ?? [7, 3, 1]
+          : [3];
+
         // Group subscriptions by renewal day to send consolidated emails
         const reminderGroups: Record<number, Array<{ subscription: any; daysUntil: number }>> = {};
         
@@ -377,7 +433,7 @@ export const generateRenewalReminders = internalMutation({
           const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
           
           // Check if this matches any reminder day
-          for (const reminderDay of preferences.reminderDays) {
+          for (const reminderDay of reminderDays) {
             if (daysUntil === reminderDay) {
               if (!reminderGroups[reminderDay]) {
                 reminderGroups[reminderDay] = [];
@@ -712,17 +768,22 @@ export const processNotificationQueue = internalAction({
 // Check spending thresholds for PREMIUM users (Smart Alerts - Premium Feature)
 export const checkSpendingThresholds = internalMutation({
   handler: async (ctx) => {
-    console.log("💰 Checking spending thresholds for premium users...");
+    console.log("💰 Checking spending thresholds for Automate users...");
     
-    // Get premium users only (Smart Alerts are premium feature per project rules)
-    const premiumUsers = await ctx.db
+    // Smart alerts are Automate-only
+    const automateUsers = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("tier"), "premium_user"))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("tier"), "automate_1"),
+          q.eq(q.field("tier"), "automate")
+        )
+      )
       .collect();
     
     let alertsScheduled = 0;
     
-    for (const user of premiumUsers) {
+    for (const user of automateUsers) {
       try {
         const preferences = await ctx.db
           .query("notificationPreferences")

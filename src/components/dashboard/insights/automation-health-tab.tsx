@@ -11,15 +11,48 @@ import { Mail, ShieldAlert, ShieldCheck, AlertTriangle, Sparkles } from "lucide-
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { DetectionReviewModal } from "../detection/detection-review-modal";
+import { useUserTier } from "@/hooks/use-user-tier";
+import { AutomateUpgradeCard } from "../automate/automate-upgrade-card";
 
 export function AutomationHealthTab() {
   const { user } = useUser();
   const [reviewOpen, setReviewOpen] = useState(false);
+  const { tier, isLoading: isTierLoading } = useUserTier();
+  const isAutomate = tier === "automate_1";
 
   const health = useQuery(
     api.insights.getAutomationHealth,
-    user?.id ? { clerkUserId: user.id } : "skip"
+    user?.id && isAutomate ? { clerkUserId: user.id } : "skip"
   );
+
+  if (isTierLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isAutomate) {
+    return (
+      <AutomateUpgradeCard
+        title="Email detection insights live on Automate"
+        description="Track Gmail health, detections, and scan performance after upgrading."
+        features={[
+          "Live Gmail connection status & scan telemetry",
+          "Detection queue + review workflows",
+          "Weekly autoscan verification + alerting",
+        ]}
+      />
+    );
+  }
 
   if (!user?.id) {
     return null;

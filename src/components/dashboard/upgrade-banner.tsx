@@ -7,16 +7,12 @@ import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
-  const { isLoading, isPremium, tier } = useUserTier();
+  const { isLoading, isPlus, isAutomate, isFree } = useUserTier();
 
   // Don't show anything while loading to prevent flash
   if (isLoading) {
     return null;
   }
-
-  const isAutomate = tier === "automate_1";
-  const isPlus = tier === "plus" || tier === "premium_user";
-  const isFree = tier === "free_user";
 
   // Hide banner for Automate users (they're on highest tier)
   // BankConnectionCTACard handles their onboarding

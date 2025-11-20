@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
     const client = await clerkClient();
     await client.users.updateUser(userId, {
       publicMetadata: {
-        plan: 'premium',
-        tier: 'premium_user',
+        plan: 'plus',
+        tier: 'plus',
         subscriptionType,
         billing: subscriptionType,
         subscription_id,
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Upgrade user in Convex
     await fetchMutation(api.users.setTier, {
       clerkId: userId,
-      tier: 'premium_user',
+      tier: 'plus',
       subscriptionType: subscriptionType,
     });
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      tier: 'premium_user',
+      tier: 'plus',
       subscriptionType,
       subscription_id,
       message: 'User upgraded to premium successfully'

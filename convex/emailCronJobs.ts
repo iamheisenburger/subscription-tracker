@@ -42,6 +42,10 @@ async function isAutomationDisabledAsync(ctx: any): Promise<boolean> {
   return Boolean(settings?.safeMode || settings?.cronsDisabled);
 }
 
+function hasAutomateScanAccess(tier?: string) {
+  return tier === "automate_1" || tier === "automate";
+}
+
 /**
  * Scan all active email connections
  * Called by cron every 6 hours
@@ -66,8 +70,13 @@ export const scanAllActiveConnections = internalMutation({
       return { message: "No active connections to scan" };
     }
 
-    // Schedule scan for each connection using Actions
+    // Schedule scan for each Automate connection using Actions
     for (const connection of connections) {
+      const user = await ctx.db.get(connection.userId as Id<"users">);
+      if (!user || !hasAutomateScanAccess(user.tier)) {
+        continue;
+      }
+
       await ctx.scheduler.runAfter(0, internal.emailScannerActions.scanGmailForReceipts, {
         connectionId: connection._id,
       });
@@ -237,6 +246,11 @@ export const scheduleWeeklyIncrementalScans = internalMutation({
     // Preflight token health per connection
     const healthyUserIds = new Set<string>();
     for (const conn of activeConnections) {
+      const user = await ctx.db.get(conn.userId as Id<"users">);
+      if (!user || !hasAutomateScanAccess(user.tier)) {
+        continue;
+      }
+
       const preflight = await (ctx as any).runAction(internal.emailScannerActions.preflightGmailToken, {
         connectionId: conn._id,
       });
@@ -247,7 +261,7 @@ export const scheduleWeeklyIncrementalScans = internalMutation({
 
     for (const userId of userIds) {
       const user = await ctx.db.get(userId as Id<"users">);
-      if (!user?.clerkId) continue;
+      if (!user?.clerkId || !hasAutomateScanAccess(user.tier)) continue;
       await ctx.scheduler.runAfter(0, (internal.scanning.orchestrator as any).startScan, {
         clerkUserId: user.clerkId,
         forceFullScan: false,

@@ -375,6 +375,15 @@ export async function POST(req: Request) {
         }
         break;
 
+      case 'user.deleted':
+        if (data.id) {
+          console.log('🗑️ User deleted in Clerk, removing Convex data');
+          await fetchMutation(api.users.deleteUserData, {
+            clerkId: data.id as string,
+          });
+        }
+        break;
+
       // Handle ALL Clerk Billing subscription events with intelligent detection
       case 'subscription.created':
         console.log('🎉 Subscription created');

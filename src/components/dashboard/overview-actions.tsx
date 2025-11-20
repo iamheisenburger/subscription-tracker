@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export function OverviewActions() {
-  const { tier } = useUserTier();
+  const { isPlus, isAutomate, isFree } = useUserTier();
   const { user } = useUser();
 
   // Fetch active subscriptions for calendar export
@@ -49,10 +49,6 @@ export function OverviewActions() {
       toast.error("Failed to export calendar events.");
     }
   };
-
-  const isAutomate = tier === "automate_1";
-  const isPlus = tier === "plus" || tier === "premium_user";
-  const isFree = tier === "free_user";
 
   // Free tier: Disabled add button with upgrade tooltip
   if (isFree) {

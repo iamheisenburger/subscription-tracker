@@ -82,6 +82,41 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4 font-sans">4. Email Integrations (Gmail)</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                If you choose to connect your Gmail account, SubWise uses Google’s OAuth 2.0 flow to request
+                read-only access to specific subscription-related emails, such as receipts, invoices, and
+                billing notifications. We do not read or store the content of your personal emails.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mt-4">
+                From these subscription-related emails we extract structured data such as merchant name,
+                service name, transaction amount, billing currency, billing cadence, and relevant dates
+                (for example, renewal dates). We store this structured data in order to power features like
+                automatic subscription detection, price change tracking, and renewal reminders.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mt-4">
+                You can disconnect Gmail at any time from within your account settings. Disconnecting stops
+                all future scans. You may also delete your SubWise account, in which case the structured data
+                derived from your Gmail messages will be deleted or anonymized in line with our data retention
+                policy described above.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mt-4">
+                SubWise does not use Gmail data for advertising, does not sell your Gmail data to third
+                parties, and does not allow any human access to Gmail message content except where required
+                for security, support, or legal compliance. Our use and transfer of information received from
+                Google APIs to any other app will adhere to the{" "}
+                <a
+                  href="https://developers.google.com/terms/api-services-user-data-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Google API Services User Data Policy
+                </a>
+                , including the Limited Use requirements.
+              </p>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4 font-sans">4. Information Sharing and Disclosure</h2>
               
               <h3 className="text-xl font-semibold mb-3 font-sans">4.1 Third-Party Service Providers</h3>

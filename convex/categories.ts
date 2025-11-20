@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function hasCategoryAccess(tier?: string) {
+  if (!tier) return false;
+  if (tier === "premium_user" || tier === "premium") return true;
+  if (tier === "automate") return true;
+  return tier === "plus" || tier === "automate_1";
+}
+
 // List categories for the current user
 export const listCategories = query({
   args: { clerkId: v.string() },
@@ -35,7 +42,7 @@ export const createCategory = mutation({
       .unique();
 
     if (!user) throw new Error("User not found");
-    if (user.tier !== "premium_user") throw new Error("Premium required");
+    if (!hasCategoryAccess(user.tier)) throw new Error("Plus plan required");
 
     const now = Date.now();
 
@@ -77,7 +84,7 @@ export const updateCategory = mutation({
       .unique();
 
     if (!user) throw new Error("User not found");
-    if (user.tier !== "premium_user") throw new Error("Premium required");
+    if (!hasCategoryAccess(user.tier)) throw new Error("Plus plan required");
 
     const category = await ctx.db.get(args.categoryId);
     if (!category || category.userId !== user._id) throw new Error("Unauthorized");
@@ -102,7 +109,7 @@ export const deleteCategory = mutation({
       .unique();
 
     if (!user) throw new Error("User not found");
-    if (user.tier !== "premium_user") throw new Error("Premium required");
+    if (!hasCategoryAccess(user.tier)) throw new Error("Plus plan required");
 
     const category = await ctx.db.get(args.categoryId);
     if (!category || category.userId !== user._id) throw new Error("Unauthorized");

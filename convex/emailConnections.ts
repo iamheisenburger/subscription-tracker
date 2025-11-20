@@ -68,10 +68,19 @@ export const createGmailConnection = mutation({
 
     // Tier-based limit check
     const userTier = user.tier || "free_user";
-    // TEMPORARILY DISABLED FOR TESTING - Allow unlimited connections
-    const connectionLimit = userTier === "automate_1" ? 999 : 0;
+    const normalizedTier =
+      userTier === "automate"
+        ? "automate_1"
+        : userTier === "premium_user"
+          ? "plus"
+          : userTier;
+    const connectionLimit = normalizedTier === "automate_1" ? 1 : 0;
 
-    console.log(`🔍 Limit check: lifetimeConnections=${lifetimeConnections}, tier=${userTier}, limit=${connectionLimit} (TESTING MODE - limits disabled)`);
+    console.log(`🔍 Limit check: lifetimeConnections=${lifetimeConnections}, tier=${normalizedTier}, limit=${connectionLimit}`);
+
+    if (connectionLimit === 0) {
+      throw new Error("Email detection is available on the Automate plan. Upgrade to Automate to connect Gmail.");
+    }
 
     if (lifetimeConnections >= connectionLimit) {
       console.error(`❌ LIMIT EXCEEDED: ${lifetimeConnections} >= ${connectionLimit}`);

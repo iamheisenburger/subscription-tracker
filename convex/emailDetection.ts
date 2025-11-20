@@ -332,7 +332,14 @@ async function trackPriceChange(
       .withIndex("by_user", (q: any) => q.eq("userId", subscription.userId))
       .unique();
 
-    if (preferences?.priceChangeAlerts && (user.tier === "premium_user" || user.tier === "automate_1")) {
+    const normalizedTier =
+      user.tier === "premium_user" || user.tier === "premium"
+        ? "plus"
+        : user.tier === "automate"
+          ? "automate_1"
+          : user.tier;
+
+    if (preferences?.priceChangeAlerts && normalizedTier === "automate_1") {
       await ctx.db.insert("notificationQueue", {
         userId: subscription.userId,
         subscriptionId,

@@ -10,7 +10,7 @@ function mapTierToCurrentType(dbTier: string | undefined): UserTier {
   // Map old "automate" to new "automate_1"
   if (dbTier === "automate") return "automate_1";
 
-  // Map old "premium_user" to new "plus"
+  // Map old "premium_user" / "premium" to the current Plus tier
   if (dbTier === "premium_user" || dbTier === "premium") return "plus";
 
   // Filter out deprecated tiers (family, teams)
@@ -31,23 +31,26 @@ export function useUserTier() {
   );
 
   const mappedTier = mapTierToCurrentType(userData?.tier);
+  const isPlus = mappedTier === "plus";
+  const isAutomate = mappedTier === "automate_1";
+  const isPaidTier = isPlus || isAutomate;
 
-  // Check if user has any paid tier (plus, automate_1, or legacy premium_user)
-  const isPaidTier = userData?.tier === "plus" ||
-                     userData?.tier === "premium_user" ||
-                     userData?.tier === "automate_1";
+  const subscriptionType = userData?.subscriptionType || null;
+  const isMonthly = subscriptionType === "monthly" || subscriptionType === null;
 
   return {
     tier: mappedTier,
-    isPremium: isPaidTier, // Now includes plus, automate_1, and legacy premium_user
-    isFree: userData?.tier === "free_user" || !userData?.tier,
+    isFree: mappedTier === "free_user",
+    isPlus,
+    isAutomate,
+    isPaid: isPaidTier,
+    isPremium: isPaidTier, // Backwards-compatible alias
     isLoading: userData === undefined,
-    subscriptionLimit: userData?.subscriptionLimit || 3,
-    subscriptionType: userData?.subscriptionType || null,
-    isMonthlyPremium: (userData?.tier === "plus" || userData?.tier === "premium_user") && userData?.subscriptionType === "monthly",
-    isAnnualPremium: (userData?.tier === "plus" || userData?.tier === "premium_user") && userData?.subscriptionType === "annual",
+    subscriptionLimit: userData?.subscriptionLimit ?? (isPaidTier ? -1 : 3),
+    subscriptionType,
+    isMonthlyPremium: isPaidTier && subscriptionType === "monthly",
+    isAnnualPremium: isPaidTier && subscriptionType === "annual",
     // Treat unknown subscriptionType as monthly for upsell purposes
-    isMonthlyOrUnknownPremium:
-      (userData?.tier === "plus" || userData?.tier === "premium_user") && (userData?.subscriptionType !== "annual"),
+    isMonthlyOrUnknownPremium: isPaidTier && isMonthly,
   };
 }

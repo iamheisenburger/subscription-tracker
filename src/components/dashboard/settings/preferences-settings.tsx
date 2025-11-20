@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Bell, Crown, Sparkles, TestTube } from "lucide-react";
+import { Settings, Bell, Crown, Sparkles, Lock } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -22,7 +22,9 @@ interface PreferencesSettingsProps {
 
 export function PreferencesSettings({ }: PreferencesSettingsProps) {
   const { user } = useUser();
-  const { isPremium } = useUserTier();
+  const { isPlus, isAutomate } = useUserTier();
+  const canCustomizeReminders = isPlus || isAutomate;
+  const canUseSmartAlerts = isAutomate;
   const preferences = useQuery(api.notifications.getNotificationPreferences, 
     user?.id ? { clerkId: user.id } : "skip"
   );
@@ -50,6 +52,17 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
     }
   }, [preferences]);
 
+  // Enforce tier-based limits client-side as well
+  useEffect(() => {
+    if (!canCustomizeReminders) {
+      setReminderDays([3]);
+    }
+    if (!canUseSmartAlerts) {
+      setSpendingAlerts(false);
+      setSpendingThreshold("");
+    }
+  }, [canCustomizeReminders, canUseSmartAlerts]);
+
   const handleSavePreferences = async () => {
     if (!user?.id) return;
 
@@ -60,9 +73,11 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
         emailEnabled,
         pushEnabled,
         renewalReminders,
-        priceChangeAlerts: false, // Disabled for now - feature not ready
-        spendingAlerts: isPremium ? spendingAlerts : false,
-        spendingThreshold: spendingThreshold ? parseFloat(spendingThreshold) : undefined,
+        priceChangeAlerts: false, // Disabled for now - feature not ready (handled server-side)
+        spendingAlerts: canUseSmartAlerts ? spendingAlerts : false,
+        spendingThreshold: canUseSmartAlerts && spendingThreshold
+          ? parseFloat(spendingThreshold)
+          : undefined,
         reminderDays,
       });
       toast.success("Notification preferences saved!");
@@ -154,17 +169,16 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Label className="font-sans">Reminder Schedule</Label>
-                  {!isPremium && <Crown className="h-4 w-4 text-primary" />}
+                  {!canCustomizeReminders && <Crown className="h-4 w-4 text-primary" />}
                 </div>
                 <p className="text-sm text-muted-foreground font-sans">
-                  {isPremium 
+                  {canCustomizeReminders
                     ? "Select your preferred reminder schedule"
-                    : "Basic reminders are sent 3 days before renewal"
-                  }
+                    : "Basic reminders are sent 3 days before renewal"}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {isPremium ? (
-                    // Premium: Full customization
+                  {canCustomizeReminders ? (
+                    // Plus & Automate: Full customization
                     [30, 14, 7, 3, 1].map((day) => (
                       <Badge
                         key={day}
@@ -182,12 +196,16 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                         3 days before
                       </Badge>
                       <div className="text-xs text-muted-foreground font-sans">
-                        Want custom timing? <span className="text-primary">Upgrade to Premium</span> for 1, 3, 7, 14, or 30-day reminders.
+                        Want custom timing?{" "}
+                        <Link href="/dashboard/upgrade" className="text-primary underline-offset-2 hover:underline">
+                          Upgrade to Plus
+                        </Link>{" "}
+                        for flexible reminder schedules.
                       </div>
                     </div>
                   )}
                 </div>
-                {isPremium && (
+                {canCustomizeReminders && (
                   <div className="mt-2 p-3 bg-muted/30 rounded-lg">
                     <div className="flex items-start gap-2">
                       <Sparkles className="h-4 w-4 text-primary mt-0.5" />
@@ -209,35 +227,43 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
                     <Label htmlFor="spending-alerts" className="font-sans">
                       Spending Alerts
                     </Label>
-                    {!isPremium && <Crown className="h-4 w-4 text-primary" />}
+                    {!canUseSmartAlerts && <Lock className="h-4 w-4 text-primary" />}
                   </div>
                   <p className="text-sm text-muted-foreground font-sans">
-                    {isPremium 
-                      ? "Monitor your spending with smart threshold alerts"
-                      : "Get alerts when exceeding budget thresholds"
-                    }
+                    {canUseSmartAlerts
+                      ? "Monitor your spending with Gmail-powered smart alerts"
+                      : "Connect Gmail with Automate to monitor spending automatically"}
                   </p>
-                  {!isPremium && (
+                  {!canUseSmartAlerts && (
                     <p className="text-xs text-muted-foreground font-sans">
-                      Available with Premium plan
+                      Available with Automate (includes Gmail detection & duplicate protection)
                     </p>
                   )}
                 </div>
                 <Switch 
                   id="spending-alerts" 
-                  checked={isPremium && spendingAlerts}
-                  onCheckedChange={setSpendingAlerts}
-                  disabled={!isPremium}
+                  checked={canUseSmartAlerts && spendingAlerts}
+                  onCheckedChange={(checked) => {
+                    if (canUseSmartAlerts) {
+                      setSpendingAlerts(checked);
+                    }
+                  }}
+                  disabled={!canUseSmartAlerts}
                 />
               </div>
 
               {/* Spending Threshold moved to Budget page */}
 
-              {!isPremium && (
-                <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+              {!canUseSmartAlerts && (
+                <div className="p-3 bg-primary/10 rounded-lg border border-primary/20 space-y-2">
                   <p className="text-sm text-primary font-sans">
-                    Upgrade to Premium to unlock advanced notification features like price change alerts and spending thresholds.
+                    Upgrade to Automate to unlock Gmail-powered alerts, duplicate protection, and automatic detection.
                   </p>
+                  <Link href="/dashboard/upgrade">
+                    <Button variant="outline" size="sm" className="font-sans">
+                      Upgrade to Automate
+                    </Button>
+                  </Link>
                 </div>
               )}
             </div>

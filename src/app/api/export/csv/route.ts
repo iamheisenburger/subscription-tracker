@@ -17,6 +17,13 @@ function toCsvRow(fields: (string | number | boolean | null | undefined)[]): str
     .join(',');
 }
 
+function hasExportAccess(tier?: string) {
+  if (!tier) return false;
+  if (tier === 'premium_user' || tier === 'premium') return true;
+  if (tier === 'automate' || tier === 'automate_1') return true;
+  return tier === 'plus';
+}
+
 export async function GET() {
   const { userId } = await auth();
   if (!userId) {
@@ -26,8 +33,8 @@ export async function GET() {
   // Gate by tier
   try {
     const user = await fetchQuery(api.users.getUserByClerkId, { clerkId: userId });
-    if (!user || user.tier !== 'premium_user') {
-      return new NextResponse('Forbidden: Premium required', { status: 403 });
+    if (!user || !hasExportAccess(user.tier)) {
+      return new NextResponse('Forbidden: Plus plan required', { status: 403 });
     }
 
     const subs = await fetchQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });

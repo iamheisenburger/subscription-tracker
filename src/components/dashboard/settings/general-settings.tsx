@@ -25,3 +25,4 @@ export function GeneralSettings({ user }: GeneralSettingsProps) {
   );
 }
 
+

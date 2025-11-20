@@ -14,7 +14,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const tier = body?.tier;
-    if (tier !== 'free_user' && tier !== 'premium_user') {
+    const allowedTiers = ['free_user', 'plus', 'automate_1'];
+    if (!tier || !allowedTiers.includes(tier)) {
       return new NextResponse('Invalid tier', { status: 400 });
     }
 

@@ -29,6 +29,8 @@ import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { EditSubscriptionDialog } from "./edit-subscription-dialog";
 import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
 import { CancelAssistantModal } from "./cancel-assistant-modal";
+import { useUserTier } from "@/hooks/use-user-tier";
+import Link from "next/link";
 
 interface SubscriptionCardActionsProps {
   subscription: Doc<"subscriptions">;
@@ -38,6 +40,7 @@ export function SubscriptionCardActions({
   subscription 
 }: SubscriptionCardActionsProps) {
   const { user } = useUser();
+  const { isAutomate } = useUserTier();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelAssistant, setShowCancelAssistant] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -141,10 +144,19 @@ export function SubscriptionCardActions({
             <Calendar className="mr-2 h-4 w-4" />
             Export to Calendar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowCancelAssistant(true)} className="font-sans">
-            <Lightbulb className="mr-2 h-4 w-4" />
-            Cancel Assistant
-          </DropdownMenuItem>
+          {isAutomate ? (
+            <DropdownMenuItem onClick={() => setShowCancelAssistant(true)} className="font-sans">
+              <Lightbulb className="mr-2 h-4 w-4" />
+              Cancel Assistant
+            </DropdownMenuItem>
+          ) : (
+            <Link href="/dashboard/upgrade">
+              <DropdownMenuItem className="font-sans">
+                <Lightbulb className="mr-2 h-4 w-4 text-primary" />
+                Cancel Assistant (Automate)
+              </DropdownMenuItem>
+            </Link>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
@@ -173,11 +185,13 @@ export function SubscriptionCardActions({
         </AlertDialogContent>
       </AlertDialog>
 
-      <CancelAssistantModal
-        subscription={subscription}
-        open={showCancelAssistant}
-        onOpenChange={setShowCancelAssistant}
-      />
+      {isAutomate && (
+        <CancelAssistantModal
+          subscription={subscription}
+          open={showCancelAssistant}
+          onOpenChange={setShowCancelAssistant}
+        />
+      )}
     </>
   );
 }

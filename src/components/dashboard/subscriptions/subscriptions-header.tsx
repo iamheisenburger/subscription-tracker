@@ -44,13 +44,11 @@ export function SubscriptionsHeader({
   onCategoryToggle,
   filterCount,
 }: SubscriptionsHeaderProps) {
-  const { isPremium, tier } = useUserTier();
+  const { isPlus, isAutomate, isFree } = useUserTier();
   const { user } = useUser();
   const categories = useQuery(api.categories.listCategories, user?.id ? { clerkId: user.id } : "skip");
 
-  const isAutomate = tier === "automate_1";
-  const isPlus = tier === "plus" || tier === "premium_user";
-  const isFree = tier === "free_user";
+  const hasPlusFeatures = isPlus || isAutomate;
 
   return (
     <div className="space-y-4">
@@ -153,7 +151,7 @@ export function SubscriptionsHeader({
                   {c.charAt(0).toUpperCase()+c.slice(1)}
                 </DropdownMenuItem>
               ))}
-              {isPremium && (
+              {hasPlusFeatures && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="font-sans flex items-center gap-2">
@@ -186,7 +184,7 @@ export function SubscriptionsHeader({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {isPremium ? (
+          {hasPlusFeatures ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="font-sans">

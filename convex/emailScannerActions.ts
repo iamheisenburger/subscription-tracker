@@ -162,13 +162,14 @@ export const scanGmailForReceipts = internalAction({
       // so we don't miss mainstream merchants (Apple, Spotify, etc.). Incremental scans keep
       // the aggressive cap for cost control.
       const isFullScan = !isIncrementalScan;
-      const defaultFullScanPages = 12; // 12 * 15 = 180 domains (~35% of catalogue, ~5 min scan)
+      const totalDomainPages = Math.max(1, domainBatches.length);
+      const defaultFullScanPages = totalDomainPages; // cover full merchant catalogue on first scan
       const maxPages = isFullScan
         ? Math.max(
             1,
-            Math.min(args.capPages ?? defaultFullScanPages, domainBatches.length)
+            Math.min(args.capPages ?? defaultFullScanPages, totalDomainPages)
           )
-        : Math.max(1, Math.min(args.capPages ?? 3, domainBatches.length));
+        : Math.max(1, Math.min(args.capPages ?? 3, totalDomainPages));
 
       const defaultFullScanMessages = 2000;
       const maxMessages = isFullScan

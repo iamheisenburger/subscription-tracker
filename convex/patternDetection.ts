@@ -1166,6 +1166,7 @@ function groupReceiptsByMerchant(receipts: Array<{
     if (!receipt.merchantName) continue;
 
     const normalized = normalizeMerchantName(receipt.merchantName);
+    if (!normalized) continue;
 
     if (!groups.has(normalized)) {
       groups.set(normalized, []);

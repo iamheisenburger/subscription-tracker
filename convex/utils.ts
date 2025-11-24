@@ -3,6 +3,24 @@
  * Single source of truth for merchant name normalization and common utilities
  */
 
+const MERCHANT_ALIAS_MAP: Record<string, string> = {
+  "rocket usa": "rocket",
+  "rocketmoney": "rocket",
+  "rocket money": "rocket",
+  "rocket.money": "rocket",
+  "capcut - photo & video editor": "capcut",
+};
+
+const GENERIC_RECEIPT_PHRASES = new Set([
+  "is confirmed",
+  "was confirmed",
+  "has been confirmed",
+  "your order",
+  "order confirmed",
+  "purchase confirmed",
+  "order is confirmed",
+]);
+
 /**
  * Normalize merchant name for consistent grouping
  * Handles payment processors, variants, and service extraction
@@ -113,8 +131,18 @@ export function normalizeMerchantName(name: string | null | undefined): string {
   // Remove trailing periods and commas
   normalized = normalized.replace(/[,.\s]+$/, "");
 
-  // Final trim
-  normalized = normalized.trim();
+  // Final trim + lowercase
+  normalized = normalized.trim().toLowerCase();
+
+  // Apply alias overrides (handles Rocket USA, CapCut verbose names, etc.)
+  if (MERCHANT_ALIAS_MAP[normalized]) {
+    normalized = MERCHANT_ALIAS_MAP[normalized];
+  }
+
+  // Drop generic confirmation phrases that are not merchants
+  if (GENERIC_RECEIPT_PHRASES.has(normalized)) {
+    return "";
+  }
 
   return normalized || name.toLowerCase().trim(); // Fallback to original if empty
 }

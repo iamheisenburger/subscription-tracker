@@ -108,17 +108,17 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
       let middleZoneConfidence: number;
 
       if (billingCycle === "yearly") {
-        recentThreshold = currentTime - 18 * 30 * 24 * 60 * 60 * 1000; // ~18 months
-        cancelledThreshold = currentTime - 27 * 30 * 24 * 60 * 60 * 1000; // ~27 months
+        recentThreshold = currentTime - 15 * 30 * 24 * 60 * 60 * 1000; // 15 months
+        cancelledThreshold = currentTime - 18 * 30 * 24 * 60 * 60 * 1000; // 18 months
         middleZoneConfidence = 0.85;
       } else if (billingCycle === "weekly") {
         recentThreshold = currentTime - 30 * 24 * 60 * 60 * 1000; // 1 month
         cancelledThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 3 months
         middleZoneConfidence = 0.70;
       } else {
-        recentThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 3 months
-        cancelledThreshold = currentTime - 365 * 24 * 60 * 60 * 1000; // 12 months
-        middleZoneConfidence = 0.8;
+        recentThreshold = currentTime - 45 * 24 * 60 * 60 * 1000; // 45 days
+        cancelledThreshold = currentTime - 180 * 24 * 60 * 60 * 1000; // 6 months
+        middleZoneConfidence = 0.75;
       }
 
       // RULE 1: Recent receipts based on billing cycle = ACTIVE
@@ -129,9 +129,7 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
           continue;
         }
         // Require evidence: at least 2 receipts for the merchant to call it ACTIVE (recent)
-        const hasMinimumReceipts =
-          sortedReceipts.length >= 2 || billingCycle === "yearly";
-        if (hasMinimumReceipts) {
+        if (sortedReceipts.length >= 2) {
           const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
           console.log(`  ✅ ACTIVE (recent): ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
 
@@ -164,6 +162,11 @@ export const detectActiveSubscriptionsFromPatterns = internalQuery({
       const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
 
       if (hasRecurringPattern) {
+        // Guard: recurring but stale should not be considered active for monthly
+        if (latestReceiptDate < recentThreshold) {
+          console.log(`  ⏭️  Skipping RECURRING but stale: ${merchantName} - ${daysAgo} days ago (${billingCycle})`);
+          continue;
+        }
         const norm = normalizeMerchantName(merchantName);
         if (NEGATIVE_MERCHANTS.has(norm)) {
           console.log(`  ⏭️  Skipping blocked merchant: ${merchantName}`);
@@ -565,10 +568,10 @@ export const runPatternBasedDetection = internalMutation({
         middleZoneConfidence = 0.70;
         console.log(`  📅 ${merchantName}: Detected as WEEKLY subscription`);
       } else {
-        // Monthly or unknown: v1 snapshot thresholds (90 days recent, 12 months cancelled)
-        recentThreshold = currentTime - 90 * 24 * 60 * 60 * 1000; // 90 days (v1)
-        cancelledThreshold = currentTime - 365 * 24 * 60 * 60 * 1000; // 12 months (v1)
-        middleZoneConfidence = 0.8;
+        // Monthly or unknown: stricter thresholds to minimize false positives
+        recentThreshold = currentTime - 45 * 24 * 60 * 60 * 1000; // 45 days
+        cancelledThreshold = currentTime - 180 * 24 * 60 * 60 * 1000; // 6 months
+        middleZoneConfidence = 0.75;
         console.log(`  📅 ${merchantName}: Detected as MONTHLY subscription`);
       }
 
@@ -595,9 +598,10 @@ export const runPatternBasedDetection = internalMutation({
             (strongSubjectEvidence && hasSubscriptionKeywords(sortedReceipts)) ||
             isTrustedMerchantForSingleMonthly(merchantName)
           );
-        // v1 behaviour: require 2+ receipts OR single with yearly/trusted, no strict charge evidence gate
-        const hasMinimumEvidence = sortedReceipts.length >= 2 || allowSingleForYearly || allowSingleForMonthly;
-        if (hasMinimumEvidence) {
+        const hasChargeEvidence =
+          hasChargeConfirmationReceipt(sortedReceipts) ||
+          (isTrustedMerchantForSingleMonthly(merchantName) && hasPurchaseLikeEvidence(sortedReceipts));
+        if ((sortedReceipts.length >= 2 || allowSingleForYearly || allowSingleForMonthly) && hasChargeEvidence) {
           const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
           console.log(`  ✅ ACTIVE (recent): ${merchantName} - Last receipt ${daysAgo} days ago (${billingCycle} cycle)`);
           activeSubscriptions.push({
@@ -628,7 +632,11 @@ export const runPatternBasedDetection = internalMutation({
       const hasRecurringPattern = detectRecurringPattern(sortedReceipts);
       const daysAgo = Math.floor((currentTime - latestReceiptDate) / (24 * 60 * 60 * 1000));
 
-      if (hasRecurringPattern) {
+      if (hasRecurringPattern && hasChargeConfirmationReceipt(sortedReceipts)) {
+        if (latestReceiptDate < recentThreshold) {
+          console.log(`  ⏭️  Skipping RECURRING but stale: ${merchantName} - Last receipt ${daysAgo} days ago (${billingCycle})`);
+          continue;
+        }
         const norm = normalizeMerchantName(merchantName);
         if (NEGATIVE_MERCHANTS.has(norm)) {
           console.log(`  ⏭️  Skipping blocked merchant: ${merchantName}`);
@@ -1158,7 +1166,6 @@ function groupReceiptsByMerchant(receipts: Array<{
     if (!receipt.merchantName) continue;
 
     const normalized = normalizeMerchantName(receipt.merchantName);
-    if (!normalized) continue;
 
     if (!groups.has(normalized)) {
       groups.set(normalized, []);

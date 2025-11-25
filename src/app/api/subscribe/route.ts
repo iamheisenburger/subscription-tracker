@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Send email notification to usesubwiseapp@gmail.com
-    const emailResult = await resend.emails.send({
+    await resend.emails.send({
       from: "SubWise <noreply@usesubwise.app>",
       to: "usesubwiseapp@gmail.com",
       subject: "New SubWise Newsletter Subscription",

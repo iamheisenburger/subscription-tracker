@@ -411,7 +411,7 @@ export function getPlaybook(serviceName: string): CancelPlaybook | null {
   }
 
   // Fuzzy match
-  for (const [key, playbook] of Object.entries(cancelPlaybooks)) {
+  for (const playbook of Object.values(cancelPlaybooks)) {
     if (
       playbook.service.toLowerCase().includes(normalized) ||
       normalized.includes(playbook.service.toLowerCase()) ||

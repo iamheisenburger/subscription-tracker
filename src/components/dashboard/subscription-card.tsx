@@ -137,7 +137,8 @@ export function SubscriptionCard({
   const displayActive = optimisticActive !== null ? optimisticActive : subscription.isActive;
 
   // Format cost with user's preferred currency
-  const formattedCost = formatCurrency(subscription.cost, subscription.currency);
+  const resolvedCurrency = currency || subscription.currency || "USD";
+  const formattedCost = formatCurrency(subscription.cost, resolvedCurrency);
 
   const cancellationPlaybook = getPlaybook(subscription.name);
 

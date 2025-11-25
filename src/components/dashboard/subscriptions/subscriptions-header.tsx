@@ -8,6 +8,7 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useUserTier } from "@/hooks/use-user-tier";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -142,19 +143,28 @@ export function SubscriptionsHeader({
               <DropdownMenuLabel className="font-sans">Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                className="font-sans" 
+                className={cn(
+                  "font-sans",
+                  activeFilter === "all" && "bg-primary/10 text-primary"
+                )} 
                 onClick={() => onFilterChange("all")}
               >
                 All Subscriptions
               </DropdownMenuItem>
               <DropdownMenuItem 
-                className="font-sans" 
+                className={cn(
+                  "font-sans",
+                  activeFilter === "active" && "bg-primary/10 text-primary"
+                )} 
                 onClick={() => onFilterChange("active")}
               >
                 Active
               </DropdownMenuItem>
               <DropdownMenuItem 
-                className="font-sans" 
+                className={cn(
+                  "font-sans",
+                  activeFilter === "inactive" && "bg-primary/10 text-primary"
+                )} 
                 onClick={() => onFilterChange("inactive")}
               >
                 Inactive
@@ -164,7 +174,10 @@ export function SubscriptionsHeader({
               {(["monthly","yearly","weekly"]).map((c) => (
                 <DropdownMenuItem
                   key={c}
-                  className="font-sans flex items-center gap-2"
+                  className={cn(
+                    "font-sans flex items-center gap-2",
+                    billingSet?.has(c) && "bg-primary/5"
+                  )}
                   onClick={() => (typeof window !== 'undefined' && (onBillingToggle && onBillingToggle(c)))}
                 >
                   <span className={`h-2 w-2 rounded-full ${billingSet?.has(c) ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
@@ -178,13 +191,19 @@ export function SubscriptionsHeader({
                     <Tag className="h-4 w-4" /> Categories
                   </DropdownMenuLabel>
                   <DropdownMenuItem 
-                    className="font-sans" 
+                    className={cn(
+                      "font-sans",
+                      categoryFilter === "all" && "bg-primary/10 text-primary"
+                    )} 
                     onClick={() => onCategoryChange("all")}
                   >
                     All Categories
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    className="font-sans" 
+                    className={cn(
+                      "font-sans",
+                      categoryFilter === "uncategorized" && "bg-primary/10 text-primary"
+                    )} 
                     onClick={() => onCategoryChange("uncategorized")}
                   >
                     Uncategorized
@@ -192,7 +211,10 @@ export function SubscriptionsHeader({
                   {categories?.map((c) => (
                     <DropdownMenuItem 
                       key={c._id}
-                      className="font-sans flex items-center gap-2"
+                      className={cn(
+                        "font-sans flex items-center gap-2",
+                        categorySet?.has(c.name) && "bg-primary/5"
+                      )}
                       onClick={() => (typeof window !== 'undefined' && (onCategoryToggle && onCategoryToggle(c.name)))}
                     >
                       <span className={`h-2 w-2 rounded-full ${categorySet?.has(c.name) ? 'bg-primary' : 'bg-muted-foreground/30'}`} />

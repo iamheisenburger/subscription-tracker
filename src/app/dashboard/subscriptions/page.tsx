@@ -30,10 +30,7 @@ export default function SubscriptionsPage() {
     router.replace(`?${sp.toString()}`);
   };
 
-  // Derived arrays (may be used by future chunks)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const billingArray = useMemo(() => Array.from(billingSet) as ("monthly"|"yearly"|"weekly")[], [billingSet]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const categoriesArray = useMemo(() => Array.from(categorySet), [categorySet]);
 
   const filterCount = (

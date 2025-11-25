@@ -52,13 +52,11 @@ export function ConnectedEmailsWidget() {
   const handleManualScan = async () => {
     if (!user?.id) return;
 
-    const gmailConnection = connections?.find((c) => c.provider === "gmail");
-    const isFirstScan = !gmailConnection?.lastFullScanAt;
-
     setIsScanning(true);
     try {
       await triggerScan({ clerkUserId: user.id });
     } catch (error) {
+      console.error("Manual scan failed", error);
       toast.error("Scan failed", {
         description: "Failed to start email scan. Please try again.",
       });
@@ -240,7 +238,6 @@ export function ConnectedEmailsWidget() {
           // Calculate progress percentage - use AI counts if available, otherwise scan stats
           const displayProcessed = hasAIProgress ? aiProcessed : parsed;
           const displayTotal = hasAIProgress ? aiTotal : total;
-          const displayRemaining = hasAIProgress ? (aiTotal - aiProcessed) : unparsed;
           const progressPercent = displayTotal > 0 ? Math.min(100, (displayProcessed / displayTotal) * 100) : 0;
 
           // Determine status message based on scan state machine (FIX #2 from audit)

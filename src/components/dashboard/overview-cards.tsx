@@ -8,7 +8,7 @@ import { DollarSign, TrendingUp, Calendar, Target } from "lucide-react";
 import { format } from "date-fns";
 import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
 import { useState, useEffect } from "react";
-import { convertMultipleCurrencies, getPreferredCurrency, formatCurrency } from "@/lib/currency";
+import { getPreferredCurrency, formatCurrency } from "@/lib/currency";
 
 interface OverviewCardsProps {
   userId: string;

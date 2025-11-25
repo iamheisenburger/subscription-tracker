@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { convertMultipleCurrencies, formatCurrency, getPreferredCurrency } from "@/lib/currency";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function SavingsCelebration() {
   const { user } = useUser();
@@ -13,7 +13,10 @@ export function SavingsCelebration() {
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, user?.id ? { clerkId: user.id } : "skip");
 
   // Calculate savings from cancelled subscriptions with currency conversion
-  const cancelledSubscriptions = subscriptions?.filter(sub => !sub.isActive) || [];
+  const cancelledSubscriptions = useMemo(
+    () => subscriptions?.filter((sub) => !sub.isActive) || [],
+    [subscriptions]
+  );
 
   // Determine preferred currency (localStorage wins to match rest of app)
   const preferredCurrency = typeof window !== 'undefined' ? getPreferredCurrency() : 'USD';
@@ -37,7 +40,7 @@ export function SavingsCelebration() {
       setMonthlySavings(Math.round(total * 100) / 100);
     };
     run();
-  }, [cancelledSubscriptions.length, preferredCurrency]);
+  }, [cancelledSubscriptions, preferredCurrency]);
 
   if (!cancelledSubscriptions.length) {
     return null; // Don't show if no cancelled subscriptions

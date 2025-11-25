@@ -1,11 +1,10 @@
 "use client";
 
-import { Home, CreditCard, BarChart3, Settings, Plus, DollarSign } from "lucide-react";
+import { Home, CreditCard, BarChart3, Settings, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
 // import { useUserTier } from "@/hooks/use-user-tier";
 
 const navigation = [

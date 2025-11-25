@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Send email to usesubwiseapp@gmail.com
-    const emailResult = await resend.emails.send({
+    await resend.emails.send({
       from: "SubWise <noreply@usesubwise.app>",
       to: "usesubwiseapp@gmail.com",
       replyTo: email, // Allow direct reply to user
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
             
             <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 6px;">
               <p style="margin: 0; font-size: 14px; color: #856404;">
-                <strong>⏰ Response Time:</strong> ${planType === 'premium' ? 'Within 12 hours (Priority Support)' : 'Within 48 hours'}
+                <strong>⏰ Response Time:</strong> ${planType === 'plus' ? 'Within 12 hours (Priority Support)' : 'Within 48 hours'}
               </p>
             </div>
           </div>

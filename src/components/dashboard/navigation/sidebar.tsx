@@ -29,7 +29,7 @@ type NavItem = {
 const NAV_ITEMS: Record<string, NavItem> = {
   overview: { name: "Overview", href: "/dashboard", icon: Home },
   subscriptions: { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
-  insights: { name: "Insights", href: "/dashboard/insights", icon: Sparkles },
+  insights: { name: "Insights", href: "/dashboard/insights", icon: Sparkles, premium: true },
   analytics: { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, premium: true },
   budget: { name: "Budget", href: "/dashboard/budget", icon: DollarSign, premium: true },
   settings: { name: "Settings", href: "/dashboard/settings", icon: Settings },

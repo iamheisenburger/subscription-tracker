@@ -8,14 +8,32 @@
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Clock, CheckCircle2, Mail } from "lucide-react";
+import { Sparkles, Clock, CheckCircle2, Mail, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { formatDistanceToNow } from "date-fns";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function DetectionQueueEmptyState() {
   const { user } = useUser();
+  const [isMobile, setIsMobile] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 640px)");
+    const handleChange = () => setIsMobile(mql.matches);
+    handleChange();
+
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", handleChange);
+      return () => mql.removeEventListener("change", handleChange);
+    }
+
+    mql.addListener(handleChange);
+    return () => mql.removeListener(handleChange);
+  }, []);
 
   // Get email connection info
   const connections = useQuery(
@@ -32,9 +50,11 @@ export function DetectionQueueEmptyState() {
   const lastScanText = scanStats?.lastScanAt
     ? formatDistanceToNow(scanStats.lastScanAt, { addSuffix: true })
     : "Never scanned";
+
+  const shouldShowDetails = !isMobile || showDetails;
   return (
     <Card className="border-dashed">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="rounded-full bg-primary/10 p-2">
@@ -61,9 +81,26 @@ export function DetectionQueueEmptyState() {
             </div>
           )}
         </div>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setShowDetails((prev) => !prev)}
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-sm"
+          >
+            {showDetails ? (
+              <>
+                Hide details <ChevronUp className="h-3 w-3" />
+              </>
+            ) : (
+              <>
+                How it works <ChevronDown className="h-3 w-3" />
+              </>
+            )}
+          </button>
+        )}
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className={cn("space-y-3", !shouldShowDetails && "hidden sm:block")}>
           <div className="flex items-start space-x-3 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div>

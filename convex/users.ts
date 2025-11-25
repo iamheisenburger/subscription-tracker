@@ -134,7 +134,18 @@ export const setTier = mutation({
 
     // Auto-add SubWise subscription when user FIRST upgrades to paid tier
     if (isPaidTier && !wasAlreadyPaid) {
-      await addSubWiseSubscription(ctx, user._id, args.subscriptionType || "monthly");
+      const paidTier: PaidTier =
+        args.tier === "automate_1"
+          ? "automate_1"
+          : args.tier === "premium_user"
+            ? "premium_user"
+            : "plus";
+      await addSubWiseSubscription(
+        ctx,
+        user._id,
+        paidTier,
+        args.subscriptionType || "monthly"
+      );
     }
 
     return user._id;
@@ -142,9 +153,18 @@ export const setTier = mutation({
 });
 
 // Helper function to auto-add SubWise subscription
+type PaidTier = "plus" | "premium_user" | "automate_1";
+
+const SUBWISE_PRICING: Record<PaidTier, { monthly: number; annual: number }> = {
+  plus: { monthly: 5, annual: 42 },
+  premium_user: { monthly: 5, annual: 42 },
+  automate_1: { monthly: 9, annual: 78 },
+};
+
 async function addSubWiseSubscription(
-  ctx: any, 
-  userId: Id<"users">, 
+  ctx: any,
+  userId: Id<"users">,
+  tier: "plus" | "premium_user" | "automate_1",
   subscriptionType: "monthly" | "annual"
 ) {
   // Check if SubWise subscription already exists  
@@ -161,7 +181,8 @@ async function addSubWiseSubscription(
   }
 
   const now = Date.now();
-  const cost = subscriptionType === "annual" ? 42.00 : 5.00; // $42/year ($3.50/month) or $5/month
+  const tierPricing = SUBWISE_PRICING[tier] || SUBWISE_PRICING.plus;
+  const cost = subscriptionType === "annual" ? tierPricing.annual : tierPricing.monthly;
   const billingCycle = subscriptionType === "annual" ? "yearly" : "monthly";
   
   // Calculate next billing date (30 days or 365 days from now)
@@ -177,7 +198,9 @@ async function addSubWiseSubscription(
     billingCycle: billingCycle,
     nextBillingDate: nextBillingDate,
     category: "Productivity", // Category for organization
-    description: "Subscription tracking and management platform",
+    description: tier === "automate_1"
+      ? "SubWise Automate (Gmail detection & automation)"
+      : "Subscription tracking and management platform",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -303,8 +326,8 @@ export const addMissingSubWiseSubscription = mutation({
       throw new Error("User not found");
     }
 
-    if (user.tier !== "premium_user") {
-      throw new Error("Only premium users get SubWise subscription");
+    if (user.tier !== "premium_user" && user.tier !== "plus" && user.tier !== "automate_1") {
+      throw new Error("Only paid tiers receive the auto SubWise subscription");
     }
 
     // Check if SubWise already exists
@@ -321,7 +344,12 @@ export const addMissingSubWiseSubscription = mutation({
 
     // Add SubWise subscription (default to monthly for existing users)
     const subscriptionType = user.subscriptionType || "monthly";
-    const subscriptionId = await addSubWiseSubscription(ctx, user._id, subscriptionType);
+    const subscriptionId = await addSubWiseSubscription(
+      ctx,
+      user._id,
+      (user.tier as "premium_user" | "plus" | "automate_1"),
+      subscriptionType
+    );
 
     return { 
       message: `Added SubWise ${subscriptionType} subscription`, 

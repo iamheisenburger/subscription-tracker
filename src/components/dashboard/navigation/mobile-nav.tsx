@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, CreditCard, BarChart3, Settings, DollarSign } from "lucide-react";
+import { Home, CreditCard, BarChart3, Settings, DollarSign, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
   { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
   { name: "Budget", href: "/dashboard/budget", icon: DollarSign, premium: true },
+  { name: "Insights", href: "/dashboard/insights", icon: Sparkles, premium: true },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, premium: true },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

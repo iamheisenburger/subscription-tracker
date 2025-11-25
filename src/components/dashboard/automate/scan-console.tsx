@@ -245,6 +245,10 @@ export function ScanConsole() {
   };
 
   const progressData = getProgressData();
+  const rawEmailProgress = {
+    emailsScanned: gmailConnection?.totalEmailsScanned || 0,
+    receiptsFound: gmailConnection?.totalReceiptsFound || 0,
+  };
   const isPausedBySafeMode = gmailConnection?.scanState === "paused_safe_mode";
 
   // Handle first scan
@@ -262,15 +266,22 @@ export function ScanConsole() {
         return;
       }
     } catch (error: unknown) {
-      const message =
+      const rawMessage =
         error instanceof Error
           ? error.message
           : typeof error === "string"
             ? error
             : "Failed to start email scan. Please try again.";
-      toast.error("Scan failed", {
-        description: message,
-      });
+      if (
+        typeof rawMessage === "string" &&
+        rawMessage.toLowerCase().includes("connection lost while action was in flight")
+      ) {
+        console.warn("Scan action connection dropped; backend continues processing.");
+      } else {
+        toast.error("Scan failed", {
+          description: rawMessage,
+        });
+      }
     } finally {
       setIsScanning(false);
     }
@@ -494,12 +505,22 @@ export function ScanConsole() {
           </div>
 
           {/* Gmail Scan status - Text only, no loading bar - Only show when actively scanning */}
-          {isScanningState && 
-           currentStep === "gmail_scan" && 
-           progressData.hasValidProgress &&
-           progressData.processed < progressData.total && (
+          {isScanningState && currentStep === "gmail_scan" && (
             <div className="mt-2 text-xs text-muted-foreground font-sans text-center">
-              {progressData.processed} / {progressData.total} emails collected
+              {progressData.hasValidProgress && progressData.processed < progressData.total ? (
+                <>
+                  {progressData.processed} / {progressData.total} emails collected
+                </>
+              ) : rawEmailProgress.emailsScanned > 0 ? (
+                <>
+                  {rawEmailProgress.emailsScanned} emails collected
+                  {rawEmailProgress.receiptsFound > 0 && (
+                    <> • {rawEmailProgress.receiptsFound} likely receipts</>
+                  )}
+                </>
+              ) : (
+                "Collecting emails from your inbox"
+              )}
             </div>
           )}
 

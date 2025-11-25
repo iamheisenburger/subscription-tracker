@@ -163,7 +163,8 @@ export const scanGmailForReceipts = internalAction({
       // the aggressive cap for cost control.
       const isFullScan = !isIncrementalScan;
       const totalDomainPages = Math.max(1, domainBatches.length);
-      const defaultFullScanPages = totalDomainPages; // cover full merchant catalogue on first scan
+      const legacyFullScanPageCap = 45; // v1 snapshot behaviour (~150-200 merchants)
+      const defaultFullScanPages = Math.min(legacyFullScanPageCap, totalDomainPages);
       const maxPages = isFullScan
         ? Math.max(
             1,
@@ -171,10 +172,10 @@ export const scanGmailForReceipts = internalAction({
           )
         : Math.max(1, Math.min(args.capPages ?? 3, totalDomainPages));
 
-      const defaultFullScanMessages = 2000;
+      const defaultFullScanMessages = 1500; // restore ~150-200 receipts baseline
       const maxMessages = isFullScan
-        ? Math.max(200, Math.min(args.capMessages ?? defaultFullScanMessages, 5000))
-        : Math.max(50, Math.min(args.capMessages ?? 500, 5000));
+        ? Math.max(200, Math.min(args.capMessages ?? defaultFullScanMessages, 3000))
+        : Math.max(50, Math.min(args.capMessages ?? 500, 3000));
 
       for (let batchIndex = 0; batchIndex < domainBatches.length && batchIndex < maxPages; batchIndex++) {
         const batch = domainBatches[batchIndex];
@@ -215,9 +216,9 @@ export const scanGmailForReceipts = internalAction({
           // Continue with next batch
         }
 
-        // Rate limiting: 2 second delay between batches
+        // Rate limiting: 500ms delay between batches (v1 speed)
         if (batchIndex < domainBatches.length - 1 && allMessageIds.size < maxMessages) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
         if (allMessageIds.size >= maxMessages) {
           console.log(`🛑 Reached capMessages=${maxMessages}. Stopping domain batch loop early.`);

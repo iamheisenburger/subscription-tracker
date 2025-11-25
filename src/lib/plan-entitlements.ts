@@ -63,7 +63,7 @@ export const PLAN_ENTITLEMENTS: Record<UserTier, PlanEntitlement> = {
   // Legacy premium tier (maps to Plus)
   premium_user: {
     tier: "premium_user",
-    displayName: "Premium (Legacy)",
+    displayName: "Plus (Legacy)",
     // Email connections
     emailConnectionsIncluded: 0,
     // Profiles
@@ -236,7 +236,7 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
   },
   premium_user: {
     tier: "premium_user",
-    displayName: "Premium (Legacy)",
+    displayName: "Plus (Legacy)",
     monthlyPrice: 5,
     annualPrice: 42,
     features: [
@@ -245,7 +245,7 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
       "CSV/PDF export",
       "Priority support",
     ],
-    cta: "Upgrade",
+    cta: "Upgrade to Plus",
   },
   plus: {
     tier: "plus",

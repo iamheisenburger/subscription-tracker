@@ -79,7 +79,7 @@ export default function TermsOfServicePage() {
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2 mt-3">
                 <li><strong>Free Account:</strong> Limited to 3 subscriptions with basic features</li>
-                <li><strong>Premium Account:</strong> Unlimited subscriptions with advanced features</li>
+                <li><strong>Plus Account:</strong> Unlimited subscriptions with advanced features</li>
               </ul>
             </section>
 
@@ -91,14 +91,14 @@ export default function TermsOfServicePage() {
                 Our Free plan is available at no cost and includes basic subscription tracking features with limitations as specified in our pricing page.
               </p>
 
-              <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.2 Premium Plan</h3>
+              <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.2 Plus Plan</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Premium subscriptions are billed in advance on a monthly or annual basis:
+                Plus subscriptions are billed in advance on a monthly or annual basis:
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2 mt-3">
                 <li><strong>Monthly:</strong> $5.00 per month</li>
                 <li><strong>Annual:</strong> $42.00 per year ($3.50/month equivalent)</li>
-                <li><strong>Free Trial:</strong> 7-day trial period for new Premium subscribers</li>
+                <li><strong>Free Trial:</strong> 7-day trial period for new Plus subscribers</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.3 Billing and Payments</h3>
@@ -113,10 +113,10 @@ export default function TermsOfServicePage() {
 
               <h3 className="text-xl font-semibold mb-3 mt-6 font-sans">4.4 Refunds and Cancellation</h3>
               <p className="text-muted-foreground leading-relaxed">
-                You may cancel your Premium subscription at any time. Upon cancellation:
+                You may cancel your Plus subscription at any time. Upon cancellation:
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2 mt-3">
-                <li>You will retain Premium access until the end of your current billing period</li>
+                <li>You will retain Plus access until the end of your current billing period</li>
                 <li>Your account will automatically downgrade to Free plan features</li>
                 <li>No partial refunds are provided for unused portions of subscription periods</li>
                 <li>Refunds may be provided at our sole discretion for exceptional circumstances</li>

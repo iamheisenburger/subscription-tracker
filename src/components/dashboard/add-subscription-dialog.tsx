@@ -106,7 +106,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
       const errorMessage = error instanceof Error ? error.message : String(error);
       const isLimitError = errorMessage.includes("Free plan") || 
                           errorMessage.includes("maximum 3") || 
-                          errorMessage.includes("Upgrade to Premium") ||
+                          errorMessage.includes("Upgrade to Plus") ||
                           (!isPremium && subscriptionLimit === 3);
       
       if (isLimitError) {
@@ -271,7 +271,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
               )}
             />
 
-{/* Category field - Premium feature only */}
+{/* Category field - Plus feature only */}
             {isPremium && (
               <FormField
                 control={form.control}

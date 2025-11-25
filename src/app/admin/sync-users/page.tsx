@@ -127,19 +127,19 @@ export default function AdminSyncPage() {
   return (
     <div className="container mx-auto p-8 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Premium User Sync</h1>
+        <h1 className="text-3xl font-bold mb-2">Plus User Sync</h1>
         <p className="text-muted-foreground">
           Sync metadata for premium users whose webhooks failed
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* Step 1: Fetch Premium Users */}
+        {/* Step 1: Fetch Plus Users */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Step 1: Find Premium Users
+              Step 1: Find Plus Users
             </CardTitle>
             <CardDescription>
               Fetches all users with active Clerk subscriptions
@@ -159,7 +159,7 @@ export default function AdminSyncPage() {
               ) : (
                 <>
                   <Users className="mr-2 h-4 w-4" />
-                  Fetch Premium Subscribers
+                  Fetch Plus Subscribers
                 </>
               )}
             </Button>
@@ -170,7 +170,7 @@ export default function AdminSyncPage() {
         {premiumUsers.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Found {premiumUsers.length} Premium Users</CardTitle>
+              <CardTitle>Found {premiumUsers.length} Plus Users</CardTitle>
               <CardDescription>
                 Review users before syncing
               </CardDescription>

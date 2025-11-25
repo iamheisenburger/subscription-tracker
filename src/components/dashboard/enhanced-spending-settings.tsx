@@ -109,7 +109,7 @@ export function EnhancedSpendingSettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <span className="font-sans">Enhanced Spending Management</span>
-          <Badge variant="secondary" className="text-blue-600">Premium</Badge>
+          <Badge variant="secondary" className="text-blue-600">Plus</Badge>
         </CardTitle>
         <CardDescription>
           Advanced spending insights, multiple thresholds, and smart budget management

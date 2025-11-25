@@ -35,7 +35,7 @@ export function FreeTierLimitModal({
             Free Plan Limit Reached
           </DialogTitle>
           <DialogDescription className="text-center font-sans">
-            You&apos;ve reached your limit of {limit} subscriptions. Upgrade to Premium to add unlimited subscriptions.
+            You&apos;ve reached your limit of {limit} subscriptions. Upgrade to Plus to add unlimited subscriptions.
           </DialogDescription>
         </DialogHeader>
         
@@ -48,7 +48,7 @@ export function FreeTierLimitModal({
           </div>
 
           <div className="space-y-3">
-            <h4 className="font-medium font-sans">Upgrade to Premium and get:</h4>
+            <h4 className="font-medium font-sans">Upgrade to Plus and get:</h4>
             <ul className="space-y-2">
               {[
                 "Unlimited subscriptions",

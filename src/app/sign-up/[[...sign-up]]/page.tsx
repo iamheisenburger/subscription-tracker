@@ -16,7 +16,7 @@ export default function Page() {
             <p className="text-sm font-medium font-sans">
               {plan === 'premium' ? (
                 <>
-                  Starting your <strong>7-day Premium free trial</strong>
+                  Starting your <strong>7-day Plus free trial</strong>
                   {billing === 'annual' && <span className="ml-2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">SAVE 17%</span>}
                 </>
               ) : (

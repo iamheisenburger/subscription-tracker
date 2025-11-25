@@ -24,7 +24,7 @@ export function MobileFirstPricing() {
   const { user } = useUser();
   const [isUpgrading, setIsUpgrading] = useState(false);
 
-  const handleUpgradeToPremium = async (subscriptionType: 'monthly' | 'annual') => {
+  const handleUpgradeToPlus = async (subscriptionType: 'monthly' | 'annual') => {
     if (!user?.id) return;
     
     setIsUpgrading(true);
@@ -76,8 +76,8 @@ export function MobileFirstPricing() {
       disabled: true
     },
     {
-      id: 'premium-monthly',
-      name: 'Premium',
+      id: 'plus-monthly',
+      name: 'Plus',
       price: '$9',
       period: 'month',
       description: 'Unlock the full power of SubWise',
@@ -97,14 +97,14 @@ export function MobileFirstPricing() {
       trial: '7-day free trial, then $9/month'
     },
     {
-      id: 'premium-annual',
-      name: 'Premium Annual',
+      id: 'plus-annual',
+      name: 'Plus Annual',
       price: '$90',
       period: 'year',
       originalPrice: '$108',
       description: 'Best value - save $18/year',
       features: [
-        'Everything in Premium',
+        'Everything in Plus',
         'Save $18 per year',
         'Priority feature requests',
         'Advanced analytics dashboard',
@@ -115,6 +115,26 @@ export function MobileFirstPricing() {
       disabled: false,
       trial: '7-day free trial, then $90/year',
       savings: 'Save $18/year'
+    },
+    {
+      id: 'automate',
+      name: 'Automate',
+      price: '$9',
+      period: 'month',
+      description: 'Best for Gmail automation & duplicate protection',
+      features: [
+        'Everything in Plus',
+        '1 Gmail connection (lifetime)',
+        'Auto-detected subscriptions',
+        'Duplicate & price change alerts',
+        'Weekly autoscan reports',
+        'Email receipt parsing & evidence',
+        'Priority support'
+      ],
+      popular: false,
+      cta: 'Explore Automate',
+      disabled: false,
+      trial: 'Includes 7-day free trial'
     }
   ];
 
@@ -219,26 +239,35 @@ export function MobileFirstPricing() {
                       </SignedOut>
 
                       <SignedIn>
-                        <Button 
-                          className="w-full h-12 text-base font-medium"
-                          size="lg"
-                          onClick={() => handleUpgradeToPremium(
-                            plan.id === 'premium-annual' ? 'annual' : 'monthly'
-                          )}
-                          disabled={isUpgrading}
-                        >
-                          {isUpgrading ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              Upgrading...
-                            </>
-                          ) : (
-                            <>
+                        {plan.id === 'automate' ? (
+                          <Link href="/dashboard/upgrade" className="w-full">
+                            <Button className="w-full h-12 text-base font-medium" size="lg">
                               <Zap className="w-4 h-4 mr-2" />
                               {plan.cta}
-                            </>
-                          )}
-                        </Button>
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Button 
+                            className="w-full h-12 text-base font-medium"
+                            size="lg"
+                            onClick={() => handleUpgradeToPlus(
+                              plan.id === 'plus-annual' ? 'annual' : 'monthly'
+                            )}
+                            disabled={isUpgrading}
+                          >
+                            {isUpgrading ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                Upgrading...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="w-4 h-4 mr-2" />
+                                {plan.cta}
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </SignedIn>
                     </>
                   )}

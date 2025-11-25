@@ -47,6 +47,10 @@ export function SubscriptionsHeader({
   const { isPlus, isAutomate, isFree } = useUserTier();
   const { user } = useUser();
   const categories = useQuery(api.categories.listCategories, user?.id ? { clerkId: user.id } : "skip");
+  const subscriptions = useQuery(
+    api.subscriptions.getUserSubscriptions,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
 
   const hasPlusFeatures = isPlus || isAutomate;
 
@@ -86,14 +90,30 @@ export function SubscriptionsHeader({
             </AddSubscriptionDialog>
           )}
 
-          {/* Free tier: Disabled with tooltip */}
+          {/* Free tier: Allow up to plan limit */}
           {isFree && (
-            <AddSubscriptionDialog>
-              <Button disabled className="font-sans opacity-50 cursor-not-allowed">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Subscription
-              </Button>
-            </AddSubscriptionDialog>
+            (() => {
+              const freeLimit = 3;
+              const currentCount = subscriptions?.length ?? 0;
+              const reachedLimit = currentCount >= freeLimit;
+
+              if (reachedLimit) {
+                return (
+                  <Button disabled className="font-sans opacity-60 cursor-not-allowed">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Subscription
+                  </Button>
+                );
+              }
+              return (
+                <AddSubscriptionDialog>
+                  <Button className="font-sans">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Subscription
+                  </Button>
+                </AddSubscriptionDialog>
+              );
+            })()
           )}
         </div>
       </div>
@@ -206,7 +226,7 @@ export function SubscriptionsHeader({
           ) : (
             <Button variant="outline" className="font-sans opacity-50 cursor-not-allowed" disabled>
               <Download className="mr-2 h-4 w-4" />
-              Export (Premium)
+              Export (Plus)
             </Button>
           )}
         </div>

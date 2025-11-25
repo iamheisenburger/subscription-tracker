@@ -82,7 +82,7 @@ export function BudgetPremiumGate({ children }: BudgetPremiumGateProps) {
               Unlock Advanced Budget Management
             </h4>
             <p className="text-sm text-muted-foreground font-sans mb-4">
-              Upgrade to Premium to access powerful budget tracking, smart alerts, and detailed spending insights.
+              Upgrade to Plus to access powerful budget tracking, smart alerts, and detailed spending insights.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/dashboard/upgrade">

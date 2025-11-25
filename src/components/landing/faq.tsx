@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     question: "Can I cancel my subscription anytime?",
-    answer: "Yes, you can cancel your Premium subscription at any time. There are no long-term contracts or cancellation fees. Your account will remain active until the end of your current billing period."
+    answer: "Yes, you can cancel your Plus subscription at any time. There are no long-term contracts or cancellation fees. Your account will remain active until the end of your current billing period."
   },
   {
     question: "What happens to my data if I cancel?",
@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     question: "Do you offer refunds?",
-    answer: "We offer a 7-day free trial for Premium features. If you're not satisfied within the first 7 days of your paid subscription, we'll provide a full refund."
+    answer: "We offer a 7-day free trial for Plus features. If you're not satisfied within the first 7 days of your paid subscription, we'll provide a full refund."
   },
   {
     question: "How do I add subscriptions?",

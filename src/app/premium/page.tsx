@@ -19,9 +19,9 @@ export default async function PremiumPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Premium Features</CardTitle>
+            <CardTitle className="text-2xl">Plus Features</CardTitle>
             <CardDescription>
-              Upgrade to Premium to unlock advanced subscription tracking features
+              Upgrade to Plus to unlock advanced subscription tracking features
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -47,7 +47,7 @@ export default async function PremiumPage() {
             <div className="pt-4">
               <Link href="/pricing">
                 <Button className="w-full">
-                  Upgrade to Premium
+                  Upgrade to Plus
                 </Button>
               </Link>
             </div>
@@ -71,11 +71,11 @@ export default async function PremiumPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Premium Features</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Plus & Automate Features</h1>
               <p className="text-gray-600 mt-2">Advanced tools for power users</p>
             </div>
             <Badge variant="secondary" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-              Premium User
+              Plus Member
             </Badge>
           </div>
         </div>

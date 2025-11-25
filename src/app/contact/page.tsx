@@ -93,7 +93,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-2">
                 <Crown className="h-4 w-4 text-primary" />
                 <span className="text-muted-foreground">
-                  <strong className="text-primary">Premium:</strong> Priority response within 12 hours
+                  <strong className="text-primary">Plus & Automate:</strong> Priority response within 12 hours
                 </span>
               </div>
             </div>
@@ -149,8 +149,9 @@ export default function ContactPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="free">Free Plan</SelectItem>
-                        <SelectItem value="premium">Premium Plan</SelectItem>
-                        <SelectItem value="trial">Premium Trial</SelectItem>
+                        <SelectItem value="plus">Plus Plan</SelectItem>
+                        <SelectItem value="trial">Plus Trial</SelectItem>
+                        <SelectItem value="automate">Automate</SelectItem>
                         <SelectItem value="not-sure">Not Sure</SelectItem>
                       </SelectContent>
                     </Select>
@@ -263,11 +264,11 @@ export default function ContactPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-sans">How do Premium notifications work?</CardTitle>
+                  <CardTitle className="text-lg font-sans">How do Plus notifications work?</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Premium users get advanced spending alerts, smart threshold notifications, price change alerts, and priority support with faster response times.
+                    Plus and Automate users get advanced spending alerts, smart threshold notifications, price change alerts, and priority support with faster response times.
                   </p>
                 </CardContent>
               </Card>
@@ -278,7 +279,7 @@ export default function ContactPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Yes! Premium users can export their subscription data to CSV or PDF formats for personal record-keeping or analysis.
+                    Yes! Plus and Automate users can export their subscription data to CSV or PDF formats for personal record-keeping or analysis.
                   </p>
                 </CardContent>
               </Card>

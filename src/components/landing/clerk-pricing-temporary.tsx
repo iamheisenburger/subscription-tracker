@@ -25,7 +25,7 @@ export function ClerkPricingTemporary() {
             Start Free, Upgrade When Ready
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-            No hidden fees, no long-term contracts. Try Premium free for 7 days, then decide. 
+            No hidden fees, no long-term contracts. Try Plus free for 7 days, then decide. 
             Cancel anytime with one click.
           </p>
         </div>

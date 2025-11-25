@@ -25,7 +25,7 @@ export default function Home() {
       },
       {
         "@type": "Offer",
-        "name": "Premium Monthly",
+        "name": "Plus Monthly",
         "price": "5.00",
         "priceCurrency": "USD",
         "priceValidUntil": "2025-12-31",
@@ -33,7 +33,7 @@ export default function Home() {
       },
       {
         "@type": "Offer",
-        "name": "Premium Annual",
+        "name": "Plus Annual",
         "price": "42.00",
         "priceCurrency": "USD",
         "priceValidUntil": "2025-12-31",

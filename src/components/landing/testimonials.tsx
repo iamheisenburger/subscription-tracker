@@ -28,7 +28,7 @@ const testimonials = [
     name: "David Kim",
     role: "Small Business Owner",
     avatar: "/avatars/david.jpg",
-    content: "The free tier gave me everything I needed to start, and upgrading to Premium was worth every penny. Customer support is also top-notch.",
+    content: "The free tier gave me everything I needed to start, and upgrading to Plus was worth every penny. Customer support is also top-notch.",
     rating: 5,
   },
   {

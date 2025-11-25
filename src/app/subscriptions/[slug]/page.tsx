@@ -289,7 +289,7 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ s
                 </Link>
               </Button>
               <p className="text-xs text-muted-foreground font-sans mt-3">
-                Free plan: Track up to 3 subscriptions • Premium: Unlimited tracking from $5/month
+                Free plan: Track up to 3 subscriptions • Plus: Unlimited tracking from $5/month
               </p>
             </div>
           </div>
@@ -424,7 +424,7 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ s
               <div>
                 <h3 className="font-semibold font-sans mb-2">Is SubWise free?</h3>
                 <p className="text-sm text-muted-foreground font-sans">
-                  Yes! SubWise&apos;s free plan lets you track up to 3 subscriptions (including {subscription.name}). Premium plans start at $5/month for unlimited tracking, advanced analytics, and smart alerts.
+                  Yes! SubWise&apos;s free plan lets you track up to 3 subscriptions (including {subscription.name}). Plus plans start at $5/month for unlimited tracking, advanced analytics, and smart alerts.
                 </p>
               </div>
             </CardContent>

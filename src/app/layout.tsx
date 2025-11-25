@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://usesubwise.app',
     title: 'SubWise - Smart Subscription Tracker & Budget Manager',
-    description: 'Track all your subscriptions, get renewal alerts, and save money. Free plan with 3 subscriptions. Premium unlocks unlimited tracking, spending analytics & smart alerts.',
+  description: 'Track all your subscriptions, get renewal alerts, and save money. Free plan with 3 subscriptions. Plus unlocks unlimited tracking, spending analytics & smart alerts.',
     siteName: 'SubWise',
     images: [{
       url: '/og-image.png',

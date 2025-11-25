@@ -16,7 +16,7 @@ export function AnalyticsHeader() {
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <TrendingUp className="h-4 w-4" />
-        <span className="font-sans">Premium Feature</span>
+        <span className="font-sans">Plus Feature</span>
       </div>
     </div>
   );

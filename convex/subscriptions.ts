@@ -366,7 +366,7 @@ export const updateSubscription = mutation({
         .collect();
 
       if (currentActiveSubs.length >= 3) {
-        throw new Error("Free plan allows maximum 3 active subscriptions. Upgrade to Premium for unlimited subscriptions.");
+        throw new Error("Free plan allows maximum 3 active subscriptions. Upgrade to Plus for unlimited tracking.");
       }
     }
 

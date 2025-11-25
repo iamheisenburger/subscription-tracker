@@ -51,7 +51,7 @@ export function AnalyticsPremiumFallback() {
             Unlock Advanced Analytics
           </h4>
           <p className="text-sm text-muted-foreground font-sans mb-4">
-            Upgrade to Premium to access detailed spending trends, interactive charts, and powerful insights.
+            Upgrade to Plus to access detailed spending trends, interactive charts, and powerful insights.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/dashboard/upgrade">

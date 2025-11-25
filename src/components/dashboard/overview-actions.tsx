@@ -50,25 +50,40 @@ export function OverviewActions() {
     }
   };
 
-  // Free tier: Disabled add button with upgrade tooltip
+  // Free tier: Allow manual tracking up to the limit
   if (isFree) {
+    const freeLimit = 3;
+    const currentCount = subscriptions?.length ?? 0;
+    const reachedLimit = currentCount >= freeLimit;
+
     return (
       <div className="flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button disabled className="font-sans opacity-50 cursor-not-allowed">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Subscription
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Upgrade to Plus to add unlimited subscriptions</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {reachedLimit ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button disabled className="font-sans opacity-60 cursor-not-allowed">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Subscription
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[220px]">
+                <p className="font-sans text-xs">
+                  Free plan includes up to {freeLimit} manual subscriptions. Upgrade to Plus for unlimited tracking.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <AddSubscriptionDialog>
+            <Button className="font-sans">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Subscription
+            </Button>
+          </AddSubscriptionDialog>
+        )}
       </div>
     );
   }

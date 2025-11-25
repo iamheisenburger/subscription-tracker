@@ -26,34 +26,36 @@ function InsightsContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="rounded-full bg-primary/10 p-3">
-          <Sparkles className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight font-sans">
-            Insights & Activity
-          </h1>
-          <p className="text-muted-foreground font-sans mt-1">
-            See what SubWise has detected, how prices changed, and how your
-            email automation is performing.
-          </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-primary/10 p-3">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight font-sans">
+              Insights & Activity
+            </h1>
+            <p className="text-muted-foreground font-sans mt-1 text-sm sm:text-base">
+              See what SubWise has detected, how prices changed, and how your
+              email automation is performing.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="activity" className="font-sans">
+      <Tabs defaultValue={defaultTab} className="space-y-5">
+        <TabsList className="flex w-full flex-nowrap gap-2 overflow-x-auto rounded-2xl bg-muted/30 p-1 sm:w-auto sm:flex-wrap sm:justify-start">
+          <TabsTrigger value="activity" className="font-sans flex-1 min-w-[120px] whitespace-nowrap sm:flex-none">
             Activity
           </TabsTrigger>
-          <TabsTrigger value="savings" className="font-sans">
+          <TabsTrigger value="savings" className="font-sans flex-1 min-w-[120px] whitespace-nowrap sm:flex-none">
             Savings
           </TabsTrigger>
-          <TabsTrigger value="price-history" className="font-sans">
+          <TabsTrigger value="price-history" className="font-sans flex-1 min-w-[120px] whitespace-nowrap sm:flex-none">
             Price History
           </TabsTrigger>
-          <TabsTrigger value="email-detection" className="font-sans">
+          <TabsTrigger value="email-detection" className="font-sans flex-1 min-w-[120px] whitespace-nowrap sm:flex-none">
             Email Detection
           </TabsTrigger>
         </TabsList>

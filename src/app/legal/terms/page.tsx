@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
             
             <div className="text-sm text-muted-foreground mb-8">
               <p><strong>Effective Date:</strong> January 1, 2025</p>
-              <p><strong>Last Updated:</strong> January 1, 2025</p>
+              <p><strong>Last Updated:</strong> November 27, 2025</p>
             </div>
 
             <section className="mb-8">

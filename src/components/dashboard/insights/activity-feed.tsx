@@ -12,7 +12,15 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, TrendingUp, AlertCircle, CheckCircle2, XCircle, Bell, ArrowUpRight } from "lucide-react";
+import {
+  Sparkles,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  Bell,
+  ArrowUpRight,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserTier } from "@/hooks/use-user-tier";
@@ -52,6 +60,12 @@ export function ActivityFeed() {
     api.insights.getActivityFeed,
     user?.id ? { clerkUserId: user.id, limit: 50 } : "skip"
   );
+  const automationHealth = useQuery(
+    api.insights.getAutomationHealth,
+    user?.id && isAutomate ? { clerkUserId: user.id } : "skip"
+  );
+  const gmailConnected = !!automationHealth?.gmail;
+  const pendingDetections = automationHealth?.detection.pending ?? 0;
 
   if (feed === undefined) {
     return (
@@ -85,21 +99,34 @@ export function ActivityFeed() {
           </div>
           <h3 className="font-semibold text-lg mb-2 font-sans">No automation activity yet</h3>
           <p className="text-sm text-muted-foreground text-center max-w-md font-sans">
-            {isAutomate
-              ? "Connect Gmail and start accepting detections to see how SubWise has been working for you over time."
-              : "Upgrade to Automate to connect Gmail, detect subscriptions automatically, and see activity here."}
+            {!isAutomate
+              ? "Upgrade to Automate to connect Gmail, detect subscriptions automatically, and see activity here."
+              : gmailConnected
+                ? pendingDetections > 0
+                  ? "Review your pending detections so SubWise can start building an activity history for you."
+                  : "Once you complete your first scan and accept detections, they will appear in this timeline."
+                : "Connect Gmail and run your first scan to start seeing history here."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3 justify-center">
-            {isAutomate ? (
+            {!isAutomate && (
+              <Link href="/dashboard/upgrade">
+                <Button size="sm" className="font-sans">
+                  Upgrade to Automate
+                </Button>
+              </Link>
+            )}
+            {isAutomate && !gmailConnected && (
               <Link href="/dashboard/settings?tab=automation">
                 <Button size="sm" className="font-sans">
                   Connect Gmail
                 </Button>
               </Link>
-            ) : (
-              <Link href="/dashboard/upgrade">
-                <Button size="sm" className="font-sans">
-                  Upgrade to Automate
+            )}
+            {isAutomate && gmailConnected && pendingDetections > 0 && (
+              <Link href="/dashboard/insights?tab=email-detection">
+                <Button size="sm" variant="outline" className="font-sans flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Review detections
                 </Button>
               </Link>
             )}

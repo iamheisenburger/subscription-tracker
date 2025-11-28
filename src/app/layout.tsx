@@ -18,10 +18,10 @@ export const metadata: Metadata = {
   description: "Track all your subscriptions in one place. Get smart renewal alerts, analyze spending patterns, and save money with SubWise. Free plan available - start tracking Netflix, Spotify, Disney+ and more today.",
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.png', type: 'image/png' },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
     ],
-    apple: '/icons/icon-192x192.png',
+    apple: "/icons/icon-192x192.png",
   },
   keywords: [
     // Primary keywords

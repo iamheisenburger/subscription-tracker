@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent background so it works on light and dark themes -->
+  <rect width="64" height="64" fill="none" />
+
+  <!-- Stylized "S" mark for SubWise -->
+  <path
+    d="M16 18
+       C 24 8, 40 8, 48 18
+       C 52 24, 48 28, 40 30
+       L 28 33
+       C 20 35, 16 39, 16 46
+       C 16 56, 32 56, 44 50"
+    fill="none"
+    stroke="#545CFF"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
+
+
+
+
+

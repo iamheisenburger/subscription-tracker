@@ -17,8 +17,7 @@ import { AutomateUpgradeCard } from "../automate/automate-upgrade-card";
 export function AutomationHealthTab() {
   const { user } = useUser();
   const [reviewOpen, setReviewOpen] = useState(false);
-  const { tier, isLoading: isTierLoading } = useUserTier();
-  const isAutomate = tier === "automate_1";
+  const { isAutomate, isLoading: isTierLoading } = useUserTier();
 
   const health = useQuery(
     api.insights.getAutomationHealth,

@@ -8,8 +8,7 @@ import { EmailConnectionSettings } from "./email-connection-settings";
 import { FeaturesSection } from "./features-section";
 
 export function AutomationSettings() {
-  const { tier, isLoading } = useUserTier();
-  const isAutomate = tier === "automate_1";
+  const { isAutomate, isLoading } = useUserTier();
 
   if (isLoading) {
     return (

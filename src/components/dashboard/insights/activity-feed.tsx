@@ -54,7 +54,8 @@ interface ActivityItem {
 
 export function ActivityFeed() {
   const { user } = useUser();
-  const { isAutomate } = useUserTier();
+  const { tier } = useUserTier();
+  const isAutomate = tier === "automate_1";
   const feed = useQuery(
     api.insights.getActivityFeed,
     user?.id ? { clerkUserId: user.id, limit: 50 } : "skip"

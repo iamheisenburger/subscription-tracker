@@ -31,11 +31,8 @@ export function useUserTier() {
   );
 
   const mappedTier = mapTierToCurrentType(userData?.tier);
-  const verificationOverride =
-    process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION === "true";
-
   const isPlus = mappedTier === "plus";
-  const isAutomate = mappedTier === "automate_1" || verificationOverride;
+  const isAutomate = mappedTier === "automate_1";
   const isPaidTier = isPlus || isAutomate;
 
   const subscriptionType = userData?.subscriptionType || null;
@@ -43,9 +40,7 @@ export function useUserTier() {
 
   return {
     tier: mappedTier,
-    // During Google OAuth verification we temporarily treat all users as having
-    // Automate access while the override flag is enabled.
-    isFree: !isPaidTier && mappedTier === "free_user",
+    isFree: mappedTier === "free_user",
     isPlus,
     isAutomate,
     isPaid: isPaidTier,

@@ -83,7 +83,8 @@ export function ScanConsole() {
   const { user } = useUser();
   const [isScanning, setIsScanning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const { isAutomate, isLoading: isTierLoading } = useUserTier();
+  const { tier, isLoading: isTierLoading } = useUserTier();
+  const isAutomate = tier === "automate_1";
 
   const connections = useQuery(
     api.emailConnections.getUserConnections,

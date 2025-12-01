@@ -22,7 +22,7 @@ import Link from "next/link";
 
 export function EmailConnectionSettings() {
   const { user } = useUser();
-  const { isAutomate } = useUserTier();
+  const { tier } = useUserTier();
   const searchParams = useSearchParams();
 
   const connections = useQuery(
@@ -33,6 +33,7 @@ export function EmailConnectionSettings() {
   const disconnectEmail = useMutation(api.emailConnections.disconnectEmail);
 
   // Tier-based limits
+  const isAutomate = tier === "automate_1";
   const maxConnections = isAutomate ? 1 : 0;
   const currentConnections = connections?.length || 0;
   const canAddConnection = currentConnections < maxConnections;

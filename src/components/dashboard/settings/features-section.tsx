@@ -22,7 +22,7 @@ interface FeatureItem {
 }
 
 export function FeaturesSection() {
-  const { isAutomate, isLoading: isTierLoading } = useUserTier();
+  const { tier, isLoading: isTierLoading } = useUserTier();
   const { user } = useUser();
 
   // Check if user has email connected
@@ -31,6 +31,7 @@ export function FeaturesSection() {
     user?.id ? { clerkUserId: user.id } : "skip"
   );
 
+  const isAutomate = tier === "automate_1";
   const hasEmailConnected = connections && connections.length > 0;
 
   // Show loading state while tier data is being fetched

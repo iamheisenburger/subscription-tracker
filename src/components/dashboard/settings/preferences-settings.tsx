@@ -256,13 +256,8 @@ export function PreferencesSettings({ }: PreferencesSettingsProps) {
               {!canUseSmartAlerts && (
                 <div className="p-3 bg-primary/10 rounded-lg border border-primary/20 space-y-2">
                   <p className="text-sm text-primary font-sans">
-                    Upgrade to Automate to unlock Gmail-powered alerts, duplicate protection, and automatic detection.
+                    Gmail-powered alerts, duplicate protection, and automatic detection will be available with the Automate tier once it launches.
                   </p>
-                  <Link href="/dashboard/upgrade">
-                    <Button variant="outline" size="sm" className="font-sans">
-                      Upgrade to Automate
-                    </Button>
-                  </Link>
                 </div>
               )}
             </div>

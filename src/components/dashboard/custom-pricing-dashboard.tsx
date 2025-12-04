@@ -8,7 +8,7 @@ import { SignedIn } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
 import type { CommerceSubscriptionPlanPeriod } from "@clerk/types";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { plusPlanId, automatePlanId } from "@/lib/clerk-plan-ids";
+import { plusPlanId } from "@/lib/clerk-plan-ids";
 
 /**
  * Custom Pricing Table for Dashboard Upgrade Page
@@ -45,28 +45,6 @@ export const CustomPricingDashboard = () => {
     return { label: "Start 7-day free trial", showCheckout: true };
   })();
 
-  const automatePlanCTA: PlanCTA = (() => {
-    if (isAutomate) {
-      const matchesCurrentInterval =
-        (billingCycle === 'annual' && normalizedInterval === 'annual') ||
-        (billingCycle === 'monthly' && normalizedInterval === 'monthly');
-
-      if (matchesCurrentInterval) {
-        return { label: "Current plan", showCheckout: false };
-      }
-
-      return {
-        label: billingCycle === 'annual' ? "Switch to annual" : "Switch to monthly",
-        showCheckout: true,
-      };
-    }
-
-    return {
-      label: isPlus ? "Upgrade to Automate" : "Start 7-day free trial",
-      showCheckout: true,
-    };
-  })();
-
   const freePlan = {
     name: "Free - Track",
     description: "Perfect for getting started with subscription tracking. Track up to 3 subscriptions with essential features.",
@@ -98,26 +76,6 @@ export const CustomPricingDashboard = () => {
     ],
     badge: !isPlus && !isAutomate ? "7-day free trial" : undefined,
   };
-
-  const automatePlan = {
-    name: "Automate",
-    description: "Everything in Plus + Gmail-powered detection, price change alerts, and cancel assistant.",
-    price: billingCycle === 'monthly' ? "$9.00" : "$6.50",
-    period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$9.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($78.00/year)" : "Billed monthly",
-    features: [
-      "Everything in Plus",
-      "1 Gmail connection (lifetime)",
-      "Auto subscription detection",
-      "Price change & duplicate alerts",
-      "Email receipt parsing",
-      "Cancel Assistant (self-serve)",
-      "Weekly autoscan & duplicate protection"
-    ],
-    badge: !isAutomate ? "Most Popular" : undefined,
-  };
-
 
   return (
     <div id="pricing" className="w-full">
@@ -157,8 +115,8 @@ export const CustomPricingDashboard = () => {
           </div>
         </div>
 
-        {/* Pricing Cards - 3 Column Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {/* Pricing Cards - 2 Column Grid (Free + Plus only) */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* Free Plan */}
           <Card className="border border-border relative">
             <CardHeader className="text-center pb-6">
@@ -247,72 +205,6 @@ export const CustomPricingDashboard = () => {
               ) : (
                 <Button className="w-full font-sans mt-6" variant="outline" disabled>
                   {plusPlanCTA.label}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Automate Plan - Most Popular */}
-          <Card className="border-2 border-primary relative shadow-md">
-            {automatePlan.badge && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold font-sans shadow-md">
-                  ⚡ {automatePlan.badge}
-                </span>
-              </div>
-            )}
-            <CardHeader className="text-center pb-6 pt-6">
-              <CardTitle className="text-xl font-bold font-sans">{automatePlan.name}</CardTitle>
-              <CardDescription className="mt-2 font-sans text-sm">
-                {automatePlan.description}
-              </CardDescription>
-              <div className="mt-4">
-                <div className="flex items-baseline justify-center gap-1.5">
-                  {automatePlan.originalPrice && (
-                    <span className="text-xl text-muted-foreground line-through font-sans">
-                      {automatePlan.originalPrice}
-                    </span>
-                  )}
-                  <span className="text-4xl font-bold font-sans">{automatePlan.price}</span>
-                  <span className="text-base text-muted-foreground font-sans">{automatePlan.period}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 font-sans">{automatePlan.annualNote}</p>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <ul className="space-y-2">
-                {automatePlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm font-sans">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              {automatePlanCTA.showCheckout ? (
-                <SignedIn>
-                  <CheckoutButton
-                    planId={automatePlanId}
-                    planPeriod={clerkPlanPeriod}
-                    onSubscriptionComplete={() => {
-                      window.location.href = '/dashboard';
-                    }}
-                    newSubscriptionRedirectUrl="/dashboard"
-                    checkoutProps={{
-                      appearance: {
-                        elements: {
-                          formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
-                        }
-                      }
-                    }}
-                  >
-                    <Button className="w-full font-sans mt-6">
-                      {automatePlanCTA.label}
-                    </Button>
-                  </CheckoutButton>
-                </SignedIn>
-              ) : (
-                <Button className="w-full font-sans mt-6" variant="outline" disabled>
-                  {automatePlanCTA.label}
                 </Button>
               )}
             </CardContent>

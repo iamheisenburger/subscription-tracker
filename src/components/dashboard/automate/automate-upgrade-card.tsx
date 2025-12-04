@@ -22,10 +22,10 @@ const DEFAULT_FEATURES = [
 ];
 
 export function AutomateUpgradeCard({
-  title = "Available on Automate",
-  description = "Connect Gmail, auto-detect subscriptions, and unlock proactive alerts with the Automate tier.",
+  title = "Gmail automation (coming soon)",
+  description = "We’re preparing an Automate tier with Gmail-powered detection and alerts. For now, you can still track everything manually with Free or Plus.",
   features = DEFAULT_FEATURES,
-  ctaLabel = "Upgrade to Automate",
+  ctaLabel = "View current plans",
   className,
 }: AutomateUpgradeCardProps) {
   return (
@@ -55,7 +55,7 @@ export function AutomateUpgradeCard({
             <Button className="font-sans">{ctaLabel}</Button>
           </Link>
           <p className="text-xs text-muted-foreground font-sans">
-            Includes a 7-day free trial · Cancel anytime through Clerk
+            Automate is currently in private beta and will be available after Google approval.
           </p>
         </div>
       </CardContent>

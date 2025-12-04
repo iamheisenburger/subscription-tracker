@@ -8,7 +8,7 @@ import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
 import type { CommerceSubscriptionPlanPeriod } from "@clerk/types";
-import { plusPlanId, automatePlanId } from "@/lib/clerk-plan-ids";
+import { plusPlanId } from "@/lib/clerk-plan-ids";
 
 export const CustomPricingV2 = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
@@ -49,27 +49,6 @@ export const CustomPricingV2 = () => {
     badge: "7-day free trial"
   };
 
-  const automatePlan = {
-    name: "Automate",
-    description: "Everything in Plus + Gmail-powered detection, price change alerts, and cancel assistant.",
-    price: billingCycle === 'monthly' ? "$9.00" : "$6.50",
-    period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$9.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($78.00/year)" : "Billed monthly",
-    features: [
-      "Everything in Plus",
-      "1 Gmail connection (lifetime)",
-      "Auto subscription detection",
-      "Price change & duplicate alerts",
-      "Email receipt parsing",
-      "Cancel Assistant (self-serve)",
-      "Weekly autoscan & duplicate protection"
-    ],
-    cta: "Start 7-day free trial",
-    ctaLink: `/sign-up?plan=automate&billing=${billingCycle}`,
-    badge: "Most Popular"
-  };
-
   return (
     <div id="pricing" className="w-full py-12 xs:py-16 px-6">
       <div className="max-w-screen-xl mx-auto">
@@ -78,7 +57,7 @@ export const CustomPricingV2 = () => {
             Start Free, Upgrade When Ready
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
-            No hidden fees, no long-term contracts. Try Plus or Automate free for 7 days, then decide.
+            No hidden fees, no long-term contracts. Try Plus free for 7 days, then decide.
             Cancel anytime with one click.
           </p>
         </div>
@@ -118,8 +97,8 @@ export const CustomPricingV2 = () => {
           </div>
         </div>
 
-        {/* Pricing Cards - 3 Column Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {/* Pricing Cards - 2 Column Grid (Free + Plus only) */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* Free Plan */}
           <Card className="border border-border relative">
             <CardHeader className="text-center pb-6">
@@ -217,80 +196,6 @@ export const CustomPricingV2 = () => {
                 <Link href={plusPlan.ctaLink} className="block w-full mt-6">
                   <Button className="w-full font-sans">
                     {plusPlan.cta}
-                  </Button>
-                </Link>
-              </SignedOut>
-            </CardContent>
-          </Card>
-
-          {/* Automate Plan - Most Popular */}
-          <Card className="border-2 border-primary relative shadow-md">
-            {automatePlan.badge && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold font-sans shadow-md">
-                  ⚡ {automatePlan.badge}
-                </span>
-              </div>
-            )}
-            <CardHeader className="text-center pb-6 pt-6">
-              <CardTitle className="text-xl font-bold font-sans">{automatePlan.name}</CardTitle>
-              <CardDescription className="mt-2 font-sans text-sm">
-                {automatePlan.description}
-              </CardDescription>
-              <div className="mt-4">
-                <div className="flex items-baseline justify-center gap-1.5">
-                  {automatePlan.originalPrice && (
-                    <span className="text-xl text-muted-foreground line-through font-sans">
-                      {automatePlan.originalPrice}
-                    </span>
-                  )}
-                  <span className="text-4xl font-bold font-sans">{automatePlan.price}</span>
-                  <span className="text-base text-muted-foreground font-sans">{automatePlan.period}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 font-sans">{automatePlan.annualNote}</p>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <ul className="space-y-2">
-                {automatePlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm font-sans">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Conditional CTA based on sign-in status */}
-              {/* For signed-in users: Use CheckoutButton to open checkout drawer */}
-              <SignedIn>
-                <CheckoutButton
-                  planId={automatePlanId}
-                  planPeriod={clerkPlanPeriod}
-                  onSubscriptionComplete={() => {
-                    // Force redirect to dashboard
-                    window.location.href = '/dashboard';
-                  }}
-                  newSubscriptionRedirectUrl="/dashboard"
-                  checkoutProps={{
-                    appearance: {
-                      elements: {
-                        // ONLY override the submit button color - everything else stays Clerk default
-                        formButtonPrimary: "!bg-primary !text-primary-foreground hover:!bg-primary/90 !font-semibold !shadow-md",
-                      }
-                    }
-                  }}
-                >
-                  <Button className="w-full font-sans mt-6">
-                    {automatePlan.cta}
-                  </Button>
-                </CheckoutButton>
-              </SignedIn>
-
-              {/* For non-signed-in users: Link to sign-up, then Clerk handles checkout */}
-              <SignedOut>
-                <Link href={automatePlan.ctaLink} className="block w-full mt-6">
-                  <Button className="w-full font-sans">
-                    {automatePlan.cta}
                   </Button>
                 </Link>
               </SignedOut>

@@ -100,7 +100,7 @@ export function ActivityFeed() {
           <h3 className="font-semibold text-lg mb-2 font-sans">No automation activity yet</h3>
           <p className="text-sm text-muted-foreground text-center max-w-md font-sans">
             {!isAutomate
-              ? "Upgrade to Automate to connect Gmail, detect subscriptions automatically, and see activity here."
+              ? "Gmail-powered automation is currently in private beta. Once the Automate tier launches, detected subscriptions and alerts will appear here."
               : gmailConnected
                 ? pendingDetections > 0
                   ? "Review your pending detections so SubWise can start building an activity history for you."
@@ -108,13 +108,7 @@ export function ActivityFeed() {
                 : "Connect Gmail and run your first scan to start seeing history here."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3 justify-center">
-            {!isAutomate && (
-              <Link href="/dashboard/upgrade">
-                <Button size="sm" className="font-sans">
-                  Upgrade to Automate
-                </Button>
-              </Link>
-            )}
+            {/* When Automate is in private beta, we don’t show an upgrade button here */}
             {isAutomate && !gmailConnected && (
               <Link href="/dashboard/settings?tab=automation">
                 <Button size="sm" className="font-sans">

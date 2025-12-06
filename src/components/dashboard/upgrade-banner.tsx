@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 export function UpgradeBanner() {
-  const { isLoading, isPlus, isAutomate, isFree } = useUserTier();
+  const { isLoading, isPlus, isAutomate, isFree, subscriptionType } = useUserTier();
 
   // Don't show anything while loading to prevent flash
   if (isLoading) {
@@ -20,9 +20,50 @@ export function UpgradeBanner() {
     return null;
   }
 
-  // For Plus users: no upsell banner while Automate is in private beta
+  // For Plus users:
+  // - Monthly: show CTA to switch to annual Plus
+  // - Annual: no banner (already on best deal)
   if (isPlus) {
-    return null;
+    const isAnnual = subscriptionType === "annual";
+
+    if (isAnnual) {
+      return null;
+    }
+
+    return (
+      <Card className="border-primary/15 bg-card shadow-sm">
+        <CardContent className="p-4 space-y-4 sm:space-y-0 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-start space-x-3 sm:space-x-4">
+              <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-2.5 sm:p-3">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground font-sans">
+                  Switch to annual Plus and save
+                </h3>
+                <p className="text-sm text-muted-foreground font-sans">
+                  Lock in a lower effective monthly price with the annual Plus plan.
+                </p>
+              </div>
+            </div>
+            <div className="text-left sm:text-right w-full sm:w-auto">
+              <div className="text-xl sm:text-2xl font-bold text-foreground font-sans">
+                $3.50<span className="text-sm font-normal">/mo</span>
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground font-sans">
+                Billed annually at $42.00/year
+              </div>
+              <Link href="/dashboard/upgrade">
+                <Button className="mt-3 w-full sm:w-auto font-sans">
+                  Switch to annual Plus
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   // For Free users: Show upgrade to Plus banner

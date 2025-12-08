@@ -128,7 +128,7 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-2xl font-semibold">Track your subscriptions instantly</CardTitle>
               <CardDescription className="text-base">
-                Free includes up to {FREE_LIMIT} local subscriptions. Sign in to back up, sync, and go unlimited with Plus.
+                Free includes up to {FREE_LIMIT} local subscriptions. Create a free account to back up, sync, and get email reminders; Plus unlocks unlimited, analytics, budgets, and exports.
               </CardDescription>
             </div>
             <Badge variant="outline" className="font-sans">No login required</Badge>
@@ -186,7 +186,7 @@ export default function Home() {
                   Free limit reached. Upgrade to Plus to go unlimited and unlock analytics, budgets, and exports.
                 </div>
                 <div className="flex gap-2">
-                  <Link href="/dashboard/upgrade">
+                  <Link href="/pricing">
                     <Button size="sm" className="font-sans">See Plus plans</Button>
                   </Link>
                   <Link href="/sign-up">
@@ -264,13 +264,15 @@ export default function Home() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-muted-foreground space-y-1">
                 <div>Your data is stored locally on this device.</div>
-                <div>Free includes up to {FREE_LIMIT} subscriptions. Sign up to back up, sync, and go unlimited with Plus.</div>
+                <div>
+                  Free includes up to {FREE_LIMIT} subscriptions. Sign up to back up, sync, and get email reminders; Plus removes limits and adds analytics/budgets/exports.
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href="/sign-up">
-                  <Button className="font-sans">Save & sync my data</Button>
+                  <Button className="font-sans">Save & get reminders</Button>
                 </Link>
-                <Link href="/dashboard/upgrade">
+                <Link href="/pricing">
                   <Button variant="outline" className="font-sans">See Plus features</Button>
                 </Link>
               </div>

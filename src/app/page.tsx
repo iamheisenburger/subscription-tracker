@@ -108,9 +108,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b bg-card/60 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 gap-3">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ThemeToggle />
             <Link href="/sign-in">
               <Button variant="ghost" className="font-sans">Sign in</Button>

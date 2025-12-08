@@ -24,8 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Footer } from "@/components/landing/footer";
-import { CircleDollarSign, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/landing/logo";
+import { ThemeToggle } from "@/components/landing/theme-toggle";
 
 type Cadence = "monthly" | "annual";
 
@@ -47,6 +49,7 @@ export default function Home() {
   const [amount, setAmount] = useState<string>("");
   const [cadence, setCadence] = useState<Cadence>("monthly");
   const [items, setItems] = useState<LocalSubscription[]>([]);
+  const isLimitReached = items.length >= FREE_LIMIT;
 
   // Load from local storage on first render
   useEffect(() => {
@@ -104,18 +107,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="border-b bg-card/60 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
+      <header className="border-b bg-card/60 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 gap-3">
+          <Logo />
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <CircleDollarSign className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">SubWise</p>
-              <p className="text-xs text-muted-foreground">Instant tracker · No login required</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/sign-in">
               <Button variant="ghost" className="font-sans">Sign in</Button>
             </Link>
@@ -124,15 +120,15 @@ export default function Home() {
             </Link>
           </div>
         </div>
-      </div>
+      </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-        <Card className="border-primary/20">
+        <Card className="border-primary/20 shadow-sm">
           <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-semibold">Track your subscriptions instantly</CardTitle>
               <CardDescription className="text-base">
-                Free mode lets you add up to {FREE_LIMIT} subscriptions locally. Sign in to back up, sync, and go unlimited.
+                Free includes up to {FREE_LIMIT} local subscriptions. Sign in to back up, sync, and go unlimited with Plus.
               </CardDescription>
             </div>
             <Badge variant="outline" className="font-sans">No login required</Badge>
@@ -176,13 +172,29 @@ export default function Home() {
                 <Button
                   onClick={handleAdd}
                   className="w-full font-sans"
-                  disabled={items.length >= FREE_LIMIT}
+                  disabled={isLimitReached}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {items.length >= FREE_LIMIT ? "Free limit reached" : "Add subscription"}
+                  {isLimitReached ? "Free limit reached" : "Add subscription"}
                 </Button>
               </div>
             </div>
+
+            {isLimitReached && (
+              <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-primary font-medium">
+                  Free limit reached. Upgrade to Plus to go unlimited and unlock analytics, budgets, and exports.
+                </div>
+                <div className="flex gap-2">
+                  <Link href="/dashboard/upgrade">
+                    <Button size="sm" className="font-sans">See Plus plans</Button>
+                  </Link>
+                  <Link href="/sign-up">
+                    <Button size="sm" variant="outline" className="font-sans">Create account</Button>
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <Separator />
 
@@ -204,7 +216,7 @@ export default function Home() {
               />
             </div>
 
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -266,16 +278,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span>Need the full marketing page?</span>
-          <Link href="/landing" className="text-primary hover:underline">View product overview</Link>
-          <span className="text-muted-foreground">•</span>
-          <Link href="/pricing" className="text-primary hover:underline">Pricing</Link>
-          <span className="text-muted-foreground">•</span>
-          <Link href="/legal/privacy" className="text-primary hover:underline">Privacy</Link>
-          <span className="text-muted-foreground">•</span>
-          <Link href="/legal/terms" className="text-primary hover:underline">Terms</Link>
-        </div>
       </main>
 
       <Footer />

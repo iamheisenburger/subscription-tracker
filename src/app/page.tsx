@@ -34,10 +34,10 @@ interface LocalSubscription {
   name: string;
   amount: number;
   cadence: Cadence;
-  category: string;
 }
 
 const STORAGE_KEY = "subwise_local_subscriptions_v1";
+const FREE_LIMIT = 3;
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
@@ -46,7 +46,6 @@ export default function Home() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [cadence, setCadence] = useState<Cadence>("monthly");
-  const [category, setCategory] = useState("General");
   const [items, setItems] = useState<LocalSubscription[]>([]);
 
   // Load from local storage on first render
@@ -83,6 +82,7 @@ export default function Home() {
   const handleAdd = () => {
     const parsedAmount = parseFloat(amount);
     if (!name.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return;
+    if (items.length >= FREE_LIMIT) return;
 
     setItems((prev) => [
       ...prev,
@@ -91,13 +91,11 @@ export default function Home() {
         name: name.trim(),
         amount: parsedAmount,
         cadence,
-        category: category.trim() || "General",
       },
     ]);
     setName("");
     setAmount("");
     setCadence("monthly");
-    setCategory("General");
   };
 
   const handleRemove = (id: string) => {
@@ -134,7 +132,7 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-2xl font-semibold">Track your subscriptions instantly</CardTitle>
               <CardDescription className="text-base">
-                Add as many subscriptions as you want. Your data stays on this device unless you sign in to sync it.
+                Free mode lets you add up to {FREE_LIMIT} subscriptions locally. Sign in to back up, sync, and go unlimited.
               </CardDescription>
             </div>
             <Badge variant="outline" className="font-sans">No login required</Badge>
@@ -174,19 +172,14 @@ export default function Home() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="category">Category (optional)</Label>
-                <Input
-                  id="category"
-                  placeholder="Streaming, Productivity, Utilities..."
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                />
-              </div>
               <div className="md:col-span-2 flex items-end">
-                <Button onClick={handleAdd} className="w-full font-sans">
+                <Button
+                  onClick={handleAdd}
+                  className="w-full font-sans"
+                  disabled={items.length >= FREE_LIMIT}
+                >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add subscription
+                  {items.length >= FREE_LIMIT ? "Free limit reached" : "Add subscription"}
                 </Button>
               </div>
             </div>
@@ -216,7 +209,6 @@ export default function Home() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead>Billing</TableHead>
                     <TableHead className="text-right">Monthly equiv.</TableHead>
@@ -236,7 +228,6 @@ export default function Home() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{item.category || "—"}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
                         <TableCell className="capitalize">{item.cadence}</TableCell>
                         <TableCell className="text-right">{formatCurrency(monthly)}</TableCell>
@@ -259,8 +250,9 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="text-sm text-muted-foreground">
-                Your data is stored locally on this device. Create an account to back it up and sync across devices.
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div>Your data is stored locally on this device.</div>
+                <div>Free includes up to {FREE_LIMIT} subscriptions. Sign up to back up, sync, and go unlimited with Plus.</div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href="/sign-up">

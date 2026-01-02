@@ -1,0 +1,59 @@
+---
+title: "Is a Subscription Tracker Safe? Security & Privacy Guide for Subwise Users"
+description: "Worried about subscription app security? Learn whether subscription trackers are safe, how Subwise protects your data, and practical steps to stay secure with Plaid bank connections and privacy best practices."
+date: "2026-01-02T10:54:42.602Z"
+sources:
+  - url: "https://plaid.com/docs/security/"
+    title: "Plaid — Security & privacy"
+  - url: "https://owasp.org/www-project-top-ten/"
+    title: "OWASP Top Ten"
+  - url: "https://gdpr.eu/"
+    title: "GDPR — General Data Protection Regulation"
+  - url: "https://oag.ca.gov/privacy/ccpa"
+    title: "California Consumer Privacy Act (CCPA)"
+  - url: "https://www.verizon.com/business/resources/reports/dbir/"
+    title: "Verizon Data Breach Investigations Report (DBIR)"
+  - url: "https://www.pewresearch.org/internet/2019/11/15/americans-and-privacy-concerned-trust-little/"
+    title: "Pew Research — Americans and Privacy"
+  - url: "https://www.nist.gov/topics/cybersecurity"
+    title: "NIST — Cybersecurity"
+  - url: "https://www.ftc.gov/tips-advice/business-center/small-businesses/accepting-payments/recurring-billing-disclosures"
+    title: "FTC — Recurring billing disclosures"
+---
+
+Verification summary
+
+Verified or supported claims (supported by the provided sources):
+- "Many apps use Plaid or similar connectors to access bank and card transaction data" — supported by Plaid documentation describing its connector role. (Plaid)
+- "Connectors often return tokens instead of apps storing bank credentials" (tokenization / delegated access) — supported by Plaid's security docs describing token-based flows. (Plaid)
+- "Plaid and similar flows typically authenticate the user via the connector's interface, not the third-party app" — supported by Plaid docs. (Plaid)
+- "Read-only transaction access is a common Plaid flow; payment initiation is a distinct permissioned flow" — consistent with Plaid's description of separate permissioned capabilities. (Plaid)
+- "Use of TLS for data in transit and encryption at rest are standard best practices" — recommended by cybersecurity guidance (NIST) and mirrored in Plaid's security information. (Plaid, NIST)
+- "OWASP Top Ten is a relevant reference for common web app risks and mitigations" — the article's use of OWASP Top Ten as guidance for secure development is appropriate. (OWASP Top Ten)
+- "GDPR and CCPA give users rights over personal data and are relevant frameworks for privacy compliance" — supported by the GDPR and CCPA references. (GDPR — General Data Protection Regulation; California Consumer Privacy Act (CCPA))
+- "Verizon DBIR and Pew Research support the article's claims that financial data is a target and that consumers are worried about data use" — the Verizon DBIR discusses patterns in breaches and threats to financial data; Pew Research documents consumer concern and mistrust. (Verizon DBIR, Pew Research)
+- "Certifications such as SOC 2 or ISO 27001 are indicators of security/process maturity but not guarantees of perfect security" — the article's phrasing that certifications indicate processes rather than absolute safety is consistent with general security guidance (NIST context on maturity and controls). (NIST)
+- "FTC guidance on recurring billing is an appropriate citation for advice about disclosures and consumer protections around subscriptions" — the FTC resource is relevant to recurring-billing disclosure points. (FTC — Recurring billing disclosures)
+
+Claims that are not directly supported or are unverified by the provided sources (need primary evidence from Subwise or additional documentation):
+- Any specific operational claims about Subwise (for example: "Subwise uses Plaid to connect to banks", "Subwise stores only tokens and never stores bank credentials", "Subwise supports 2FA", "Subwise provides export/delete options", "Subwise does not sell PII to data brokers", "Subwise publishes audits or certifications") are assertions about a particular vendor and are not verifiable from the supplied sources. None of the provided sources are Subwise's published security or privacy pages, so these Subwise-specific statements should be labeled as claims by Subwise and linked to Subwise's own documentation or privacy policy for verification.
+
+Partially supported or imprecise technical claims (needs careful wording or citation):
+- "AES-256 or similar encryption for stored PII and tokens" — strong encryption at rest is a reasonable recommendation, but specifying AES-256 requires a supporting citation from the vendor or a standard that prescribes that algorithm. The provided NIST overview discusses encryption as a control but does not serve as a vendor-specific proof that AES-256 is used. Rephrase to: "encrypted at rest using industry-standard algorithms (vendor should disclose specifics)." (NIST)
+- "TLS 1.2+ (HTTPS)" — TLS is a correct general recommendation; Plaid's documentation describes secure transport, but any specific TLS version requirements (e.g., TLS 1.2+) should be supported by either vendor docs or current best-practice guidance (NIST) and kept up to date.
+
+Suggested edits / recommended language changes for the article
+- Where the article states Subwise-specific operational details, change absolute statements to verifiable-at-source wording. Example:
+  - Replace "Subwise uses Plaid to connect to banks securely" with: "Subwise states that it uses Plaid to connect to banks; readers should verify this on Subwise's security or privacy pages." (Requires adding a citation to Subwise's own docs.)
+  - Replace "Subwise does not store bank passwords" with: "According to Plaid's connector model, apps using Plaid typically do not receive raw bank credentials; confirm Subwise's implementation in its documentation." (Cite Plaid for the connector model.)
+  - Replace "Subwise supports 2FA and export/delete options" with: "If Subwise supports 2FA and data export/deletion, this should be documented on its security and privacy pages — verify directly." (Ask the author to link Subwise docs.)
+- For encryption algorithm claims (AES-256), change to: "Data should be encrypted at rest using industry-standard algorithms; check the vendor's security documentation for specifics." (Cite NIST for general encryption guidance.)
+
+Actionable next steps for the author / publisher
+- Add direct citations to Subwise's public security and privacy pages (or privacy policy) for every claim about Subwise's controls (Plaid usage, token storage, 2FA availability, export/delete, data-sharing practices, certifications/audit reports). If those pages are not available, remove or qualify vendor-specific assertions.
+- When mentioning a specific encryption algorithm or protocol version, cite vendor documentation or an authoritative standard (NIST) to avoid implying unverified specifics.
+- Keep statements about certifications precise: e.g., "Subwise reports SOC 2 Type II [if true and link provided], which indicates the organization has processes for controls subject to audit; certifications are indicators, not guarantees." (Require a link to the certification report.)
+
+Bottom line
+- The article's general security advice (use connectors like Plaid, tokenization, least privilege, 2FA, data minimization, reviewing permissions, and regular account hygiene) is consistent with the provided authoritative sources (Plaid docs, OWASP Top Ten, NIST, FTC guidance, and privacy law overviews).
+- Any vendor-specific claims about Subwise must be supported by Subwise's own published, auditable documentation; otherwise they should be clearly labeled as assertions by the vendor or removed.

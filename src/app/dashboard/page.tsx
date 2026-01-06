@@ -22,18 +22,15 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight font-sans">
-            Welcome back, {user?.firstName || "there"}!
-          </h1>
-          <p className="text-muted-foreground font-sans">
-            Here&apos;s your subscription overview
-          </p>
-        </div>
-        <OverviewActions />
+    <div className="space-y-8">
+      {/* Welcome Header - Modern App Style */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-black tracking-tight font-sans">
+          Hi, {user?.firstName || "there"}!
+        </h1>
+        <p className="text-muted-foreground font-medium font-sans">
+          Your subscriptions are looking good.
+        </p>
       </div>
 
       {/* Auto Tier Sync - Silent reconciliation */}

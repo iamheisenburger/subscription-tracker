@@ -60,29 +60,17 @@ export function DashboardSidebar() {
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
       {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b border-border/50">
+      <div className="flex h-20 items-center px-6 border-b border-border/50">
         <Link href="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-            <CreditCard className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+            <CreditCard className="w-6 h-6 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold font-sans tracking-tight">SubWise</span>
+          <span className="text-2xl font-black font-sans tracking-tighter">SubWise</span>
         </Link>
       </div>
 
-      {/* Quick Add */}
-      <div className="p-4">
-        <AddSubscriptionDialog>
-          <Button className="w-full font-sans" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Subscription
-          </Button>
-        </AddSubscriptionDialog>
-      </div>
-
-      <Separator />
-
       {/* Navigation */}
-      <nav className="flex-1 space-y-2 p-4">
+      <nav className="flex-1 space-y-1.5 p-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (

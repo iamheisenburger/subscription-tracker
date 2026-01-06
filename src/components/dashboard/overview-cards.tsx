@@ -93,16 +93,17 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title} className="border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium font-sans text-muted-foreground">{card.title}</CardTitle>
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <card.icon className="h-4 w-4 text-primary" />
+        <Card key={card.title} className="border border-border/50 shadow-sm bg-card rounded-2xl hover:shadow-md transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-6">
+            <CardTitle className="text-sm font-bold font-sans uppercase tracking-widest text-muted-foreground/80">{card.title}</CardTitle>
+            <div className="p-2.5 bg-primary/5 rounded-xl border border-primary/10">
+              <card.icon className="h-5 w-5 text-primary" />
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold font-sans tracking-tight">{card.value}</div>
-            <p className="text-xs text-muted-foreground font-sans mt-1">
+          <CardContent className="px-6 pb-6">
+            <div className="text-3xl font-black font-sans tracking-tighter">{card.value}</div>
+            <p className="text-xs text-muted-foreground font-semibold font-sans mt-1.5 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
               {card.description}
             </p>
           </CardContent>

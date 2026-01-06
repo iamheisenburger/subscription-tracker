@@ -52,22 +52,22 @@ export function MobileNav() {
   const navItems = useNavItems(tier);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t pb-safe">
-      <div className="flex items-center gap-2 px-2 py-2 overflow-x-auto sm:overflow-x-visible sm:justify-around [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 pb-safe">
+      <div className="flex items-center gap-1 px-3 py-3 overflow-x-auto sm:overflow-x-visible sm:justify-around [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
 
           return (
-            <Link key={item.name} href={item.href} className="flex-1">
+            <Link key={item.name} href={item.href} className="flex-1 min-w-[70px]">
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-12 min-w-[90px] flex-1 flex-shrink-0 flex-col gap-1 text-xs font-sans",
-                  isActive && "text-primary bg-primary/10"
+                  "h-14 w-full flex flex-col gap-1.5 text-[10px] font-bold font-sans transition-all duration-300 rounded-xl",
+                  isActive ? "text-primary bg-primary/10 shadow-sm" : "text-muted-foreground hover:bg-muted/40"
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className={cn("h-5 w-5 transition-transform duration-300", isActive && "scale-110")} />
                 {item.name}
               </Button>
             </Link>

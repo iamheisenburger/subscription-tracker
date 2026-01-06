@@ -155,15 +155,15 @@ export function SubscriptionCard({
 
   return (
     <>
-      <div className="group flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-            <CreditCard className="h-6 w-6 text-primary" />
+      <div className="group flex items-center justify-between p-5 bg-card border border-border/50 rounded-2xl shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300">
+        <div className="flex items-center space-x-5">
+          <div className="w-14 h-14 bg-primary/5 rounded-2xl flex items-center justify-center flex-shrink-0 border border-primary/10">
+            <CreditCard className="h-7 w-7 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold font-sans truncate">{subscription.name}</h3>
-            <p className="text-sm text-muted-foreground font-sans">
-              Next: {format(subscription.nextBillingDate, "MMM dd, yyyy")} • {subscription.billingCycle}
+            <h3 className="font-bold text-lg font-sans tracking-tight truncate">{subscription.name}</h3>
+            <p className="text-sm text-muted-foreground font-medium font-sans">
+              Next: {format(subscription.nextBillingDate, "MMM dd")} • {subscription.billingCycle}
             </p>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {showCategory && subscription.category && (

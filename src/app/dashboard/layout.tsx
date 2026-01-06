@@ -35,8 +35,8 @@ export default async function DashboardLayout({
       {/* Mobile Layout */}
       <div className="lg:hidden">
         <DashboardHeader />
-        <main className="pb-20 px-4 pt-6">
-          <div className="max-w-sm mx-auto">
+        <main className="pb-24 px-5 pt-8">
+          <div className="max-w-md mx-auto">
             {children}
           </div>
         </main>

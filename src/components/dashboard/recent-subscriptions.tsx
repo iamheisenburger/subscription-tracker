@@ -95,22 +95,21 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
   const recentSubscriptions = subscriptions.slice(0, 5);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="border border-border/50 shadow-sm bg-card rounded-2xl overflow-hidden transition-all duration-300">
+      <CardHeader className="flex flex-row items-center justify-between px-6 pt-6 pb-4">
         <div>
-          <CardTitle className="font-sans">Your Subscriptions</CardTitle>
-          <CardDescription className="font-sans">
-            Recent and active subscriptions
+          <CardTitle className="text-xl font-bold font-sans tracking-tight">Your Subscriptions</CardTitle>
+          <CardDescription className="font-medium font-sans">
+            Active and recently managed
           </CardDescription>
         </div>
-        <AddSubscriptionDialog>
-          <Button size="sm" className="font-sans">
-            <Plus className="mr-2 h-4 w-4" />
-            Add New
+        <Link href="/dashboard/subscriptions">
+          <Button variant="ghost" size="sm" className="font-bold font-sans text-primary hover:bg-primary/5">
+            See All
           </Button>
-        </AddSubscriptionDialog>
+        </Link>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-6 pb-6">
         <div className="space-y-4">
           {recentSubscriptions.map((subscription) => (
             <SubscriptionCard

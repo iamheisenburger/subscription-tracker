@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Footer } from "@/components/landing/footer";
-import { Plus, Trash2, Search, TrendingUp, Settings, Home, Crown } from "lucide-react";
+import { Plus, Trash2, Search, TrendingUp, Settings, Home as HomeIcon, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 
@@ -32,7 +32,7 @@ const FREE_LIMIT = 3;
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
-export default function Home() {
+export default function HomePage() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [cadence, setCadence] = useState<Cadence>("monthly");
@@ -319,7 +319,7 @@ export default function Home() {
       {/* Bottom Navigation - Mobile App Style */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border pb-safe">
         <div className="max-w-lg mx-auto flex items-center justify-between px-6 py-3">
-          <NavItem icon={Home} label="Home" active />
+          <NavItem icon={HomeIcon} label="Home" active />
           <NavItem icon={TrendingUp} label="Analytics" href="/sign-up" />
           
           {/* Center FAB */}

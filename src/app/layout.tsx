@@ -24,20 +24,13 @@ export const metadata: Metadata = {
     apple: "/icons/icon-192x192.png",
   },
   keywords: [
-    // Primary keywords
     'subscription tracker', 'subscription management', 'subscription manager app',
-    // Action-based keywords
     'track subscriptions', 'manage subscriptions', 'cancel subscriptions', 'subscription reminder',
-    // Problem-solving keywords
     'stop unwanted subscriptions', 'subscription budget', 'subscription spending', 'subscription cost tracker',
-    // Platform-specific
     'netflix subscription tracker', 'spotify subscription manager', 'disney plus tracker',
-    // Feature-based
     'recurring payment tracker', 'subscription analytics', 'spending insights', 'budget management',
     'subscription alerts', 'renewal reminders', 'subscription dashboard',
-    // Comparative & alternatives
     'truebill alternative', 'rocket money alternative', 'hiatus alternative', 'bobby app alternative',
-    // Long-tail keywords
     'how to track all my subscriptions', 'app to manage subscriptions', 'subscription tracking software',
     'free subscription tracker', 'subscription expense tracker', 'monthly subscription manager'
   ],
@@ -52,7 +45,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://usesubwise.app',
     title: 'SubWise - Smart Subscription Tracker & Budget Manager',
-  description: 'Track all your subscriptions, get renewal alerts, and save money. Free plan with 3 subscriptions. Plus unlocks unlimited tracking, spending analytics & smart alerts.',
+    description: 'Track all your subscriptions, get renewal alerts, and save money. Free plan with 3 subscriptions. Plus unlocks unlimited tracking, spending analytics & smart alerts.',
     siteName: 'SubWise',
     images: [{
       url: '/og-image.png',
@@ -107,21 +100,21 @@ export default function RootLayout({
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
       appearance={{
         variables: {
-          colorPrimary: "hsl(var(--primary))",
+          colorPrimary: "#1F2937",
           fontFamily: "var(--font-sans)",
         },
         elements: {
           formButtonPrimary: 
-            "bg-primary text-primary-foreground hover:bg-primary/90 text-sm normal-case font-medium",
-          card: "bg-card shadow-lg border border-border",
+            "bg-primary text-primary-foreground hover:bg-primary/90 text-sm normal-case font-semibold rounded-xl",
+          card: "bg-card shadow-lg border border-border rounded-2xl",
         },
       }}
     >
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className={`${inter.variable} font-sans antialiased`}>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="light"
             enableSystem
             disableTransitionOnChange
           >

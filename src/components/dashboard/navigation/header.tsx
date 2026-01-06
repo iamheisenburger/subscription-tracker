@@ -8,6 +8,7 @@ import { DetectionBadge } from "../detection/detection-badge";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddSubscriptionDialog } from "../add-subscription-dialog";
+import Link from "next/link";
 
 export function DashboardHeader() {
   return (
@@ -15,20 +16,25 @@ export function DashboardHeader() {
       <div className="flex h-full items-center justify-between px-6">
         {/* Logo/Brand space on mobile */}
         <div className="lg:hidden">
-          <h1 className="text-xl font-black font-sans tracking-tighter text-primary">SubWise</h1>
+          <Link href="/dashboard" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300">
+              <Plus className="w-5 h-5 text-primary-foreground stroke-[3px]" />
+            </div>
+            <h1 className="text-xl font-black font-sans tracking-tighter text-primary leading-none">SubWise</h1>
+          </Link>
         </div>
 
         {/* Desktop Title Placeholder */}
         <div className="hidden lg:block">
-          <p className="text-sm font-medium text-muted-foreground font-sans">Dashboard</p>
+          <p className="text-sm font-medium text-muted-foreground font-sans text-primary/80 font-bold uppercase tracking-widest">Dashboard</p>
         </div>
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
           {/* Add Button - Native Mobile feel */}
           <AddSubscriptionDialog>
-            <Button size="icon" className="h-10 w-10 rounded-full shadow-lg transition-transform active:scale-95 bg-primary text-primary-foreground">
-              <Plus className="h-6 w-6" />
+            <Button size="icon" className="h-10 w-10 rounded-full shadow-lg transition-transform active:scale-95 bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-6 w-6 stroke-[3px]" />
             </Button>
           </AddSubscriptionDialog>
 
@@ -48,7 +54,7 @@ export function DashboardHeader() {
             afterSignOutUrl="/"
             appearance={{
               elements: {
-                avatarBox: "w-8 h-8"
+                avatarBox: "w-8 h-8 rounded-xl ring-2 ring-primary/10"
               }
             }}
           >

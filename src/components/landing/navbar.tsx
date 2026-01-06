@@ -7,26 +7,30 @@ import { NavigationSheet } from "./navigation-sheet";
 
 export const Navbar = () => {
   return (
-    <nav className="fixed z-10 top-6 inset-x-4 h-14 xs:h-16 bg-background/50 backdrop-blur-sm border dark:border-slate-700/70 max-w-screen-xl mx-auto rounded-full">
-      <div className="h-full flex items-center justify-between mx-auto px-4">
-        <Logo />
+    <nav className="fixed z-50 top-6 inset-x-4 h-16 sm:h-20 bg-background/80 backdrop-blur-xl border border-border/50 max-w-screen-xl mx-auto rounded-3xl shadow-lg transition-all duration-300">
+      <div className="h-full flex items-center justify-between mx-auto px-6">
+        <div className="flex items-center gap-3">
+          <Logo />
+          <ThemeToggle />
+        </div>
 
         {/* Desktop Menu */}
-        <NavMenu className="hidden md:block" />
+        <NavMenu className="hidden lg:block" />
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <Link href="/sign-in">
-            <Button variant="outline" className="hidden sm:inline-flex rounded-full">
+            <Button variant="ghost" className="hidden sm:inline-flex font-bold font-sans hover:bg-primary/5 rounded-full px-6">
               Sign In
             </Button>
           </Link>
           <Link href="/sign-up">
-            <Button className="hidden sm:inline-flex rounded-full">Get Started</Button>
+            <Button className="hidden sm:inline-flex font-black font-sans rounded-full px-8 shadow-md transition-transform active:scale-95 bg-primary text-primary-foreground">
+              Get Started
+            </Button>
           </Link>
 
           {/* Mobile Menu */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <NavigationSheet />
           </div>
         </div>

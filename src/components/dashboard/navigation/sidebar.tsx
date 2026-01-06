@@ -61,9 +61,9 @@ export function DashboardSidebar() {
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
       {/* Logo */}
       <div className="flex h-20 items-center px-6 border-b border-border/50">
-        <Link href="/dashboard" className="flex items-center gap-3 group">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-            <CreditCard className="w-6 h-6 text-primary-foreground" />
+            <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
           </div>
           <span className="text-2xl font-black font-sans tracking-tighter">SubWise</span>
         </Link>

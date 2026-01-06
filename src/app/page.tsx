@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Footer } from "@/components/landing/footer";
-import { Plus, Trash2, Search, TrendingUp, Settings, Home as HomeIcon, Crown } from "lucide-react";
+import { Plus, Trash2, Search, TrendingUp, Settings, Home as HomeIcon, Crown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 
@@ -104,10 +104,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-muted flex flex-col">
       {/* Header - Clean white like mobile */}
       <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
               <Plus className="w-5 h-5 text-primary-foreground stroke-[2.5px]" />
@@ -130,7 +130,14 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg px-4 py-4 pb-24">
+      {/* Main content with proper padding for mobile nav */}
+      <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-4 pb-24 md:pb-8">
+        {/* Hero section for desktop */}
+        <div className="hidden md:block text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">Track Your Subscriptions</h1>
+          <p className="text-muted-foreground">Try it free — no sign up required for up to 3 subscriptions</p>
+        </div>
+
         {/* Search Bar - Mobile Style */}
         <div className="flex gap-3 mb-4">
           <div className="flex-1 flex items-center gap-2 bg-card rounded-xl px-4 py-3 border border-border">
@@ -160,136 +167,142 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Add Subscription Form */}
-        <div className="bg-card rounded-2xl p-4 mb-4 border border-border">
-          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                  Subscription
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="Netflix, Spotify..."
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="rounded-xl bg-muted border-0 h-12"
-                />
-              </div>
-              <div>
-                <Label htmlFor="amount" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                  Amount
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="12.99"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="rounded-xl bg-muted border-0 h-12"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                  Billing
-                </Label>
-                <Select value={cadence} onValueChange={(value) => setCadence(value as Cadence)}>
-                  <SelectTrigger className="rounded-xl bg-muted border-0 h-12">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="annual">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <Button
-              onClick={handleAdd}
-              disabled={isLimitReached}
-              className="w-full h-12 rounded-xl font-semibold text-base"
-            >
-              <Plus className="w-5 h-5 mr-2 stroke-[2.5px]" />
-              {isLimitReached ? "Free limit reached" : "Add Subscription"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Upgrade Banner */}
-        {isLimitReached && (
-          <div className="bg-card rounded-2xl p-4 mb-4 border border-warning/30">
-            <div className="flex items-start gap-3">
-              <Crown className="w-5 h-5 text-warning mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold text-sm mb-1">Free limit reached</p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Upgrade to Plus for unlimited subscriptions, analytics, and more.
-                </p>
-                <div className="flex gap-2">
-                  <Link href="/pricing" className="flex-1">
-                    <Button size="sm" className="w-full rounded-xl font-semibold">
-                      See Plus Plans
-                    </Button>
-                  </Link>
-                  <Link href="/sign-up" className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full rounded-xl font-semibold">
-                      Create Account
-                    </Button>
-                  </Link>
+        {/* Two column layout on larger screens */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Add Subscription Form */}
+          <div className="bg-card rounded-2xl p-4 border border-border h-fit">
+            <div className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Subscription
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="Netflix, Spotify..."
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="rounded-xl bg-muted border-0 h-12"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="amount" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Amount
+                  </Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="12.99"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="rounded-xl bg-muted border-0 h-12"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Billing
+                  </Label>
+                  <Select value={cadence} onValueChange={(value) => setCadence(value as Cadence)}>
+                    <SelectTrigger className="rounded-xl bg-muted border-0 h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="annual">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+              <Button
+                onClick={handleAdd}
+                disabled={isLimitReached}
+                className="w-full h-12 rounded-xl font-semibold text-base"
+              >
+                <Plus className="w-5 h-5 mr-2 stroke-[2.5px]" />
+                {isLimitReached ? "Free limit reached" : "Add Subscription"}
+              </Button>
             </div>
-          </div>
-        )}
 
-        {/* Subscription List */}
-        <div className="space-y-3">
-          {filteredItems.length === 0 ? (
-            <div className="bg-card rounded-2xl p-8 text-center border border-border">
-              <p className="font-semibold text-lg mb-1">
-                {items.length === 0 ? "No subscriptions yet" : "No matches found"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {items.length === 0 
-                  ? "Add your first subscription above"
-                  : "Try adjusting your search"}
-              </p>
-            </div>
-          ) : (
-            filteredItems.map((item) => {
-              return (
-                <div
-                  key={item.id}
-                  className="bg-card rounded-2xl p-4 flex items-center gap-3 border border-border shadow-sm"
-                >
-                  {/* Category dot placeholder */}
-                  <div className="w-3 h-3 rounded-full bg-primary/60" />
-                  
-                  {/* Info */}
+            {/* Upgrade Banner - inside form card on mobile, separate on desktop */}
+            {isLimitReached && (
+              <div className="mt-4 p-3 rounded-xl border border-warning/30 bg-warning/5">
+                <div className="flex items-start gap-3">
+                  <Crown className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-base truncate">{item.name}</p>
-                    <p className="text-sm text-muted-foreground capitalize">{item.cadence}</p>
+                    <p className="font-semibold text-sm mb-1">Free limit reached</p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Upgrade to Plus for unlimited subscriptions, analytics, and more.
+                    </p>
+                    <div className="flex gap-2">
+                      <Link href="/pricing">
+                        <Button size="sm" className="rounded-xl font-semibold text-xs">
+                          See Plus Plans
+                        </Button>
+                      </Link>
+                      <Link href="/sign-up">
+                        <Button size="sm" variant="outline" className="rounded-xl font-semibold text-xs">
+                          Create Account
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-
-                  {/* Cost */}
-                  <div className="text-right">
-                    <p className="font-bold text-base">{formatCurrency(item.amount)}</p>
-                    <p className="text-xs text-muted-foreground">{getCycleLabel(item.cadence)}</p>
-                  </div>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleRemove(item.id)}
-                    className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
                 </div>
-              );
-            })
-          )}
+              </div>
+            )}
+          </div>
+
+          {/* Subscription List */}
+          <div className="space-y-3">
+            {filteredItems.length === 0 ? (
+              <div className="bg-card rounded-2xl p-8 text-center border border-border">
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="font-semibold text-lg mb-1">
+                  {items.length === 0 ? "No subscriptions yet" : "No matches found"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {items.length === 0 
+                    ? "Add your first subscription to get started"
+                    : "Try adjusting your search"}
+                </p>
+              </div>
+            ) : (
+              filteredItems.map((item) => {
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-card rounded-2xl p-4 flex items-center gap-3 border border-border shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {/* Category dot placeholder */}
+                    <div className="w-3 h-3 rounded-full bg-primary/60 flex-shrink-0" />
+                    
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-base truncate">{item.name}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{item.cadence}</p>
+                    </div>
+
+                    {/* Cost */}
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-base">{formatCurrency(item.amount)}</p>
+                      <p className="text-xs text-muted-foreground">{getCycleLabel(item.cadence)}</p>
+                    </div>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleRemove(item.id)}
+                      className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors flex-shrink-0"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* CTA Section */}
@@ -316,8 +329,8 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Bottom Navigation - Mobile App Style */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border pb-safe">
+      {/* Bottom Navigation - Mobile Only */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border pb-safe md:hidden">
         <div className="max-w-lg mx-auto flex items-center justify-between px-6 py-3">
           <NavItem icon={HomeIcon} label="Home" active />
           <NavItem icon={TrendingUp} label="Analytics" href="/sign-up" />

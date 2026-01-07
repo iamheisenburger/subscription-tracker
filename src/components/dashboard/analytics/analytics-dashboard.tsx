@@ -6,11 +6,10 @@ import { api } from "../../../../convex/_generated/api";
 import { SpendingTrendsChart } from "./spending-trends-chart";
 import { CategoryBreakdownChart } from "./category-breakdown-chart";
 import { BillingCycleChart } from "./billing-cycle-chart";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Calendar, Target, DollarSign } from "lucide-react";
+import { TrendingUp, Calendar, CreditCard } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 
 interface AnalyticsDashboardProps {
   userId: string;
@@ -19,7 +18,6 @@ interface AnalyticsDashboardProps {
 export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
   const [currency, setCurrency] = useState("USD");
 
-  // Get user's preferred currency from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const preferred = localStorage.getItem('preferred-currency') || 'USD';
@@ -27,7 +25,6 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     }
   }, []);
 
-  // Currency conversion enabled - now deployed to correct production Convex
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
     targetCurrency: currency,
@@ -40,16 +37,16 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
   if (!analytics || analytics.totalSubscriptions === 0) {
     return (
       <div className="text-center py-12">
-        <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
-          <TrendingUp className="h-12 w-12 text-muted-foreground" />
+        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+          <TrendingUp className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-semibold mb-2 font-sans">No Data Available</h3>
-        <p className="text-muted-foreground mb-6 font-sans">
-          Add some subscriptions to see your analytics and spending insights.
+        <h3 className="text-xl font-bold mb-2">No Data Available</h3>
+        <p className="text-muted-foreground mb-6">
+          Add some subscriptions to see your analytics.
         </p>
         <a 
           href="/dashboard" 
-          className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-sans hover:bg-primary/90"
+          className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
         >
           Add Your First Subscription
         </a>
@@ -66,179 +63,205 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     cycleBreakdown,
     upcomingRenewals,
     averagePerSubscription,
-    currency: responseCurrency, // Currency from backend response
+    currency: responseCurrency,
   } = analytics;
 
-  // Use backend's converted currency or user preference
   const displayCurrency = responseCurrency || currency;
 
   return (
-    <div className="space-y-8">
-      {/* Key Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-sans">Total Subscriptions</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-sans">{totalSubscriptions}</div>
-            <p className="text-xs text-muted-foreground font-sans">
-              Active subscriptions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-sans">Monthly Spend</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-sans">{formatCurrency(monthlyTotal, displayCurrency)}</div>
-            <p className="text-xs text-muted-foreground font-sans">
-              Per month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-sans">Yearly Projection</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-sans">{formatCurrency(yearlyTotal, displayCurrency)}</div>
-            <p className="text-xs text-muted-foreground font-sans">
-              Annual total
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-sans">Upcoming Renewals</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-sans">{upcomingRenewals}</div>
-            <p className="text-xs text-muted-foreground font-sans">
-              Next 30 days
-            </p>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      {/* Quick Stats - Mobile app style */}
+      <div className="bg-card rounded-2xl p-5 border border-border">
+        <div className="flex items-center">
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-bold">{totalSubscriptions}</p>
+            <p className="text-xs text-muted-foreground font-medium">Subscriptions</p>
+          </div>
+          <div className="w-px h-10 bg-border mx-4" />
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-bold">{formatCurrency(averagePerSubscription, displayCurrency)}</p>
+            <p className="text-xs text-muted-foreground font-medium">Avg Monthly</p>
+          </div>
+        </div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-8 lg:grid-cols-2">
+      {/* Upcoming Renewals */}
+      {upcomingRenewals > 0 && (
+        <div className="bg-card rounded-2xl border border-border">
+          <div className="p-4 border-b border-border">
+            <h2 className="text-lg font-bold">Next 3 Months</h2>
+          </div>
+          <div className="p-4">
+            <RenewalsList userId={userId} currency={displayCurrency} />
+          </div>
+        </div>
+      )}
+
+      {/* Category Breakdown */}
+      {categoryBreakdown.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border">
+          <div className="p-4 border-b border-border">
+            <h2 className="text-lg font-bold">Monthly Breakdown</h2>
+          </div>
+          <div className="p-4">
+            <div className="space-y-3">
+              {categoryBreakdown.map((item, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between py-3 border-b border-border last:border-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: getCategoryColor(item.category) }}
+                    />
+                    <span className="font-semibold text-[15px]">{item.category}</span>
+                  </div>
+                  <span className="font-bold text-[15px]">
+                    {formatCurrency(item.amount, displayCurrency)}/mo
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="lg:col-span-2">
           <SpendingTrendsChart data={spendingTrends} currency={displayCurrency} />
         </div>
-        
         <CategoryBreakdownChart data={categoryBreakdown} currency={displayCurrency} />
-        
         <BillingCycleChart data={cycleBreakdown} currency={displayCurrency} />
       </div>
 
-      {/* Insights Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-sans">Spending Insights</CardTitle>
-          <CardDescription className="font-sans">
-            Key insights about your subscription spending
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="font-sans">Average</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground font-sans">
-                You spend <span className="font-semibold text-foreground">{formatCurrency(averagePerSubscription, displayCurrency)}</span> per subscription on average
+      {/* Recommendations */}
+      <div className="bg-card rounded-2xl border border-border">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-bold">Recommendations</h2>
+        </div>
+        <div className="p-4 space-y-3">
+          {categoryBreakdown.length > 0 && (
+            <div className="bg-muted/50 rounded-xl p-4 border-l-4 border-primary">
+              <h4 className="font-bold text-[15px] mb-1">Top Spending Category</h4>
+              <p className="text-sm text-muted-foreground">
+                {categoryBreakdown[0].category} accounts for {formatCurrency(categoryBreakdown[0].amount, displayCurrency)} monthly. Consider reviewing these subscriptions.
               </p>
             </div>
-
-            {categoryBreakdown.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="font-sans">Top Category</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground font-sans">
-                  <span className="font-semibold text-foreground">{categoryBreakdown[0].category}</span> accounts for {formatCurrency(categoryBreakdown[0].amount, displayCurrency)} monthly
-                </p>
-              </div>
-            )}
-
-            {cycleBreakdown.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="font-sans">Billing</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground font-sans">
-                  Most subscriptions are billed <span className="font-semibold text-foreground">{cycleBreakdown[0].cycle.toLowerCase()}</span>
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )}
+          {averagePerSubscription > 15 && (
+            <div className="bg-muted/50 rounded-xl p-4 border-l-4 border-warning">
+              <h4 className="font-bold text-[15px] mb-1">High Average Cost</h4>
+              <p className="text-sm text-muted-foreground">
+                Your average subscription cost is {formatCurrency(averagePerSubscription, displayCurrency)}. Look for bundle deals or family plans to save.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
+function RenewalsList({ userId, currency }: { userId: string; currency: string }) {
+  const subscriptions = useQuery(api.subscriptions.getSubscriptions, { clerkId: userId });
+  
+  if (!subscriptions) return null;
+
+  const now = new Date();
+  const renewals = subscriptions
+    .filter(sub => sub.status === "active")
+    .map(sub => ({
+      ...sub,
+      daysUntil: Math.ceil((sub.nextBillingDate - now.getTime()) / (1000 * 60 * 60 * 24))
+    }))
+    .filter(sub => sub.daysUntil >= 0 && sub.daysUntil <= 90)
+    .sort((a, b) => a.daysUntil - b.daysUntil)
+    .slice(0, 5);
+
+  return (
+    <div className="space-y-3">
+      {renewals.map((renewal) => (
+        <div 
+          key={renewal._id}
+          className="flex items-center justify-between py-3 border-b border-border last:border-0"
+        >
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: getCategoryColor(renewal.category || 'other') }}
+            />
+            <div>
+              <p className="font-semibold text-[15px]">{renewal.name}</p>
+              <p className="text-sm font-bold">{formatCurrency(renewal.cost, currency)}</p>
+            </div>
+          </div>
+          <span className={cn(
+            "text-sm font-semibold",
+            renewal.daysUntil <= 3 ? "text-destructive" : "text-muted-foreground"
+          )}>
+            {renewal.daysUntil === 0 ? "Today" : 
+             renewal.daysUntil === 1 ? "1 day" : 
+             `${renewal.daysUntil} days`}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  streaming: '#E63946',
+  music: '#F77F00',
+  productivity: '#06A77D',
+  fitness: '#2A9D8F',
+  gaming: '#7209B7',
+  news: '#457B9D',
+  cloud: '#3A86FF',
+  other: '#6C757D',
+  entertainment: '#E63946',
+  utilities: '#06A77D',
+  software: '#3A86FF',
+  education: '#457B9D',
+  finance: '#10B981',
+  health: '#2A9D8F',
+  food: '#F77F00',
+  shopping: '#7209B7',
+  travel: '#3A86FF',
+  social: '#E63946',
+};
+
+function getCategoryColor(category: string): string {
+  return CATEGORY_COLORS[category.toLowerCase()] || CATEGORY_COLORS.other;
+}
+
 function AnalyticsSkeleton() {
   return (
-    <div className="space-y-8">
-      {/* Key Metrics Skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4 rounded" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-16 mb-1" />
-              <Skeleton className="h-3 w-20" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Charts Skeleton */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-[300px] w-full" />
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      <div className="bg-card rounded-2xl p-5 border border-border">
+        <div className="flex items-center">
+          <div className="flex-1 text-center">
+            <Skeleton className="h-8 w-12 mx-auto mb-1" />
+            <Skeleton className="h-3 w-20 mx-auto" />
+          </div>
+          <div className="w-px h-10 bg-border mx-4" />
+          <div className="flex-1 text-center">
+            <Skeleton className="h-8 w-16 mx-auto mb-1" />
+            <Skeleton className="h-3 w-20 mx-auto" />
+          </div>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[250px] w-full" />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[200px] w-full" />
-          </CardContent>
-        </Card>
+      </div>
+      
+      <div className="bg-card rounded-2xl border border-border">
+        <div className="p-4 border-b border-border">
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <div className="p-4 space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
       </div>
     </div>
   );

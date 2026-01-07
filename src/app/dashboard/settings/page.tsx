@@ -22,14 +22,13 @@ export default async function SettingsPage() {
     : null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-sans tracking-tight">Settings</h1>
-          <p className="text-muted-foreground font-sans">
-            Manage your account preferences and subscription settings.
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header - Mobile app style */}
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <h1 className="text-2xl font-bold tracking-tight mb-1">Settings</h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your account preferences and subscription settings.
+        </p>
       </div>
 
       <SettingsTabs user={safeUser} userId={userId} />

@@ -91,6 +91,13 @@ export function EditSubscriptionDialog({ subscription, children, open: openProp,
     form.setValue("nextBillingDate", newDate);
   };
 
+  const adjustMonth = (increment: number) => {
+    const currentDate = form.getValues("nextBillingDate");
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + increment);
+    form.setValue("nextBillingDate", newDate);
+  };
+
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
@@ -226,34 +233,67 @@ export function EditSubscriptionDialog({ subscription, children, open: openProp,
                 )}
               />
 
-              {/* Next Billing Date - Simple arrow-based picker */}
+              {/* Next Billing Date - month + day controls to match mobile app */}
               <FormField
                 control={form.control}
                 name="nextBillingDate"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
                     <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">Next Renewal Date</FormLabel>
-                    <div className="bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#374151] rounded-xl p-4">
+                    <div className="bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#2A3038] rounded-xl p-4 space-y-3 shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => adjustMonth(-1)}
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Previous month"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                        </button>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-sm text-[#6C757D] dark:text-[#9CA3AF]">Month</span>
+                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">
+                            {field.value.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => adjustMonth(1)}
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Next month"
+                        >
+                          <ChevronRight className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                        </button>
+                      </div>
+
                       <div className="flex items-center justify-between">
                         <button
                           type="button"
                           onClick={() => adjustDay(-1)}
-                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] flex items-center justify-center transition-colors"
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Previous day"
                         >
                           <ChevronLeft className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
                         </button>
                         <div className="flex items-center gap-3">
                           <CalendarIcon className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
-                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">{formatDate(field.value)}</span>
+                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">
+                            {formatDate(field.value)}
+                          </span>
                         </div>
                         <button
                           type="button"
                           onClick={() => adjustDay(1)}
-                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] flex items-center justify-center transition-colors"
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Next day"
                         >
                           <ChevronRight className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
                         </button>
                       </div>
+
+                      <p className="text-center text-sm text-[#6C757D] dark:text-[#9CA3AF]">
+                        Selected: {formatDate(field.value)}
+                      </p>
                     </div>
                     <FormMessage className="text-xs font-medium px-1" />
                   </FormItem>

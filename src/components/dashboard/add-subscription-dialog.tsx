@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -123,6 +124,12 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
   const adjustDay = (increment: number) => {
     const newDate = new Date(renewalDate);
     newDate.setDate(newDate.getDate() + increment);
+    setRenewalDate(newDate);
+  };
+
+  const adjustMonth = (increment: number) => {
+    const newDate = new Date(renewalDate);
+    newDate.setMonth(newDate.getMonth() + increment);
     setRenewalDate(newDate);
   };
 
@@ -239,7 +246,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                 {/* Next Renewal Date Toggle - Mobile app style: renewalHeader */}
                 <div className="space-y-3">
                   <div 
-                    className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#374151] cursor-pointer hover:bg-[#F9FAFB] dark:hover:bg-[#1A1F26] transition-colors"
+                    className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-[#111821] border border-[#E5E7EB] dark:border-[#2A3038] cursor-pointer hover:bg-[#F9FAFB] dark:hover:bg-[#1A1F26] transition-colors"
                     onClick={() => setIncludeRenewalDate(!includeRenewalDate)}
                   >
                     <div className="space-y-0.5">
@@ -255,27 +262,60 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
 
                   {/* Date Picker - Mobile app style: webDatePicker */}
                   {includeRenewalDate && (
-                    <div className="bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#374151] rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#2A3038] rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 space-y-3 shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => adjustMonth(-1)}
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Previous month"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                        </button>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-sm text-[#6C757D] dark:text-[#9CA3AF]">Month</span>
+                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">
+                            {renewalDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => adjustMonth(1)}
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Next month"
+                        >
+                          <ChevronRight className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                        </button>
+                      </div>
+
                       <div className="flex items-center justify-between">
                         <button
                           type="button"
                           onClick={() => adjustDay(-1)}
-                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] flex items-center justify-center transition-colors"
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Previous day"
                         >
                           <ChevronLeft className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
                         </button>
                         <div className="flex items-center gap-3">
                           <Calendar className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
-                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">{formatDate(renewalDate)}</span>
+                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">
+                            {formatDate(renewalDate)}
+                          </span>
                         </div>
                         <button
                           type="button"
                           onClick={() => adjustDay(1)}
-                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] flex items-center justify-center transition-colors"
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-[#2D3641] flex items-center justify-center transition-colors border border-[#E5E7EB] dark:border-[#2A3038]"
+                          aria-label="Next day"
                         >
                           <ChevronRight className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
                         </button>
                       </div>
+
+                      <p className="text-center text-sm text-[#6C757D] dark:text-[#9CA3AF]">
+                        Selected: {formatDate(renewalDate)}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -322,6 +362,27 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                     </FormItem>
                   )}
                 />
+
+              {/* Notes (Optional) - matches mobile app */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">
+                      Notes (Optional)
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Add any notes about this subscription..."
+                        className="min-h-[88px] rounded-xl bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#2A3038] focus-visible:border-[#1F2937] dark:focus-visible:border-[#F3F4F6] focus-visible:ring-0 text-base text-[#1F2937] dark:text-[#F3F4F6] placeholder:text-[#9CA3AF] px-4 py-3"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs font-medium px-1" />
+                  </FormItem>
+                )}
+              />
 
                 {/* Submit Button - Mobile app style: submitButton */}
                 <div className="pt-4">

@@ -2,19 +2,24 @@
 
 import { useState } from "react";
 import { useMutation } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Trash2, Calendar, MoreHorizontal, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { useCurrency } from "@/hooks/use-currency";
-import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  CreditCard,
+  Edit,
+  Trash2,
+  Pause,
+  Play,
+  MoreVertical,
+  Calendar,
+  TrendingUp,
+  HelpCircle,
+  ExternalLink,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,174 +30,322 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { formatCurrency } from "@/lib/currency";
+import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { EditSubscriptionDialog } from "./edit-subscription-dialog";
-
-// Category colors matching mobile app
-const CATEGORY_COLORS: Record<string, string> = {
-  streaming: '#E63946',
-  music: '#F77F00',
-  productivity: '#06A77D',
-  fitness: '#2A9D8F',
-  gaming: '#7209B7',
-  news: '#457B9D',
-  cloud: '#3A86FF',
-  other: '#6C757D',
-  entertainment: '#E63946',
-  utilities: '#06A77D',
-  software: '#3A86FF',
-  education: '#457B9D',
-  finance: '#10B981',
-  health: '#2A9D8F',
-  food: '#F77F00',
-  shopping: '#7209B7',
-  travel: '#3A86FF',
-  social: '#E63946',
-};
+import { FeatureBadge, FeatureBadgesContainer } from "./feature-badge";
+import { useUserTier } from "@/hooks/use-user-tier";
+import { CancelAssistantModal } from "./cancel-assistant-modal";
+import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
+import Link from "next/link";
+import { getPlaybook } from "@/lib/cancel-playbooks";
 
 interface SubscriptionCardProps {
-  subscription: {
-    _id: Id<"subscriptions">;
-    name: string;
-    cost: number;
-    currency: string;
-    billingCycle: string;
-    nextBillingDate: number;
-    category?: string;
-    status: string;
-  };
+  subscription: Doc<"subscriptions">;
+  showCategory?: boolean;
+  currency?: string;
+  hasDuplicateAlert?: boolean;
 }
 
-export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+export function SubscriptionCard({
+  subscription,
+  showCategory = true,
+  currency = "USD",
+  hasDuplicateAlert,
+}: SubscriptionCardProps) {
+  const { user } = useUser();
+  const { tier } = useUserTier();
+  const isMobile = useIsMobile();
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  // Optimistic UI state
+  const [optimisticActive, setOptimisticActive] = useState<boolean | null>(null);
+  
+  // Mutations
   const deleteSubscription = useMutation(api.subscriptions.deleteSubscription);
-  const { formatAmount, convertAmount } = useCurrency();
+  const toggleStatus = useMutation(api.subscriptions.toggleSubscriptionStatus);
 
   const handleDelete = async () => {
+    if (!user?.id) return;
+    setIsDeleting(true);
     try {
-      await deleteSubscription({ id: subscription._id });
-      toast.success("Subscription deleted");
+      await deleteSubscription({
+        clerkId: user.id,
+        subscriptionId: subscription._id as Id<"subscriptions">,
+      });
+      toast.success("Subscription deleted successfully!");
     } catch (error) {
-      toast.error("Failed to delete subscription");
+      console.error("Error deleting subscription:", error);
+      toast.error("Failed to delete subscription. Please try again.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
-  const categoryColor = CATEGORY_COLORS[subscription.category?.toLowerCase() || 'other'] || CATEGORY_COLORS.other;
+  const handleTogglePause = async () => {
+    if (!user?.id || isToggling) return;
+
+    const newStatus = !subscription.isActive;
+
+    // OPTIMISTIC UPDATE: Change UI immediately
+    setOptimisticActive(newStatus);
+    setIsToggling(true);
+
+    try {
+      await toggleStatus({
+        clerkId: user.id,
+        subscriptionId: subscription._id as Id<"subscriptions">,
+        isActive: newStatus,
+      });
+      toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
+    } catch (error) {
+      console.error("Error toggling subscription:", error);
+      // ROLLBACK on error
+      setOptimisticActive(subscription.isActive);
+      toast.error("Failed to update subscription status.");
+    } finally {
+      setIsToggling(false);
+      // Clear optimistic state after mutation completes
+      setTimeout(() => setOptimisticActive(null), 100);
+    }
+  };
+
+  const handleExportToCalendar = () => {
+    try {
+      exportSubscriptionToCalendar(subscription);
+      toast.success(`${subscription.name} added to calendar!`);
+    } catch (error) {
+      console.error("Error exporting to calendar:", error);
+      toast.error("Failed to export to calendar.");
+    }
+  };
   
-  const getCycleLabel = (cycle: string) => {
-    const labels: Record<string, string> = {
-      daily: '/day',
-      weekly: '/week',
-      monthly: '/month',
-      yearly: '/year',
-    };
-    return labels[cycle] || '/month';
-  };
+  // Use optimistic state if available, otherwise use real state
+  const displayActive = optimisticActive !== null ? optimisticActive : subscription.isActive;
 
-  // Calculate days until renewal
-  const getDaysUntilRenewal = (): number => {
-    const now = new Date();
-    const renewal = new Date(subscription.nextBillingDate);
-    now.setHours(0, 0, 0, 0);
-    renewal.setHours(0, 0, 0, 0);
-    const diff = renewal.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
+  // Format cost with user's preferred currency
+  const resolvedCurrency = currency || subscription.currency || "USD";
+  const formattedCost = formatCurrency(subscription.cost, resolvedCurrency);
 
-  const daysUntil = getDaysUntilRenewal();
-  const isUpcoming = daysUntil <= 3 && daysUntil >= 0;
-  const renewalDate = new Date(subscription.nextBillingDate);
+  const cancellationPlaybook = getPlaybook(subscription.name);
 
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  // Determine which feature badges to show (only for Automate users)
+  const isAutomate = tier === "automate_1";
+  const isManual = subscription.source === "manual" || !subscription.source;
+  const showFeatureBadges =
+    isAutomate &&
+    (subscription.source === "detected" ||
+      subscription.detectionConfidence ||
+      subscription.predictedCadence ||
+      subscription.predictionConfidence ||
+      isManual); // Show price tracking badge for manual entries
 
   return (
     <>
-      <div className="bg-muted/50 rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-        {/* Category dot */}
-        <div 
-          className="w-3 h-3 rounded-full flex-shrink-0" 
-          style={{ backgroundColor: categoryColor }}
-        />
-        
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-base truncate">{subscription.name}</p>
-          <p className="text-sm text-muted-foreground capitalize">
-            {subscription.category || 'Other'}
-          </p>
-        </div>
-
-        {/* Renewal badge */}
-        <div className="flex flex-col items-center">
-          <div className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium",
-            isUpcoming ? "bg-destructive/10 text-destructive" : "bg-background text-muted-foreground"
-          )}>
-            <Calendar className="w-3 h-3" />
-            {formatDate(renewalDate)}
+      <div className="group flex items-center justify-between p-4 bg-muted/20 rounded-xl hover:bg-muted/30 transition-all duration-200">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span className="text-lg font-bold text-primary">
+              {subscription.name.charAt(0).toUpperCase()}
+            </span>
           </div>
-          <span className={cn(
-            "text-[10px] mt-0.5",
-            isUpcoming ? "text-destructive font-medium" : "text-muted-foreground"
-          )}>
-            {daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : daysUntil < 0 ? "Overdue" : `${daysUntil} days`}
-          </span>
-        </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm truncate">{subscription.name}</h3>
+            <p className="text-xs text-muted-foreground">
+              {format(subscription.nextBillingDate, "MMM dd")} • {subscription.billingCycle}
+            </p>
+            {showCategory && subscription.category && (
+              <Badge variant="secondary" className="mt-1 text-xs rounded-md bg-accent/40">
+                {subscription.category}
+              </Badge>
+            )}
+            {showFeatureBadges && (
+              <FeatureBadgesContainer>
+                {/* Auto-detected badge - only for detected subscriptions */}
+                {subscription.source === "detected" && (
+                  <Link href={`/dashboard/insights?sub=${subscription._id}&tab=activity`}>
+                    <FeatureBadge
+                      type="auto-detected"
+                      confidence={subscription.detectionConfidence}
+                      clickable
+                    />
+                  </Link>
+                )}
 
-        {/* Cost */}
-        <div className="text-right flex-shrink-0">
-          <p className="font-bold text-base">
-            {formatAmount(convertAmount(subscription.cost, subscription.currency))}
-          </p>
-          <p className="text-xs text-muted-foreground">{getCycleLabel(subscription.billingCycle)}</p>
-        </div>
+                {/* Price tracked - show for ALL Automate subscriptions (manual or detected) */}
+                {isAutomate && (
+                  <Link href={`/dashboard/insights?sub=${subscription._id}&tab=price-history`}>
+                    <FeatureBadge type="price-tracked" clickable />
+                  </Link>
+                )}
 
-        {/* Actions */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => setShowDeleteDialog(true)}
-              className="text-destructive focus:text-destructive"
+                {/* Renewal predicted - show when prediction exists */}
+                {subscription.predictedCadence && subscription.predictionConfidence && (
+                  <Link href={`/dashboard/insights?tab=predictions`}>
+                    <FeatureBadge
+                      type="renewal-predicted"
+                      confidence={subscription.predictionConfidence}
+                      clickable
+                    />
+                  </Link>
+                )}
+
+                {/* Duplicate protection - only when we have an unread duplicate alert for this subscription */}
+                {isAutomate && hasDuplicateAlert && (
+                  <Link href={`/dashboard/insights?tab=alerts&sub=${subscription._id}`}>
+                    <FeatureBadge type="duplicate-alert" clickable />
+                  </Link>
+                )}
+              </FeatureBadgesContainer>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="font-semibold text-sm">
+              {formattedCost}
+            </div>
+            <Badge 
+              className={`text-xs rounded-md ${
+                displayActive 
+                  ? 'bg-success/10 text-success border-success/30' 
+                  : 'bg-muted text-muted-foreground'
+              }`}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {displayActive ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+
+          {/* Actions Dropdown (Mobile & Desktop) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 rounded-lg ${isMobile ? "" : "opacity-0 group-hover:opacity-100 transition-opacity"}`}
+              >
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">More actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-xl">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              {/* Automate Tier Actions (if applicable) */}
+              {isAutomate && (
+                <>
+                  <Link href={`/dashboard/insights?sub=${subscription._id}`}>
+                    <DropdownMenuItem>
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      View Insights
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuItem onSelect={handleExportToCalendar}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Export to Calendar
+                  </DropdownMenuItem>
+                  {cancellationPlaybook?.cancellationUrl && (
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        window.open(cancellationPlaybook.cancellationUrl, "_blank", "noopener,noreferrer");
+                      }}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Manage on {cancellationPlaybook.service}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onSelect={() => setShowCancelDialog(true)}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Need cancellation help
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {/* Standard Actions */}
+              <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={handleTogglePause}
+                disabled={isToggling}
+              >
+                {displayActive ? (
+                  <>
+                    <Pause className="mr-2 h-4 w-4" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Resume
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onSelect={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Subscription</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {subscription.name}? This action cannot be undone.
+              Are you sure you want to delete <strong>{subscription.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Edit Dialog */}
       <EditSubscriptionDialog
         subscription={subscription}
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
+      />
+
+      {/* Cancel Assistant Modal */}
+      <CancelAssistantModal
+        subscription={subscription}
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
       />
     </>
   );

@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header - Mobile App Style */}
+      {/* Welcome Header - Mobile app style */}
       <div className="bg-card rounded-2xl p-6 border border-border">
         <h1 className="text-2xl font-bold tracking-tight mb-1">
           Hi, {user?.firstName || "there"}!
@@ -45,6 +45,7 @@ export default async function DashboardPage() {
       <AutomateDetectionQueue />
 
       {/* Conditional CTAs based on tier and bank status */}
+      {/* UpgradeBanner for Free/Plus users */}
       <UpgradeBanner />
 
       {/* Savings Celebration */}
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
       {/* Mobile Annual Upgrade CTA */}
       <MobileAnnualCTA />
 
-      {/* Main Content - Stacked on mobile, side by side on desktop */}
+      {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <RecentSubscriptions userId={userId} />

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -23,15 +22,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -90,7 +82,6 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
     if (!user?.id) return;
 
     try {
-      // Calculate next billing date based on renewal date or today
       const nextBillingDate = includeRenewalDate 
         ? renewalDate.getTime() 
         : new Date().getTime();
@@ -129,12 +120,6 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
     }
   };
 
-  const adjustMonth = (increment: number) => {
-    const newDate = new Date(renewalDate);
-    newDate.setMonth(newDate.getMonth() + increment);
-    setRenewalDate(newDate);
-  };
-
   const adjustDay = (increment: number) => {
     const newDate = new Date(renewalDate);
     newDate.setDate(newDate.getDate() + increment);
@@ -151,53 +136,27 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px] rounded-2xl">
+        <DialogContent className="sm:max-w-[425px] rounded-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Add Subscription</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Track a new recurring expense.
-            </DialogDescription>
+            <DialogTitle className="text-xl font-bold text-center">Add Subscription</DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Name */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* Cost - Mobile app style (cost first) */}
               <FormField
                 control={form.control}
-                name="name"
+                name="cost"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      Subscription Name
-                    </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Netflix, Spotify, etc." 
-                        className="rounded-xl bg-muted border-0 h-12" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Cost & Currency */}
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="cost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Cost
-                      </FormLabel>
-                      <FormControl>
+                      <div className="flex items-center bg-muted rounded-xl px-4 h-14">
+                        <span className="text-xl font-semibold text-muted-foreground mr-2">$</span>
                         <Input
                           type="number"
                           step="0.01"
                           min="0"
-                          placeholder="9.99"
-                          className="rounded-xl bg-muted border-0 h-12"
+                          placeholder="0.00"
+                          className="border-0 bg-transparent text-xl font-semibold h-full p-0 focus-visible:ring-0"
                           value={field.value || ""}
                           onChange={(e) => {
                             const value = e.target.value;
@@ -211,61 +170,40 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                             }
                           }}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Currency
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-muted border-0 h-12">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                          <SelectItem value="CAD">CAD (C$)</SelectItem>
-                          <SelectItem value="AUD">AUD (A$)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {/* Billing Cycle */}
+              {/* Billing Cycle - 4 buttons like mobile app */}
               <FormField
                 control={form.control}
                 name="billingCycle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      Billing Cycle
-                    </FormLabel>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["weekly", "monthly", "yearly"].map((cycle) => (
+                    <FormLabel className="text-base font-semibold">Billing Cycle</FormLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["daily", "weekly", "monthly", "yearly"].map((cycle) => (
                         <button
                           key={cycle}
                           type="button"
-                          onClick={() => field.onChange(cycle)}
+                          onClick={() => {
+                            // Only allow weekly, monthly, yearly in the actual form value
+                            if (cycle !== "daily") {
+                              field.onChange(cycle);
+                            }
+                          }}
                           className={cn(
-                            "py-3 px-2 rounded-xl text-sm font-semibold transition-colors border-2",
+                            "py-4 px-4 rounded-xl text-sm font-semibold transition-colors border-2",
                             field.value === cycle
                               ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-muted text-muted-foreground border-transparent hover:border-border"
+                              : cycle === "daily"
+                              ? "bg-muted/50 text-muted-foreground/50 border-transparent cursor-not-allowed"
+                              : "bg-card text-muted-foreground border-border hover:border-primary/50"
                           )}
+                          disabled={cycle === "daily"}
                         >
                           {cycle.charAt(0).toUpperCase() + cycle.slice(1)}
                         </button>
@@ -276,135 +214,95 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                 )}
               />
 
-              {/* Renewal Date Toggle */}
-              <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
-                <div>
-                  <p className="text-sm font-medium">Next Renewal Date</p>
-                  <p className="text-xs text-muted-foreground">Track when payment is due</p>
+              {/* Next Renewal Date Toggle */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-base font-semibold">Next Renewal Date</p>
+                    <p className="text-sm text-muted-foreground">Track when payment is due (optional)</p>
+                  </div>
+                  <Switch
+                    checked={includeRenewalDate}
+                    onCheckedChange={setIncludeRenewalDate}
+                  />
                 </div>
-                <Switch
-                  checked={includeRenewalDate}
-                  onCheckedChange={setIncludeRenewalDate}
-                />
+
+                {/* Date Picker - Shows when toggle is ON */}
+                {includeRenewalDate && (
+                  <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => adjustDay(-1)}
+                          className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="font-semibold">{formatDate(renewalDate)}</span>
+                        <button
+                          type="button"
+                          onClick={() => adjustDay(1)}
+                          className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Date Picker */}
-              {includeRenewalDate && (
-                <div className="bg-muted rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => adjustMonth(-1)}
-                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <span className="font-semibold">
-                      {renewalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => adjustMonth(1)}
-                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => adjustDay(-1)}
-                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <span className="text-4xl font-bold">{renewalDate.getDate()}</span>
-                    <button
-                      type="button"
-                      onClick={() => adjustDay(1)}
-                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <p className="text-center text-sm text-muted-foreground">
-                    Selected: {formatDate(renewalDate)}
-                  </p>
-                </div>
-              )}
-
-              {/* Category */}
+              {/* Category - List of buttons like mobile app */}
               <FormField
                 control={form.control}
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      Category
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="rounded-xl bg-muted border-0 h-12">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CATEGORIES.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: cat.color }}
-                              />
-                              {cat.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel className="text-base font-semibold">Category</FormLabel>
+                    <div className="space-y-2">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => field.onChange(cat.value)}
+                          className={cn(
+                            "w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-colors text-left",
+                            field.value === cat.value
+                              ? "border-current bg-card"
+                              : "border-border bg-card hover:border-border/80"
+                          )}
+                          style={{
+                            borderColor: field.value === cat.value ? cat.color : undefined
+                          }}
+                        >
+                          <div 
+                            className="w-4 h-4 rounded-full" 
+                            style={{ backgroundColor: cat.color }}
+                          />
+                          <span className={cn(
+                            "font-medium",
+                            field.value === cat.value ? "text-foreground" : "text-muted-foreground"
+                          )}>
+                            {cat.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Notes */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      Notes (Optional)
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Additional notes..." 
-                        className="rounded-xl bg-muted border-0 h-12" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  className="flex-1 rounded-xl h-12 font-semibold"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="flex-1 rounded-xl h-12 font-semibold"
-                >
-                  Add Subscription
-                </Button>
-              </div>
+              {/* Submit Button - Full width at bottom */}
+              <Button 
+                type="submit" 
+                className="w-full rounded-xl h-14 font-semibold text-base"
+                disabled={!form.watch("cost") || form.watch("cost") <= 0}
+              >
+                Add Subscription
+              </Button>
             </form>
           </Form>
         </DialogContent>

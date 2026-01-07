@@ -11,6 +11,7 @@ import { ScanConsole } from "@/components/dashboard/automate/scan-console";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
 import { GmailConnectionToast } from "@/components/dashboard/gmail-connection-toast";
+import { DashboardFAB } from "@/components/dashboard/dashboard-fab";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -21,7 +22,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Welcome Header - Mobile app style */}
       <div className="bg-card rounded-2xl p-6 border border-border">
         <h1 className="text-2xl font-bold tracking-tight mb-1">
@@ -69,6 +70,9 @@ export default async function DashboardPage() {
           <UpcomingRenewals userId={userId} />
         </div>
       </div>
+
+      {/* Floating Action Button for adding subscriptions */}
+      <DashboardFAB />
     </div>
   );
 }

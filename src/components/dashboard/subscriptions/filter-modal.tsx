@@ -1,12 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +15,7 @@ const CATEGORIES = [
   { value: 'other', label: 'Other', color: '#6C757D' },
 ];
 
-const BILLING_CYCLES = ['weekly', 'monthly', 'yearly'];
+const BILLING_CYCLES = ['daily', 'weekly', 'monthly', 'yearly'];
 
 const SORT_OPTIONS = [
   { value: 'name', label: 'Name' },
@@ -53,21 +47,28 @@ export function FilterModal({
   onCycleToggle,
   onClearAll,
 }: FilterModalProps) {
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] rounded-t-3xl sm:rounded-2xl p-0 gap-0">
+    <div className="fixed inset-0 z-50">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50"
+        onClick={() => onOpenChange(false)}
+      />
+      
+      {/* Modal - slides up from bottom on mobile */}
+      <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-3xl max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[400px] sm:rounded-2xl sm:w-full">
         {/* Header */}
-        <DialogHeader className="flex flex-row items-center justify-between p-5 border-b border-border">
-          <DialogTitle className="text-xl font-bold">Filter & Sort</DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-xl font-bold">Filter & Sort</h2>
+          <button
             onClick={() => onOpenChange(false)}
-            className="rounded-full"
+            className="w-10 h-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />
-          </Button>
-        </DialogHeader>
+          </button>
+        </div>
 
         {/* Content */}
         <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto">
@@ -166,8 +167,7 @@ export function FilterModal({
             Apply
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
-

@@ -815,6 +815,8 @@ export const checkSpendingThresholds = internalMutation({
             monthlyCost = sub.cost / 12;
           } else if (sub.billingCycle === "weekly") {
             monthlyCost = sub.cost * 4.33; // Average weeks per month
+          } else if (sub.billingCycle === "daily") {
+            monthlyCost = sub.cost * 30.44; // Average days per month
           }
           
           // Use SAME fallback rates as frontend and backend for consistency

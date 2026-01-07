@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -142,188 +141,171 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
 
   if (subscriptions === undefined) {
     return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-32" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-4">
-                <Skeleton className="h-12 w-12 rounded" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-8" />
+      <div className="p-6">
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center space-x-4 p-4 bg-muted/30 rounded-xl">
+              <Skeleton className="h-12 w-12 rounded-xl" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-4 w-3/4 rounded-lg" />
+                <Skeleton className="h-3 w-1/2 rounded-lg" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <Skeleton className="h-8 w-20 rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
   if (subscriptions.length === 0) {
     return (
-      <Card>
-        <CardContent className="text-center py-12">
-          <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
-            <Target className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold font-sans mb-2">No subscriptions found</h3>
-          <p className="text-muted-foreground font-sans mb-4">
-            Start tracking your expenses by adding your first subscription.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12 px-6">
+        <div className="mx-auto w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
+          <Target className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No subscriptions found</h3>
+        <p className="text-muted-foreground text-sm">
+          Start tracking your expenses by adding your first subscription.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-sans">All Subscriptions</CardTitle>
-        <CardDescription className="font-sans">
-          {subscriptions.length} subscription{subscriptions.length !== 1 ? 's' : ''} total
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isMobile ? (
-          // Mobile Card View with Swipe Gestures
-          <div className="space-y-4">
-            {subscriptions.map((subscription) => (
-              <SubscriptionCard
-                key={subscription._id}
-                subscription={subscription}
-                showCategory={true}
-                currency="USD" // Will be replaced with user preference later
-                hasDuplicateAlert={duplicateAlertMap.get(subscription._id) === true}
-              />
-            ))}
-          </div>
-        ) : (
-          // Desktop Table View
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-sans">Service</TableHead>
-                  <TableHead className="font-sans">Cost</TableHead>
-                  <TableHead className="font-sans">Billing</TableHead>
-                  <TableHead className="font-sans">Next Payment</TableHead>
-                  <TableHead className="font-sans">Status</TableHead>
-                  <TableHead className="font-sans w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptions.map((subscription) => (
-                <TableRow key={subscription._id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <span className="text-xs font-semibold font-sans">
-                          {subscription.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium font-sans">{subscription.name}</p>
-                        {subscription.category && (
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 mt-1 rounded-md text-xs font-medium bg-accent/40 text-accent-foreground"
-                          >
-                            {subscription.category}
-                          </span>
-                        )}
-                      </div>
+    <div className="p-4">
+      {isMobile ? (
+        // Mobile Card View with Swipe Gestures
+        <div className="space-y-3">
+          {subscriptions.map((subscription) => (
+            <SubscriptionCard
+              key={subscription._id}
+              subscription={subscription}
+              showCategory={true}
+              currency="USD" // Will be replaced with user preference later
+              hasDuplicateAlert={duplicateAlertMap.get(subscription._id) === true}
+            />
+          ))}
+        </div>
+      ) : (
+        // Desktop Table View
+        <div className="rounded-xl border border-border/50 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead>Service</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Billing</TableHead>
+                <TableHead>Next Payment</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {subscriptions.map((subscription) => (
+              <TableRow key={subscription._id} className="hover:bg-muted/20">
+                <TableCell>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <span className="text-sm font-semibold text-primary">
+                        {subscription.name.charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-medium font-sans">
-                      {subscription.currency} {subscription.cost.toFixed(2)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="font-sans capitalize">
-                      {subscription.billingCycle}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-sans">
-                      {format(subscription.nextBillingDate, "MMM dd, yyyy")}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={subscription.isActive ? "default" : "secondary"}
-                      className="font-sans"
-                    >
-                      {subscription.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel className="font-sans">Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <EditSubscriptionDialog subscription={subscription}>
-                          <DropdownMenuItem className="font-sans" onSelect={(e) => e.preventDefault()}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                        </EditSubscriptionDialog>
-                        <DropdownMenuItem
-                          className="font-sans"
-                          onClick={async () => {
-                            try {
-                              await toggleStatus({
-                                clerkId: userId,
-                                subscriptionId: subscription._id as Id<"subscriptions">,
-                                isActive: !subscription.isActive,
-                              });
-                              toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
-                            } catch {
-                              toast.error("Failed to update status");
-                            }
-                          }}
-                        >
-                          {subscription.isActive ? (
-                            <>
-                              <Pause className="mr-2 h-4 w-4" />
-                              Pause
-                            </>
-                          ) : (
-                            <>
-                              <Play className="mr-2 h-4 w-4" />
-                              Resume
-                            </>
-                          )}
+                    <div>
+                      <p className="font-medium">{subscription.name}</p>
+                      {subscription.category && (
+                        <Badge variant="secondary" className="mt-1 rounded-md text-xs bg-accent/40">
+                          {subscription.category}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="font-semibold">
+                    {subscription.currency} {subscription.cost.toFixed(2)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="capitalize rounded-lg">
+                    {subscription.billingCycle}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm">
+                    {format(subscription.nextBillingDate, "MMM dd, yyyy")}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    className={`rounded-lg ${
+                      subscription.isActive 
+                        ? 'bg-success/10 text-success border-success/30' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {subscription.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <EditSubscriptionDialog subscription={subscription}>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive font-sans"
-                          onClick={() => handleDelete(subscription._id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                      </EditSubscriptionDialog>
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          try {
+                            await toggleStatus({
+                              clerkId: userId,
+                              subscriptionId: subscription._id as Id<"subscriptions">,
+                              isActive: !subscription.isActive,
+                            });
+                            toast.success(subscription.isActive ? "Subscription paused" : "Subscription resumed");
+                          } catch {
+                            toast.error("Failed to update status");
+                          }
+                        }}
+                      >
+                        {subscription.isActive ? (
+                          <>
+                            <Pause className="mr-2 h-4 w-4" />
+                            Pause
+                          </>
+                        ) : (
+                          <>
+                            <Play className="mr-2 h-4 w-4" />
+                            Resume
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => handleDelete(subscription._id)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
   );
 }

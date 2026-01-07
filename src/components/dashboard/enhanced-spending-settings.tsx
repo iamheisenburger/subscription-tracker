@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { getPreferredCurrency } from "@/lib/currency";
+import { DollarSign, TrendingUp, AlertTriangle, Check, Bell } from "lucide-react";
 
 // Helper function to format currency based on user preference
 const formatCurrency = (amount: number, currency: string) => {
@@ -50,10 +50,9 @@ export function EnhancedSpendingSettings() {
     }
   }, [preferences]);
 
-  // No need for manual calculation - using backend analytics data
-
   const spendingPercentage = monthlyThreshold > 0 ? (currentSpending / monthlyThreshold) * 100 : 0;
   const isOverBudget = currentSpending > monthlyThreshold;
+  const isNearBudget = spendingPercentage >= 80 && !isOverBudget;
 
   const handleSaveThresholds = async () => {
     if (!user?.id) return;
@@ -105,67 +104,92 @@ export function EnhancedSpendingSettings() {
   if (!user) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <span className="font-sans">Enhanced Spending Management</span>
-          <Badge variant="secondary" className="text-blue-600">Plus</Badge>
-        </CardTitle>
-        <CardDescription>
-          Advanced spending insights, multiple thresholds, and smart budget management
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        
-        {/* Current Spending Overview */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-semibold">Current Monthly Spending</h4>
-            <div className="text-right">
-              <div className="text-2xl font-bold">
-                {analytics === undefined ? (
-                  <span className="text-muted-foreground">Loading...</span>
-                ) : (
-                  formatCurrency(currentSpending, userCurrency)
-                )}
+    <div className="space-y-6">
+      {/* Current Spending Card - Mobile app style */}
+      <Card className="rounded-2xl border border-border overflow-hidden">
+        <div className={`p-6 ${
+          isOverBudget 
+            ? 'bg-destructive text-destructive-foreground' 
+            : isNearBudget 
+              ? 'bg-warning text-warning-foreground' 
+              : 'bg-primary text-primary-foreground'
+        }`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-6 h-6" />
               </div>
-              <div className="text-sm text-muted-foreground">
-                {Math.round(spendingPercentage)}% of budget
-                {userCurrency !== 'USD' && analytics && (
-                  <span className="block text-xs">Converted to {userCurrency}</span>
-                )}
+              <div>
+                <p className="text-sm opacity-80">Current Monthly Spending</p>
+                <p className="text-3xl font-bold">
+                  {analytics === undefined ? (
+                    <span className="opacity-50">Loading...</span>
+                  ) : (
+                    formatCurrency(currentSpending, userCurrency)
+                  )}
+                </p>
               </div>
             </div>
+            <Badge className={`${
+              isOverBudget 
+                ? 'bg-white/20 text-white' 
+                : isNearBudget 
+                  ? 'bg-white/20 text-white' 
+                  : 'bg-success text-success-foreground'
+            } rounded-lg px-3 py-1`}>
+              {isOverBudget ? 'Over Budget' : isNearBudget ? 'Near Limit' : 'On Track'}
+            </Badge>
           </div>
           
-          <Progress 
-            value={Math.min(spendingPercentage, 120)} 
-            className={`h-3 ${isOverBudget ? '[&>div]:bg-red-500' : '[&>div]:bg-green-500'}`}
-          />
-          
-          {isOverBudget && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <p className="text-red-600 font-medium">
-                🚨 Over Budget: {formatCurrency(currentSpending - monthlyThreshold, userCurrency)}
-              </p>
-              <p className="text-sm text-red-600/80">
-                Consider reviewing your subscriptions or adjusting your budget
+          {monthlyThreshold > 0 && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm opacity-80">
+                <span>Budget Progress</span>
+                <span>{Math.round(spendingPercentage)}%</span>
+              </div>
+              <Progress 
+                value={Math.min(spendingPercentage, 100)} 
+                className="h-3 bg-white/20 [&>div]:bg-white"
+              />
+              <p className="text-sm opacity-80">
+                {formatCurrency(monthlyThreshold - currentSpending, userCurrency)} remaining of {formatCurrency(monthlyThreshold, userCurrency)}
               </p>
             </div>
           )}
         </div>
 
-        <Separator />
+        {isOverBudget && (
+          <div className="p-4 bg-destructive/10 border-t border-destructive/20">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-destructive">Over Budget Alert</p>
+                <p className="text-sm text-destructive/80">
+                  You've exceeded your budget by {formatCurrency(currentSpending - monthlyThreshold, userCurrency)}. Consider reviewing your subscriptions.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
 
-        {/* Budget Configuration */}
-        <div className="space-y-4">
-          <h4 className="font-semibold">Budget Thresholds</h4>
-          
+      {/* Budget Configuration Card */}
+      <Card className="rounded-2xl border border-border">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Budget Thresholds
+          </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Set your spending limits to stay on track
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="monthly-threshold">Monthly Budget</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-muted-foreground">
+            <div className="space-y-2">
+              <Label htmlFor="monthly-threshold" className="text-sm font-medium">Monthly Budget</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$'}
                 </span>
                 <Input
@@ -173,15 +197,16 @@ export function EnhancedSpendingSettings() {
                   type="number"
                   value={monthlyThreshold || ''}
                   onChange={(e) => setMonthlyThreshold(parseFloat(e.target.value) || 0)}
-                  placeholder="e.g. 100"
+                  placeholder="100.00"
+                  className="pl-8 rounded-xl bg-muted/40 border-border/50"
                 />
               </div>
             </div>
             
-            <div>
-              <Label htmlFor="yearly-threshold">Yearly Budget</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-muted-foreground">
+            <div className="space-y-2">
+              <Label htmlFor="yearly-threshold" className="text-sm font-medium">Yearly Budget</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {userCurrency === 'GBP' ? '£' : userCurrency === 'EUR' ? '€' : userCurrency === 'CAD' ? 'C$' : userCurrency === 'AUD' ? 'A$' : '$'}
                 </span>
                 <Input
@@ -189,56 +214,59 @@ export function EnhancedSpendingSettings() {
                   type="number"
                   value={yearlyThreshold || ''}
                   onChange={(e) => setYearlyThreshold(parseFloat(e.target.value) || 0)}
-                  placeholder="e.g. 1200"
+                  placeholder="1200.00"
+                  className="pl-8 rounded-xl bg-muted/40 border-border/50"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground">
                 {formatCurrency(yearlyThreshold / 12, userCurrency)}/month equivalent
               </p>
             </div>
           </div>
 
-          {/* Alert Percentages */}
-          <div>
-            <Label htmlFor="alert-triggers">💎 Alert Triggers</Label>
-            <p className="text-sm text-muted-foreground mb-3">
-              Get notified when you reach these percentages of your budget
-            </p>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-md">
-              {[80, 100, 120].map((percentage) => (
-                <div 
-                  key={percentage}
-                  className={`p-3 sm:p-4 border-2 rounded-lg text-center transition-colors ${
-                    percentage >= 100 
-                      ? 'border-red-500/50 bg-red-500/10' 
-                      : 'border-yellow-500/50 bg-yellow-500/10'
-                  }`}
-                >
-                  <div className="text-2xl sm:text-3xl font-bold">{percentage}%</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {percentage === 80 ? 'Warning' : percentage === 100 ? 'Reached' : 'Exceeded'}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
-              <p className="text-xs text-muted-foreground">
-                <strong>Automatic alerts:</strong> You&apos;ll receive email notifications when your spending reaches 80%, 100%, and 120% of your budget threshold.
-              </p>
-            </div>
-          </div>
-
-
           <Button 
             onClick={handleSaveThresholds}
             disabled={loading}
-            className="w-full"
+            className="w-full rounded-xl h-12 font-semibold"
           >
-            {loading ? "Saving..." : "Save Spending Preferences"}
+            {loading ? "Saving..." : "Save Budget"}
           </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-      </CardContent>
-    </Card>
+      {/* Alert Triggers Card */}
+      <Card className="rounded-2xl border border-border">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Bell className="w-5 h-5 text-primary" />
+            Alert Triggers
+          </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Get notified at these spending milestones
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { percentage: 80, label: 'Warning', color: 'bg-warning/10 border-warning/30 text-warning' },
+              { percentage: 100, label: 'Reached', color: 'bg-destructive/10 border-destructive/30 text-destructive' },
+              { percentage: 120, label: 'Exceeded', color: 'bg-destructive/20 border-destructive/50 text-destructive' },
+            ].map((trigger) => (
+              <div 
+                key={trigger.percentage}
+                className={`p-4 border-2 rounded-xl text-center ${trigger.color}`}
+              >
+                <div className="text-2xl font-bold">{trigger.percentage}%</div>
+                <div className="text-xs mt-1 opacity-80">{trigger.label}</div>
+                <Check className="w-4 h-4 mx-auto mt-2 opacity-60" />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            You'll receive email notifications when your spending reaches these percentages.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

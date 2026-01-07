@@ -56,76 +56,14 @@ export function SubscriptionsHeader({
   const hasPlusFeatures = isPlus || isAutomate;
 
   return (
-    <div className="space-y-4">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight font-sans">
-            Subscriptions
-          </h1>
-          <p className="text-muted-foreground font-sans">
-            {isAutomate
-              ? "Track manual and auto-detected subscriptions"
-              : "Manage all your subscriptions in one place"}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Automate tier: Manual add as secondary action */}
-          {isAutomate && (
-            <AddSubscriptionDialog>
-              <Button variant="outline" className="font-sans">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Manual
-              </Button>
-            </AddSubscriptionDialog>
-          )}
-
-          {/* Plus tier: Add subscription as primary action */}
-          {isPlus && (
-            <AddSubscriptionDialog>
-              <Button className="font-sans">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Subscription
-              </Button>
-            </AddSubscriptionDialog>
-          )}
-
-          {/* Free tier: Allow up to plan limit */}
-          {isFree && (
-            (() => {
-              const freeLimit = 3;
-              const currentCount = subscriptions?.length ?? 0;
-              const reachedLimit = currentCount >= freeLimit;
-
-              if (reachedLimit) {
-                return (
-                  <Button disabled className="font-sans opacity-60 cursor-not-allowed">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Subscription
-                  </Button>
-                );
-              }
-              return (
-                <AddSubscriptionDialog>
-                  <Button className="font-sans">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Subscription
-                  </Button>
-                </AddSubscriptionDialog>
-              );
-            })()
-          )}
-        </div>
-      </div>
-
+    <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search subscriptions..."
-            className="pl-10 font-sans"
+            className="pl-10 rounded-xl bg-muted/40 border-border/50"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -134,17 +72,16 @@ export function SubscriptionsHeader({
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="font-sans">
+              <Button variant="outline" className="rounded-xl border-border/50">
                 <Filter className="mr-2 h-4 w-4" />
                 {filterCount && filterCount > 0 ? `Filters (${filterCount})` : "Filter"}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-sans">Filter by Status</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56 rounded-xl">
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className={cn(
-                  "font-sans",
                   activeFilter === "all" && "bg-primary/10 text-primary"
                 )} 
                 onClick={() => onFilterChange("all")}
@@ -153,7 +90,6 @@ export function SubscriptionsHeader({
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className={cn(
-                  "font-sans",
                   activeFilter === "active" && "bg-primary/10 text-primary"
                 )} 
                 onClick={() => onFilterChange("active")}
@@ -162,7 +98,6 @@ export function SubscriptionsHeader({
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className={cn(
-                  "font-sans",
                   activeFilter === "inactive" && "bg-primary/10 text-primary"
                 )} 
                 onClick={() => onFilterChange("inactive")}
@@ -170,12 +105,12 @@ export function SubscriptionsHeader({
                 Inactive
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="font-sans">Filter by Billing</DropdownMenuLabel>
+              <DropdownMenuLabel>Filter by Billing</DropdownMenuLabel>
               {(["monthly","yearly","weekly"]).map((c) => (
                 <DropdownMenuItem
                   key={c}
                   className={cn(
-                    "font-sans flex items-center gap-2",
+                    "flex items-center gap-2",
                     billingSet?.has(c) && "bg-primary/5"
                   )}
                   onClick={() => (typeof window !== 'undefined' && (onBillingToggle && onBillingToggle(c)))}
@@ -187,12 +122,11 @@ export function SubscriptionsHeader({
               {hasPlusFeatures && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="font-sans flex items-center gap-2">
+                  <DropdownMenuLabel className="flex items-center gap-2">
                     <Tag className="h-4 w-4" /> Categories
                   </DropdownMenuLabel>
                   <DropdownMenuItem 
                     className={cn(
-                      "font-sans",
                       categoryFilter === "all" && "bg-primary/10 text-primary"
                     )} 
                     onClick={() => onCategoryChange("all")}
@@ -201,7 +135,6 @@ export function SubscriptionsHeader({
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className={cn(
-                      "font-sans",
                       categoryFilter === "uncategorized" && "bg-primary/10 text-primary"
                     )} 
                     onClick={() => onCategoryChange("uncategorized")}
@@ -212,7 +145,7 @@ export function SubscriptionsHeader({
                     <DropdownMenuItem 
                       key={c._id}
                       className={cn(
-                        "font-sans flex items-center gap-2",
+                        "flex items-center gap-2",
                         categorySet?.has(c.name) && "bg-primary/5"
                       )}
                       onClick={() => (typeof window !== 'undefined' && (onCategoryToggle && onCategoryToggle(c.name)))}
@@ -229,27 +162,71 @@ export function SubscriptionsHeader({
           {hasPlusFeatures ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="font-sans">
+                <Button variant="outline" className="rounded-xl border-border/50">
                   <Download className="mr-2 h-4 w-4" />
                   Export
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="font-sans">Export Options</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="rounded-xl">
+                <DropdownMenuLabel>Export Options</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <a href="/api/export/csv" className="font-sans">Export as CSV</a>
+                  <a href="/api/export/csv">Export as CSV</a>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="/api/export/pdf" className="font-sans">Export as PDF</a>
+                  <a href="/api/export/pdf">Export as PDF</a>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="outline" className="font-sans opacity-50 cursor-not-allowed" disabled>
+            <Button variant="outline" className="rounded-xl border-border/50 opacity-50 cursor-not-allowed" disabled>
               <Download className="mr-2 h-4 w-4" />
               Export (Plus)
             </Button>
+          )}
+
+          {/* Add Subscription Button */}
+          {isAutomate && (
+            <AddSubscriptionDialog>
+              <Button variant="outline" className="rounded-xl border-border/50">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Manual
+              </Button>
+            </AddSubscriptionDialog>
+          )}
+
+          {isPlus && (
+            <AddSubscriptionDialog>
+              <Button className="rounded-xl">
+                <Plus className="mr-2 h-4 w-4" />
+                Add
+              </Button>
+            </AddSubscriptionDialog>
+          )}
+
+          {isFree && (
+            (() => {
+              const freeLimit = 3;
+              const currentCount = subscriptions?.length ?? 0;
+              const reachedLimit = currentCount >= freeLimit;
+
+              if (reachedLimit) {
+                return (
+                  <Button disabled className="rounded-xl opacity-60 cursor-not-allowed">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                );
+              }
+              return (
+                <AddSubscriptionDialog>
+                  <Button className="rounded-xl">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                </AddSubscriptionDialog>
+              );
+            })()
           )}
         </div>
       </div>

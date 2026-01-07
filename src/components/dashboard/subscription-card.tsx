@@ -16,6 +16,7 @@ import {
   TrendingUp,
   HelpCircle,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,19 @@ import { CancelAssistantModal } from "./cancel-assistant-modal";
 import { exportSubscriptionToCalendar } from "@/lib/calendar-export";
 import Link from "next/link";
 import { getPlaybook } from "@/lib/cancel-playbooks";
+import { differenceInDays } from "date-fns";
+
+// Mobile app category colors - matching exactly
+const CATEGORY_COLORS: Record<string, string> = {
+  streaming: '#E63946',
+  music: '#F77F00',
+  productivity: '#06A77D',
+  fitness: '#2A9D8F',
+  gaming: '#7209B7',
+  news: '#457B9D',
+  cloud: '#3A86FF',
+  other: '#6C757D',
+};
 
 interface SubscriptionCardProps {
   subscription: Doc<"subscriptions">;
@@ -152,84 +166,60 @@ export function SubscriptionCard({
       subscription.predictionConfidence ||
       isManual); // Show price tracking badge for manual entries
 
+  // Calculate days until renewal for urgency styling
+  const daysUntilRenewal = differenceInDays(subscription.nextBillingDate, new Date());
+  const isUrgent = daysUntilRenewal <= 3 && daysUntilRenewal >= 0;
+  const isSoon = daysUntilRenewal <= 7 && daysUntilRenewal > 3;
+
+  // Get category color
+  const categoryColor = subscription.category
+    ? CATEGORY_COLORS[subscription.category.toLowerCase()] || CATEGORY_COLORS.other
+    : CATEGORY_COLORS.other;
+
   return (
     <>
-      <div className="group flex items-center justify-between p-4 bg-muted/20 rounded-xl hover:bg-muted/30 transition-all duration-200">
+      <div
+        className="group flex items-center justify-between p-4 bg-card rounded-2xl border border-border hover:shadow-md transition-all duration-200 cursor-pointer"
+        onClick={() => setShowEditDialog(true)}
+      >
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-lg font-bold text-primary">
-              {subscription.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          {/* Category color dot indicator */}
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: categoryColor }}
+          />
+
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm truncate">{subscription.name}</h3>
-            <p className="text-xs text-muted-foreground">
-              {format(subscription.nextBillingDate, "MMM dd")} • {subscription.billingCycle}
-            </p>
-            {showCategory && subscription.category && (
-              <Badge variant="secondary" className="mt-1 text-xs rounded-md bg-accent/40">
-                {subscription.category}
-              </Badge>
-            )}
-            {showFeatureBadges && (
-              <FeatureBadgesContainer>
-                {/* Auto-detected badge - only for detected subscriptions */}
-                {subscription.source === "detected" && (
-                  <Link href={`/dashboard/insights?sub=${subscription._id}&tab=activity`}>
-                    <FeatureBadge
-                      type="auto-detected"
-                      confidence={subscription.detectionConfidence}
-                      clickable
-                    />
-                  </Link>
-                )}
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-base truncate text-foreground">{subscription.name}</h3>
+              {!displayActive && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground border-muted-foreground/30">
+                  Paused
+                </Badge>
+              )}
+            </div>
 
-                {/* Price tracked - show for ALL Automate subscriptions (manual or detected) */}
-                {isAutomate && (
-                  <Link href={`/dashboard/insights?sub=${subscription._id}&tab=price-history`}>
-                    <FeatureBadge type="price-tracked" clickable />
-                  </Link>
-                )}
-
-                {/* Renewal predicted - show when prediction exists */}
-                {subscription.predictedCadence && subscription.predictionConfidence && (
-                  <Link href={`/dashboard/insights?tab=predictions`}>
-                    <FeatureBadge
-                      type="renewal-predicted"
-                      confidence={subscription.predictionConfidence}
-                      clickable
-                    />
-                  </Link>
-                )}
-
-                {/* Duplicate protection - only when we have an unread duplicate alert for this subscription */}
-                {isAutomate && hasDuplicateAlert && (
-                  <Link href={`/dashboard/insights?tab=alerts&sub=${subscription._id}`}>
-                    <FeatureBadge type="duplicate-alert" clickable />
-                  </Link>
-                )}
-              </FeatureBadgesContainer>
-            )}
+            {/* Renewal date with calendar icon - mobile app style */}
+            <div className="flex items-center gap-1.5 mt-1">
+              <Calendar className={`h-3 w-3 ${isUrgent ? 'text-red-500' : isSoon ? 'text-amber-500' : 'text-muted-foreground'}`} />
+              <span className={`text-xs font-medium ${isUrgent ? 'text-red-500' : isSoon ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                {isUrgent ? `${daysUntilRenewal === 0 ? 'Today' : `${daysUntilRenewal}d`}` : format(subscription.nextBillingDate, "MMM dd")}
+              </span>
+              <span className="text-xs text-muted-foreground">•</span>
+              <span className="text-xs text-muted-foreground capitalize">{subscription.billingCycle}</span>
+            </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
+          {/* Cost */}
           <div className="text-right">
-            <div className="font-semibold text-sm">
+            <div className="font-bold text-base text-foreground">
               {formattedCost}
             </div>
-            <Badge 
-              className={`text-xs rounded-md ${
-                displayActive 
-                  ? 'bg-success/10 text-success border-success/30' 
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {displayActive ? "Active" : "Inactive"}
-            </Badge>
           </div>
 
-          {/* Actions Dropdown (Mobile & Desktop) */}
+          {/* Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

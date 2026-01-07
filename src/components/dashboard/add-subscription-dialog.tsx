@@ -44,12 +44,15 @@ const CATEGORIES = [
   { value: 'other', label: 'Other', color: '#6C757D' },
 ];
 
+// Matching mobile app: 7 currencies
 const CURRENCY_OPTIONS = [
-  { code: "USD", label: "US Dollar ($)", symbol: "$" },
-  { code: "EUR", label: "Euro (€)", symbol: "€" },
-  { code: "GBP", label: "British Pound (£)", symbol: "£" },
-  { code: "CAD", label: "Canadian Dollar (C$)", symbol: "C$" },
-  { code: "AUD", label: "Australian Dollar (A$)", symbol: "A$" },
+  { code: "USD", label: "US Dollar", symbol: "$" },
+  { code: "EUR", label: "Euro", symbol: "€" },
+  { code: "GBP", label: "British Pound", symbol: "£" },
+  { code: "CAD", label: "Canadian Dollar", symbol: "C$" },
+  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
+  { code: "JPY", label: "Japanese Yen", symbol: "¥" },
+  { code: "INR", label: "Indian Rupee", symbol: "₹" },
 ];
 
 const formSchema = z.object({

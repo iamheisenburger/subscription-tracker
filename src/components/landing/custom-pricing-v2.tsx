@@ -32,21 +32,22 @@ export const CustomPricingV2 = () => {
 
   const plusPlan = {
     name: "Plus",
-    description: "Unlock unlimited subscriptions, advanced analytics, smart alerts, and export capabilities with priority support.",
-    price: billingCycle === 'monthly' ? "$5.00" : "$3.50",
+    description: "Unlock unlimited subscriptions, advanced analytics, budget tracking, smart alerts, and export capabilities.",
+    price: billingCycle === 'monthly' ? "$4.00" : "$3.33",
     period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$5.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
+    originalPrice: billingCycle === 'annual' ? "$4.00" : null,
+    annualNote: billingCycle === 'annual' ? "Billed annually ($40.00/year)" : "Billed monthly",
     features: [
-      "Unlimited manual subscriptions",
-      "Analytics & CSV/PDF export",
-      "Custom categories & reminders",
-      "Smart alerts (manual detections)",
-      "Priority email support"
+      "Unlimited subscriptions",
+      "Budget tracking & alerts",
+      "Advanced analytics dashboard",
+      "CSV & JSON export",
+      "Custom reminder timing",
+      "Priority support"
     ],
-    cta: "Start 7-day free trial",
+    cta: "Upgrade to Plus",
     ctaLink: `/sign-up?plan=plus&billing=${billingCycle}`,
-    badge: "7-day free trial"
+    badge: "Best Value"
   };
 
   return (
@@ -91,6 +92,11 @@ export const CustomPricingV2 = () => {
               {billingCycle === 'annual' && (
                 <span className="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                   SAVE 17%
+                </span>
+              )}
+              {billingCycle !== 'annual' && (
+                <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                  POPULAR
                 </span>
               )}
             </button>

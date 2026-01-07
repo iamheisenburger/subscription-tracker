@@ -17,6 +17,7 @@ export interface CurrencyConversionResult {
 }
 
 // Hardcoded fallback exchange rates (used when API unavailable)
+// Matching mobile app: 7 currencies (USD, EUR, GBP, CAD, AUD, JPY, INR)
 const EXCHANGE_RATES: Record<string, ExchangeRates> = {
   USD: {
     USD: 1.00,
@@ -24,6 +25,8 @@ const EXCHANGE_RATES: Record<string, ExchangeRates> = {
     GBP: 0.79,
     CAD: 1.36,
     AUD: 1.52,
+    JPY: 149.50,
+    INR: 83.12,
   },
   EUR: {
     USD: 1.09,
@@ -31,6 +34,8 @@ const EXCHANGE_RATES: Record<string, ExchangeRates> = {
     GBP: 0.86,
     CAD: 1.48,
     AUD: 1.65,
+    JPY: 162.50,
+    INR: 90.40,
   },
   GBP: {
     USD: 1.27,
@@ -38,6 +43,8 @@ const EXCHANGE_RATES: Record<string, ExchangeRates> = {
     GBP: 1.00,
     CAD: 1.73,
     AUD: 1.93,
+    JPY: 189.80,
+    INR: 105.50,
   },
   CAD: {
     USD: 0.74,
@@ -45,6 +52,8 @@ const EXCHANGE_RATES: Record<string, ExchangeRates> = {
     GBP: 0.58,
     CAD: 1.00,
     AUD: 1.12,
+    JPY: 109.90,
+    INR: 61.10,
   },
   AUD: {
     USD: 0.66,
@@ -52,12 +61,33 @@ const EXCHANGE_RATES: Record<string, ExchangeRates> = {
     GBP: 0.52,
     CAD: 0.89,
     AUD: 1.00,
+    JPY: 98.30,
+    INR: 54.70,
+  },
+  JPY: {
+    USD: 0.0067,
+    EUR: 0.0062,
+    GBP: 0.0053,
+    CAD: 0.0091,
+    AUD: 0.0102,
+    JPY: 1.00,
+    INR: 0.56,
+  },
+  INR: {
+    USD: 0.012,
+    EUR: 0.011,
+    GBP: 0.0095,
+    CAD: 0.016,
+    AUD: 0.018,
+    JPY: 1.80,
+    INR: 1.00,
   },
 };
 
 type CachedRates = { base: string; rates: ExchangeRates; timestamp: number };
 
-const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
+// 7 currencies matching mobile app
+const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "INR"];
 const CACHE_KEY_PREFIX = "exchange-rates:";
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -243,6 +273,7 @@ export async function convertMultipleCurrencies(
 
 /**
  * Format currency with proper symbol
+ * Matching mobile app: 7 currencies
  */
 export function formatCurrency(amount: number, currency: string): string {
   const currencySymbols: Record<string, string> = {
@@ -251,9 +282,15 @@ export function formatCurrency(amount: number, currency: string): string {
     GBP: '£',
     CAD: 'C$',
     AUD: 'A$',
+    JPY: '¥',
+    INR: '₹',
   };
 
   const symbol = currencySymbols[currency] || currency;
+  // JPY typically doesn't use decimals
+  if (currency === 'JPY') {
+    return `${symbol}${Math.round(amount).toLocaleString()}`;
+  }
   return `${symbol}${amount.toFixed(2)}`;
 }
 

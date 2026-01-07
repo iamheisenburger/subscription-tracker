@@ -58,7 +58,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
 
   const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
 
-  // Calculate upcoming renewals (next 90 days)
+  // Calculate upcoming renewals (next 90 days) - MUST be before any returns
   const upcomingRenewals = useMemo(() => {
     if (!subscriptions) return [];
     
@@ -78,42 +78,16 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       .slice(0, 5);
   }, [subscriptions]);
 
-  if (analytics === undefined) {
-    return <AnalyticsSkeleton />;
-  }
-
-  if (!analytics || analytics.totalSubscriptions === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-          <TrendingUp className="h-10 w-10 text-muted-foreground" />
-        </div>
-        <h3 className="text-xl font-bold mb-2">No Data Available</h3>
-        <p className="text-muted-foreground mb-6">
-          Add some subscriptions to see your analytics.
-        </p>
-        <a 
-          href="/dashboard" 
-          className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
-        >
-          Add Your First Subscription
-        </a>
-      </div>
-    );
-  }
-
-  const {
-    totalSubscriptions,
-    spendingTrends,
-    categoryBreakdown,
-    cycleBreakdown,
-    averagePerSubscription,
-    currency: responseCurrency,
-  } = analytics;
-
+  // Extract values from analytics (with defaults for when undefined)
+  const totalSubscriptions = analytics?.totalSubscriptions ?? 0;
+  const spendingTrends = analytics?.spendingTrends ?? [];
+  const categoryBreakdown = analytics?.categoryBreakdown ?? [];
+  const cycleBreakdown = analytics?.cycleBreakdown ?? [];
+  const averagePerSubscription = analytics?.averagePerSubscription ?? 0;
+  const responseCurrency = analytics?.currency;
   const displayCurrency = responseCurrency || currency;
 
-  // Generate insights based on data
+  // Generate insights based on data - MUST be before any returns
   const insights = useMemo(() => {
     const tips: { title: string; description: string; type: 'tip' | 'warning' }[] = [];
     
@@ -142,6 +116,32 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
     if (daysUntil === 1) return '1 day';
     return `${daysUntil} days`;
   };
+
+  // Loading state - after all hooks
+  if (analytics === undefined) {
+    return <AnalyticsSkeleton />;
+  }
+
+  // Empty state - after all hooks
+  if (!analytics || analytics.totalSubscriptions === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+          <TrendingUp className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <h3 className="text-xl font-bold mb-2">No Data Available</h3>
+        <p className="text-muted-foreground mb-6">
+          Add some subscriptions to see your analytics.
+        </p>
+        <a 
+          href="/dashboard" 
+          className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
+        >
+          Add Your First Subscription
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

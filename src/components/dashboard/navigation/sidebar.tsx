@@ -5,35 +5,31 @@ import {
   CreditCard,
   BarChart3,
   Settings,
-  Crown,
-  Plus,
   DollarSign,
   Sparkles,
+  Plus,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 type NavItem = {
   name: string;
   href: string;
   icon: LucideIcon;
-  premium?: boolean;
 };
 
 const NAV_ITEMS: Record<string, NavItem> = {
   overview: { name: "Overview", href: "/dashboard", icon: Home },
   subscriptions: { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
-  insights: { name: "Insights", href: "/dashboard/insights", icon: Sparkles, premium: true },
-  analytics: { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, premium: true },
-  budget: { name: "Budget", href: "/dashboard/budget", icon: DollarSign, premium: true },
+  insights: { name: "Insights", href: "/dashboard/insights", icon: Sparkles },
+  analytics: { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  budget: { name: "Budget", href: "/dashboard/budget", icon: DollarSign },
   settings: { name: "Settings", href: "/dashboard/settings", icon: Settings },
-} as const;
+};
 
 const NAV_ORDER = {
   automate_1: ["overview", "subscriptions", "insights", "analytics", "budget", "settings"],
@@ -46,98 +42,56 @@ type NavKey = keyof typeof NAV_ITEMS;
 
 function useNavItems(tier: string | undefined) {
   const order = NAV_ORDER[tier as keyof typeof NAV_ORDER] || NAV_ORDER.default;
-  return order.map((key) => NAV_ITEMS[key as NavKey]).filter(Boolean);
+  return order
+    .map((key) => NAV_ITEMS[key as NavKey])
+    .filter(Boolean);
 }
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const { tier, isLoading, isPaid, subscriptionType } = useUserTier();
+  const { tier } = useUserTier();
   const navItems = useNavItems(tier);
-  const subscriptionInterval = subscriptionType === "annual" ? "annual" : "monthly";
-  const shouldShowAnnualSavings = !isLoading && isPaid && subscriptionInterval !== "annual";
-  const shouldShowUpgrade = !isLoading && !isPaid;
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-card border-r border-border/50">
+    <div className="w-64 bg-card border-r border-border flex flex-col h-screen">
       {/* Logo */}
-      <div className="flex h-20 items-center px-6 border-b border-border/50">
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-            <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
+      <div className="p-4 border-b border-border">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
+            <Plus className="w-5 h-5 text-primary-foreground stroke-[2.5px]" />
           </div>
-          <span className="text-2xl font-black font-sans tracking-tighter">SubWise</span>
+          <span className="text-xl font-bold tracking-tight">SubWise</span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1.5 p-4">
+      <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link key={item.name} href={item.href}>
               <Button
-                variant={isActive ? "default" : "ghost"}
+                variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 font-sans h-11 px-4 rounded-lg transition-all duration-200",
-                  item.premium && "relative",
-                  isActive && "shadow-sm",
-                  !isActive && "hover:bg-muted/60"
+                  "w-full justify-start gap-3 font-medium rounded-xl h-11",
+                  isActive 
+                    ? "bg-primary/10 text-primary hover:bg-primary/15" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.name}</span>
-                {item.premium && (
-                  <Crown className="ml-auto h-4 w-4 text-primary" />
-                )}
+                {item.name}
               </Button>
             </Link>
           );
         })}
       </nav>
 
-      <Separator />
-
-      {/* Upgrade CTA (smart) */}
-      <div className="p-4">
-        {shouldShowAnnualSavings ? (
-          <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-foreground font-sans">
-                Save with Annual Billing
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground font-sans mb-3">
-              {tier === "automate_1"
-                ? "Switch to annual and save $30/year (billed $78/year)"
-                : "Switch to annual and save $18/year (billed $42/year)"}
-            </p>
-            <Link href="/dashboard/upgrade">
-              <Button size="sm" className="w-full font-sans">
-                {tier === "automate_1" ? "Switch Automate to Annual" : "Switch Plus to Annual"}
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          shouldShowUpgrade && (
-            <div className="rounded-lg bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Crown className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground font-sans">
-                  Upgrade your plan
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground font-sans mb-3">
-                Unlock Plus analytics or Automate detection whenever you need them.
-              </p>
-              <Link href="/dashboard/upgrade">
-                <Button size="sm" className="w-full font-sans">
-                  View Plans
-                </Button>
-              </Link>
-            </div>
-          )
-        )}
+      {/* Footer */}
+      <div className="p-4 border-t border-border">
+        <div className="text-xs text-muted-foreground text-center">
+          © 2025 SubWise
+        </div>
       </div>
     </div>
   );

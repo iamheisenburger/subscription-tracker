@@ -2,113 +2,128 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, Calendar, Target } from "lucide-react";
-import { format } from "date-fns";
-import { ConvexErrorBoundary } from "@/components/convex-error-boundary";
-import { useState, useEffect } from "react";
-import { getPreferredCurrency, formatCurrency } from "@/lib/currency";
+import { DollarSign, CreditCard, TrendingUp, Calendar } from "lucide-react";
+import { useUserSettings } from "@/hooks/use-user-settings";
+import { useCurrency } from "@/hooks/use-currency";
 
 interface OverviewCardsProps {
   userId: string;
 }
 
 export function OverviewCards({ userId }: OverviewCardsProps) {
-  return (
-    <ConvexErrorBoundary>
-      <OverviewCardsContent userId={userId} />
-    </ConvexErrorBoundary>
-  );
-}
+  const subscriptions = useQuery(api.subscriptions.getSubscriptions, { clerkId: userId });
+  const { settings } = useUserSettings();
+  const { formatAmount, convertAmount, isLoading: currencyLoading } = useCurrency();
 
-function OverviewCardsContent({ userId }: OverviewCardsProps) {
-  const stats = useQuery(api.subscriptions.getSubscriptionStats, { clerkId: userId });
-  
-  // GET PREFERRED CURRENCY
-  const [preferredCurrency, setPreferredCurrency] = useState('USD');
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const preferred = getPreferredCurrency();
-      setPreferredCurrency(preferred);
-    }
-  }, []);
-
-  // USE SAME ANALYTICS BACKEND AS ANALYTICS PAGE - SINGLE SOURCE OF TRUTH
-  const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
-    clerkId: userId,
-    targetCurrency: preferredCurrency,
-  });
-
-  if (stats === undefined) {
+  if (!subscriptions) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="border-0 shadow-sm bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-8 rounded-lg" />
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Skeleton className="h-7 w-3/4 mb-1" />
-              <Skeleton className="h-3 w-1/2" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="bg-primary rounded-[20px] p-6 shadow-lg animate-pulse">
+        <div className="flex">
+          <div className="flex-1 text-center">
+            <div className="h-4 bg-primary-foreground/20 rounded w-16 mx-auto mb-3" />
+            <div className="h-8 bg-primary-foreground/20 rounded w-24 mx-auto" />
+          </div>
+          <div className="w-px bg-primary-foreground/20 mx-4" />
+          <div className="flex-1 text-center">
+            <div className="h-4 bg-primary-foreground/20 rounded w-16 mx-auto mb-3" />
+            <div className="h-8 bg-primary-foreground/20 rounded w-24 mx-auto" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  const cards = [
-    {
-      title: "Total Subscriptions",
-      value: analytics?.totalSubscriptions || stats?.totalSubscriptions || 0,
-      description: `${stats?.activeSubscriptions || 0} active`,
-      icon: Target,
-    },
-    {
-      title: "Monthly Spend",
-      value: analytics?.monthlyTotal 
-        ? formatCurrency(analytics.monthlyTotal, analytics.currency || preferredCurrency)
-        : formatCurrency(0, preferredCurrency),
-      description: `Current monthly cost (${analytics?.currency || preferredCurrency})`,
-      icon: DollarSign,
-    },
-    {
-      title: "Yearly Spend",
-      value: analytics?.yearlyTotal
-        ? formatCurrency(analytics.yearlyTotal, analytics.currency || preferredCurrency)
-        : formatCurrency(0, preferredCurrency),
-      description: `Projected annual cost (${analytics?.currency || preferredCurrency})`,
-      icon: TrendingUp,
-    },
-    {
-      title: "Next Renewal",
-      value: stats?.nextRenewal ? format(stats.nextRenewal, "MMM dd") : "N/A",
-      description: "Upcoming billing date",
-      icon: Calendar,
-    },
-  ];
+  const activeSubscriptions = subscriptions.filter(sub => sub.status === "active");
+
+  // Calculate totals with currency conversion
+  const monthlyTotal = activeSubscriptions.reduce((sum, sub) => {
+    const convertedCost = convertAmount(sub.cost, sub.currency);
+    if (sub.billingCycle === "monthly") {
+      return sum + convertedCost;
+    } else if (sub.billingCycle === "yearly") {
+      return sum + convertedCost / 12;
+    } else if (sub.billingCycle === "weekly") {
+      return sum + convertedCost * 4.33;
+    }
+    return sum;
+  }, 0);
+
+  const yearlyTotal = monthlyTotal * 12;
+
+  // Budget tracking
+  const budget = settings?.monthlyBudget || 0;
+  const budgetUsage = budget > 0 ? (monthlyTotal / budget) * 100 : 0;
+  const isOverBudget = budget > 0 && monthlyTotal > budget;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => (
-        <Card key={card.title} className="border border-border/50 shadow-sm bg-card rounded-2xl hover:shadow-md transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-6">
-            <CardTitle className="text-sm font-bold font-sans uppercase tracking-widest text-muted-foreground/80">{card.title}</CardTitle>
-            <div className="p-2.5 bg-primary/5 rounded-xl border border-primary/10">
-              <card.icon className="h-5 w-5 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className="text-3xl font-black font-sans tracking-tighter">{card.value}</div>
-            <p className="text-xs text-muted-foreground font-semibold font-sans mt-1.5 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-              {card.description}
+    <div className="space-y-4">
+      {/* Main Totals Card - Dark like mobile app */}
+      <div className="bg-primary rounded-[20px] p-6 shadow-lg">
+        <div className="flex">
+          <div className="flex-1 text-center">
+            <p className="text-sm font-semibold text-primary-foreground/70 mb-2 tracking-wide">Monthly</p>
+            <p className="text-3xl font-bold text-primary-foreground">
+              {currencyLoading ? "..." : formatAmount(monthlyTotal)}
             </p>
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+          <div className="w-px bg-primary-foreground/20 mx-4" />
+          <div className="flex-1 text-center">
+            <p className="text-sm font-semibold text-primary-foreground/70 mb-2 tracking-wide">Yearly</p>
+            <p className="text-3xl font-bold text-primary-foreground">
+              {currencyLoading ? "..." : formatAmount(yearlyTotal)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Budget Card - Only show if budget is set */}
+      {budget > 0 && (
+        <div className="bg-card rounded-2xl p-4 border border-border">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-semibold text-muted-foreground">Monthly Budget</span>
+            <span className={`text-sm font-bold ${isOverBudget ? 'text-destructive' : 'text-foreground'}`}>
+              {formatAmount(monthlyTotal)} / {formatAmount(budget)}
+            </span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-destructive' : 'bg-success'}`}
+              style={{ width: `${Math.min(budgetUsage, 100)}%` }}
+            />
+          </div>
+          {isOverBudget && (
+            <p className="text-xs text-destructive mt-2 font-medium">
+              Over budget by {formatAmount(monthlyTotal - budget)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-card rounded-2xl p-4 border border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{activeSubscriptions.length}</p>
+              <p className="text-xs text-muted-foreground">Active</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-card rounded-2xl p-4 border border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-success" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{formatAmount(monthlyTotal / Math.max(activeSubscriptions.length, 1))}</p>
+              <p className="text-xs text-muted-foreground">Avg/sub</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

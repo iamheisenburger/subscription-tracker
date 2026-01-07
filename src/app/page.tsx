@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -13,29 +14,50 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Footer } from "@/components/landing/footer";
-import { Plus, Trash2, Search, TrendingUp, Settings, Home as HomeIcon, Crown, Sparkles } from "lucide-react";
+import { Plus, Trash2, Search, TrendingUp, Settings, Home as HomeIcon, Crown, Sparkles, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 
-type Cadence = "monthly" | "annual";
+type Cadence = "monthly" | "yearly" | "weekly" | "daily";
+type Category = "streaming" | "music" | "productivity" | "fitness" | "gaming" | "news" | "cloud" | "other";
+
+const CATEGORIES: Record<Category, { label: string; color: string }> = {
+  streaming: { label: 'Streaming', color: '#E63946' },
+  music: { label: 'Music', color: '#F77F00' },
+  productivity: { label: 'Productivity', color: '#06A77D' },
+  fitness: { label: 'Fitness', color: '#2A9D8F' },
+  gaming: { label: 'Gaming', color: '#7209B7' },
+  news: { label: 'News', color: '#457B9D' },
+  cloud: { label: 'Cloud Storage', color: '#3A86FF' },
+  other: { label: 'Other', color: '#6C757D' },
+};
 
 interface LocalSubscription {
   id: string;
   name: string;
   amount: number;
   cadence: Cadence;
+  category: Category;
+  renewalDate?: string;
 }
 
-const STORAGE_KEY = "subwise_local_subscriptions_v1";
+const STORAGE_KEY = "subwise_local_subscriptions_v2";
 const FREE_LIMIT = 3;
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
+const formatDate = (date: Date): string => {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
 export default function HomePage() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [cadence, setCadence] = useState<Cadence>("monthly");
+  const [category, setCategory] = useState<Category>("streaming");
+  const [includeRenewalDate, setIncludeRenewalDate] = useState(false);
+  const [renewalDate, setRenewalDate] = useState<Date>(new Date());
   const [items, setItems] = useState<LocalSubscription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const isLimitReached = items.length >= FREE_LIMIT;
@@ -62,7 +84,12 @@ export default function HomePage() {
 
   const totals = useMemo(() => {
     const monthly = items.reduce((sum, item) => {
-      const monthlyValue = item.cadence === "monthly" ? item.amount : item.amount / 12;
+      let monthlyValue = item.amount;
+      switch (item.cadence) {
+        case 'daily': monthlyValue = item.amount * 30; break;
+        case 'weekly': monthlyValue = item.amount * 4.33; break;
+        case 'yearly': monthlyValue = item.amount / 12; break;
+      }
       return sum + monthlyValue;
     }, 0);
     const annual = monthly * 12;
@@ -72,7 +99,8 @@ export default function HomePage() {
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     return items.filter(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      CATEGORIES[item.category].label.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [items, searchQuery]);
 
@@ -88,11 +116,16 @@ export default function HomePage() {
         name: name.trim(),
         amount: parsedAmount,
         cadence,
+        category,
+        renewalDate: includeRenewalDate ? renewalDate.toISOString() : undefined,
       },
     ]);
     setName("");
     setAmount("");
     setCadence("monthly");
+    setCategory("streaming");
+    setIncludeRenewalDate(false);
+    setRenewalDate(new Date());
   };
 
   const handleRemove = (id: string) => {
@@ -100,12 +133,40 @@ export default function HomePage() {
   };
 
   const getCycleLabel = (cycle: string) => {
-    return cycle === "monthly" ? "/month" : "/year";
+    const labels: Record<string, string> = {
+      daily: '/day',
+      weekly: '/week',
+      monthly: '/month',
+      yearly: '/year',
+    };
+    return labels[cycle] || '';
+  };
+
+  const adjustMonth = (increment: number) => {
+    const newDate = new Date(renewalDate);
+    newDate.setMonth(newDate.getMonth() + increment);
+    setRenewalDate(newDate);
+  };
+
+  const adjustDay = (increment: number) => {
+    const newDate = new Date(renewalDate);
+    newDate.setDate(newDate.getDate() + increment);
+    setRenewalDate(newDate);
+  };
+
+  const getDaysUntilRenewal = (dateStr?: string): number | null => {
+    if (!dateStr) return null;
+    const renewal = new Date(dateStr);
+    const now = new Date();
+    renewal.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+    const diff = renewal.getTime() - now.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
   return (
     <div className="min-h-screen bg-muted flex flex-col">
-      {/* Header - Clean white like mobile */}
+      {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -130,7 +191,6 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main content with proper padding for mobile nav */}
       <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-4 pb-24 md:pb-8">
         {/* Hero section for desktop */}
         <div className="hidden md:block text-center mb-6">
@@ -138,7 +198,7 @@ export default function HomePage() {
           <p className="text-muted-foreground">Try it free — no sign up required for up to 3 subscriptions</p>
         </div>
 
-        {/* Search Bar - Mobile Style */}
+        {/* Search Bar */}
         <div className="flex gap-3 mb-4">
           <div className="flex-1 flex items-center gap-2 bg-card rounded-xl px-4 py-3 border border-border">
             <Search className="w-5 h-5 text-muted-foreground" />
@@ -152,7 +212,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Totals Card - Dark like mobile app */}
+        {/* Totals Card */}
         <div className="bg-primary rounded-[20px] p-6 mb-4 shadow-lg">
           <div className="flex">
             <div className="flex-1 text-center">
@@ -171,26 +231,27 @@ export default function HomePage() {
         <div className="grid md:grid-cols-2 gap-4">
           {/* Add Subscription Form */}
           <div className="bg-card rounded-2xl p-4 border border-border h-fit">
-            <div className="grid gap-3">
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Subscription
+                </Label>
+                <Input
+                  placeholder="Netflix, Spotify..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="rounded-xl bg-muted border-0 h-12"
+                />
+              </div>
+
+              {/* Cost & Billing */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                    Subscription
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="Netflix, Spotify..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="rounded-xl bg-muted border-0 h-12"
-                  />
-                </div>
                 <div>
-                  <Label htmlFor="amount" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
                     Amount
                   </Label>
                   <Input
-                    id="amount"
                     type="number"
                     min="0"
                     step="0.01"
@@ -209,12 +270,97 @@ export default function HomePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="annual">Yearly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {/* Category */}
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Category
+                </Label>
+                <Select value={category} onValueChange={(value) => setCategory(value as Category)}>
+                  <SelectTrigger className="rounded-xl bg-muted border-0 h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(CATEGORIES) as Category[]).map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: CATEGORIES[cat].color }}
+                          />
+                          {CATEGORIES[cat].label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Renewal Date Toggle */}
+              <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
+                <div>
+                  <p className="text-sm font-medium">Next Renewal Date</p>
+                  <p className="text-xs text-muted-foreground">Track when payment is due</p>
+                </div>
+                <Switch
+                  checked={includeRenewalDate}
+                  onCheckedChange={setIncludeRenewalDate}
+                />
+              </div>
+
+              {/* Date Picker */}
+              {includeRenewalDate && (
+                <div className="bg-muted rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => adjustMonth(-1)}
+                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="font-semibold">
+                      {renewalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => adjustMonth(1)}
+                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => adjustDay(-1)}
+                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="text-4xl font-bold">{renewalDate.getDate()}</span>
+                    <button
+                      type="button"
+                      onClick={() => adjustDay(1)}
+                      className="w-10 h-10 rounded-full bg-card flex items-center justify-center hover:bg-accent transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Selected: {formatDate(renewalDate)}, {renewalDate.getFullYear()}
+                  </p>
+                </div>
+              )}
+
               <Button
                 onClick={handleAdd}
                 disabled={isLimitReached}
@@ -225,7 +371,7 @@ export default function HomePage() {
               </Button>
             </div>
 
-            {/* Upgrade Banner - inside form card on mobile, separate on desktop */}
+            {/* Upgrade Banner */}
             {isLimitReached && (
               <div className="mt-4 p-3 rounded-xl border border-warning/30 bg-warning/5">
                 <div className="flex items-start gap-3">
@@ -271,19 +417,43 @@ export default function HomePage() {
               </div>
             ) : (
               filteredItems.map((item) => {
+                const daysUntil = getDaysUntilRenewal(item.renewalDate);
+                const isUpcoming = daysUntil !== null && daysUntil <= 3 && daysUntil >= 0;
                 return (
                   <div
                     key={item.id}
                     className="bg-card rounded-2xl p-4 flex items-center gap-3 border border-border shadow-sm hover:shadow-md transition-shadow"
                   >
-                    {/* Category dot placeholder */}
-                    <div className="w-3 h-3 rounded-full bg-primary/60 flex-shrink-0" />
+                    {/* Category dot */}
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: CATEGORIES[item.category].color }}
+                    />
                     
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-base truncate">{item.name}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{item.cadence}</p>
+                      <p className="text-sm text-muted-foreground">{CATEGORIES[item.category].label}</p>
                     </div>
+
+                    {/* Renewal badge */}
+                    {item.renewalDate && daysUntil !== null && (
+                      <div className="flex flex-col items-center">
+                        <div className={cn(
+                          "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium",
+                          isUpcoming ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                        )}>
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(new Date(item.renewalDate))}
+                        </div>
+                        <span className={cn(
+                          "text-[10px] mt-0.5",
+                          isUpcoming ? "text-destructive font-medium" : "text-muted-foreground"
+                        )}>
+                          {daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days`}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Cost */}
                     <div className="text-right flex-shrink-0">
@@ -335,7 +505,6 @@ export default function HomePage() {
           <NavItem icon={HomeIcon} label="Home" active />
           <NavItem icon={TrendingUp} label="Analytics" href="/sign-up" />
           
-          {/* Center FAB */}
           <Link href="/sign-up">
             <button className="w-14 h-14 -mt-8 bg-primary rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
               <Plus className="w-8 h-8 text-primary-foreground stroke-[2.5px]" />

@@ -2,99 +2,98 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "lucide-react";
-import { format } from "date-fns";
+import { useCurrency } from "@/hooks/use-currency";
+import { cn } from "@/lib/utils";
 
 interface UpcomingRenewalsProps {
   userId: string;
 }
 
 export function UpcomingRenewals({ userId }: UpcomingRenewalsProps) {
-  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
+  const subscriptions = useQuery(api.subscriptions.getSubscriptions, { clerkId: userId });
+  const { formatAmount, convertAmount } = useCurrency();
 
-  if (subscriptions === undefined) {
+  if (!subscriptions) {
     return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-32" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-4">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-              <Skeleton className="h-6 w-12" />
-            </div>
+      <div className="bg-card rounded-2xl border border-border">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-semibold">Upcoming</h2>
+        </div>
+        <div className="p-4 space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
-  // Filter and sort upcoming renewals (next 30 days) - ONLY ACTIVE subscriptions
-  const upcoming = subscriptions
-    .filter(sub => {
-      const daysUntil = Math.ceil((sub.nextBillingDate - Date.now()) / (1000 * 60 * 60 * 24));
-      return sub.isActive && daysUntil >= 0 && daysUntil <= 30;
-    })
-    .sort((a, b) => a.nextBillingDate - b.nextBillingDate)
+  const now = new Date();
+  const upcomingRenewals = subscriptions
+    .filter(sub => sub.status === "active")
+    .map(sub => ({
+      ...sub,
+      daysUntil: Math.ceil((sub.nextBillingDate - now.getTime()) / (1000 * 60 * 60 * 24))
+    }))
+    .filter(sub => sub.daysUntil >= 0 && sub.daysUntil <= 30)
+    .sort((a, b) => a.daysUntil - b.daysUntil)
     .slice(0, 5);
 
+  const formatDate = (timestamp: number): string => {
+    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   return (
-    <Card className="border border-border/50 shadow-sm bg-card rounded-2xl transition-all duration-300">
-      <CardHeader className="px-6 pt-6 pb-4">
-        <CardTitle className="text-xl font-bold font-sans tracking-tight">Upcoming Renewals</CardTitle>
-        <CardDescription className="font-medium font-sans text-muted-foreground">Next 30 days</CardDescription>
-      </CardHeader>
-      <CardContent className="px-6 pb-6">
-        {upcoming.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12 bg-muted/20 rounded-2xl border border-dashed border-border">
-            <Calendar className="h-10 w-10 mx-auto mb-3 opacity-20" />
-            <p className="font-bold text-sm tracking-tight font-sans">Everything is quiet</p>
-            <p className="text-xs font-sans">No renewals in the next 30 days</p>
+    <div className="bg-card rounded-2xl border border-border">
+      <div className="p-4 border-b border-border">
+        <h2 className="text-lg font-semibold">Upcoming</h2>
+      </div>
+      <div className="p-4">
+        {upcomingRenewals.length === 0 ? (
+          <div className="text-center py-6">
+            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center mx-auto mb-2">
+              <Calendar className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              No renewals in the next 30 days
+            </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {upcoming.map((subscription) => {
-              const daysUntil = Math.ceil((subscription.nextBillingDate - Date.now()) / (1000 * 60 * 60 * 24));
-              
+          <div className="space-y-3">
+            {upcomingRenewals.map((sub) => {
+              const isUrgent = sub.daysUntil <= 3;
               return (
-                <div key={subscription._id} className="flex items-center justify-between group">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center border border-primary/10 group-hover:bg-primary/10 transition-colors">
-                      <Calendar className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-base font-sans leading-none mb-1">{subscription.name}</p>
-                      <p className="text-xs text-muted-foreground font-bold font-sans">
-                        {format(subscription.nextBillingDate, "MMM dd")}
-                      </p>
-                    </div>
+                <div 
+                  key={sub._id} 
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl",
+                    isUrgent ? "bg-destructive/10" : "bg-muted/50"
+                  )}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{sub.name}</p>
+                    <p className={cn(
+                      "text-xs",
+                      isUrgent ? "text-destructive font-medium" : "text-muted-foreground"
+                    )}>
+                      {sub.daysUntil === 0 ? "Today" : sub.daysUntil === 1 ? "Tomorrow" : `${sub.daysUntil} days`}
+                    </p>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-1.5">
-                    <div className="font-black text-sm font-sans">
-                      {subscription.currency} {subscription.cost.toFixed(2)}
-                    </div>
-                    <Badge 
-                      variant={daysUntil <= 3 ? "destructive" : daysUntil <= 7 ? "secondary" : "outline"}
-                      className="text-[10px] font-black uppercase tracking-tighter px-1.5 py-0 h-5"
-                    >
-                      {daysUntil === 0 ? "Today" : `${daysUntil}d left`}
-                    </Badge>
+                  <div className="text-right">
+                    <p className="font-bold text-sm">
+                      {formatAmount(convertAmount(sub.cost, sub.currency))}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(sub.nextBillingDate)}
+                    </p>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

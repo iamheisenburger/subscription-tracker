@@ -8,7 +8,6 @@ import { SavingsCelebration } from "@/components/dashboard/savings-celebration";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { AutomateDetectionQueue } from "@/components/dashboard/automate/automate-detection-queue";
 import { ScanConsole } from "@/components/dashboard/automate/scan-console";
-import { OverviewActions } from "@/components/dashboard/overview-actions";
 import { MobileAnnualCTA } from "@/components/dashboard/mobile-annual-cta";
 import { AutoTierSync } from "@/components/dashboard/auto-tier-sync";
 import { GmailConnectionToast } from "@/components/dashboard/gmail-connection-toast";
@@ -22,13 +21,13 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Header - Modern App Style */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-black tracking-tight font-sans">
+    <div className="space-y-6">
+      {/* Welcome Header - Mobile App Style */}
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <h1 className="text-2xl font-bold tracking-tight mb-1">
           Hi, {user?.firstName || "there"}!
         </h1>
-        <p className="text-muted-foreground font-medium font-sans">
+        <p className="text-muted-foreground text-sm">
           Your subscriptions are looking good.
         </p>
       </div>
@@ -46,7 +45,6 @@ export default async function DashboardPage() {
       <AutomateDetectionQueue />
 
       {/* Conditional CTAs based on tier and bank status */}
-      {/* UpgradeBanner for Free/Plus users */}
       <UpgradeBanner />
 
       {/* Savings Celebration */}
@@ -61,7 +59,7 @@ export default async function DashboardPage() {
       {/* Mobile Annual Upgrade CTA */}
       <MobileAnnualCTA />
 
-      {/* Main Content */}
+      {/* Main Content - Stacked on mobile, side by side on desktop */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <RecentSubscriptions userId={userId} />

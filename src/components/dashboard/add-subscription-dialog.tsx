@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -30,6 +30,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { FreeTierLimitModal } from "./free-tier-limit-modal";
+import { getPreferredCurrency, setPreferredCurrency } from "@/lib/currency";
 
 // Mobile app category colors - matching exactly
 const CATEGORIES = [
@@ -41,6 +42,14 @@ const CATEGORIES = [
   { value: 'news', label: 'News', color: '#457B9D' },
   { value: 'cloud', label: 'Cloud Storage', color: '#3A86FF' },
   { value: 'other', label: 'Other', color: '#6C757D' },
+];
+
+const CURRENCY_OPTIONS = [
+  { code: "USD", label: "US Dollar ($)", symbol: "$" },
+  { code: "EUR", label: "Euro (€)", symbol: "€" },
+  { code: "GBP", label: "British Pound (£)", symbol: "£" },
+  { code: "CAD", label: "Canadian Dollar (C$)", symbol: "C$" },
+  { code: "AUD", label: "Australian Dollar (A$)", symbol: "A$" },
 ];
 
 const formSchema = z.object({
@@ -63,6 +72,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [includeRenewalDate, setIncludeRenewalDate] = useState(false);
   const [renewalDate, setRenewalDate] = useState<Date>(new Date());
+  const [currencySymbol, setCurrencySymbol] = useState<string>("$");
   const { user } = useUser();
   const { isPremium, subscriptionLimit } = useUserTier();
   const createSubscription = useMutation(api.subscriptions.createSubscription);
@@ -79,19 +89,37 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
     },
   });
 
+  useEffect(() => {
+    const preferred = getPreferredCurrency();
+    form.setValue("currency", preferred);
+    const match = CURRENCY_OPTIONS.find((c) => c.code === preferred);
+    setCurrencySymbol(match?.symbol || "$");
+  }, [form]);
+
+  const handleCurrencyChange = (code: string) => {
+    form.setValue("currency", code);
+    const match = CURRENCY_OPTIONS.find((c) => c.code === code);
+    setCurrencySymbol(match?.symbol || "$");
+    setPreferredCurrency(code);
+  };
+
   const onSubmit = async (values: FormData) => {
     if (!user?.id) return;
 
     try {
+      const safeDate = renewalDate instanceof Date && !isNaN(renewalDate.getTime())
+        ? renewalDate
+        : new Date();
+
       const nextBillingDate = includeRenewalDate 
-        ? renewalDate.getTime() 
-        : new Date().getTime();
+        ? safeDate.getTime() 
+        : Date.now();
 
       await createSubscription({
         clerkId: user.id,
         name: values.name,
         cost: values.cost,
-        currency: values.currency,
+        currency: values.currency.toUpperCase(),
         billingCycle: values.billingCycle,
         nextBillingDate,
         category: values.category,
@@ -168,7 +196,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                     <FormItem className="space-y-2">
                       <FormControl>
                         <div className="flex items-center bg-white dark:bg-[#0F1419] rounded-xl px-4 h-16 border border-[#E5E7EB] dark:border-[#374151]">
-                          <span className="text-xl font-semibold text-[#1F2937] dark:text-[#F3F4F6] mr-1">$</span>
+                          <span className="text-xl font-semibold text-[#1F2937] dark:text-[#F3F4F6] mr-2">{currencySymbol}</span>
                           <Input
                             type="number"
                             step="0.01"
@@ -190,6 +218,43 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                           />
                         </div>
                       </FormControl>
+                      <FormMessage className="text-xs font-medium px-1" />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Currency selection - Mobile-style segmented buttons */}
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">
+                        Currency
+                      </FormLabel>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {CURRENCY_OPTIONS.map((option) => (
+                          <button
+                            key={option.code}
+                            type="button"
+                            onClick={() => {
+                              handleCurrencyChange(option.code);
+                              field.onChange(option.code);
+                            }}
+                            className={cn(
+                              "w-full text-left p-3 rounded-xl border-2 transition-all bg-white dark:bg-[#0F1419]",
+                              field.value === option.code
+                                ? "border-[#1F2937] dark:border-[#F3F4F6] text-[#1F2937] dark:text-[#F3F4F6] font-semibold"
+                                : "border-[#E5E7EB] dark:border-[#374151] text-[#6C757D] hover:border-[#1F2937]/30 dark:hover:border-[#F3F4F6]/30"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">{option.label}</span>
+                              <span className="text-base font-bold">{option.symbol}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                       <FormMessage className="text-xs font-medium px-1" />
                     </FormItem>
                   )}

@@ -163,13 +163,13 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
 }
 
 function RenewalsList({ userId, currency }: { userId: string; currency: string }) {
-  const subscriptions = useQuery(api.subscriptions.getSubscriptions, { clerkId: userId });
+  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
   
   if (!subscriptions) return null;
 
   const now = new Date();
   const renewals = subscriptions
-    .filter(sub => sub.status === "active")
+    .filter(sub => sub.isActive)
     .map(sub => ({
       ...sub,
       daysUntil: Math.ceil((sub.nextBillingDate - now.getTime()) / (1000 * 60 * 60 * 24))

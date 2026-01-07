@@ -54,7 +54,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
   cost: z.number().min(0.01, "Cost must be greater than 0"),
   currency: z.string().min(1, "Currency is required"),
-  billingCycle: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  billingCycle: z.enum(["weekly", "monthly", "yearly"]),
   category: z.string().optional(),
   description: z.string().optional(),
 });
@@ -254,8 +254,8 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                     <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       Billing Cycle
                     </FormLabel>
-                    <div className="grid grid-cols-4 gap-2">
-                      {["daily", "weekly", "monthly", "yearly"].map((cycle) => (
+                    <div className="grid grid-cols-3 gap-2">
+                      {["weekly", "monthly", "yearly"].map((cycle) => (
                         <button
                           key={cycle}
                           type="button"

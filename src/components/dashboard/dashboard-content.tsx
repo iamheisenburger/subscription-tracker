@@ -52,12 +52,12 @@ export function DashboardContent({ userId, userName }: DashboardContentProps) {
   return (
     <div className="space-y-6 pb-24 max-w-5xl mx-auto px-4 sm:px-6">
       {/* Mobile-Style Top Bar - Always Visible Add Button */}
-      <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-border/50 shadow-sm sticky top-0 z-30 sm:p-4">
+      <div className="flex items-center gap-3 bg-card/95 backdrop-blur border border-border shadow-sm rounded-2xl sticky top-0 z-30 sm:p-4 p-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search subscriptions..."
-            className="pl-10 h-12 rounded-xl bg-muted/40 border-0 text-base font-medium"
+            className="pl-10 h-12 rounded-xl bg-muted/40 border-0 text-base font-medium text-foreground"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -83,10 +83,10 @@ export function DashboardContent({ userId, userName }: DashboardContentProps) {
 
       {/* Welcome Header */}
       <div className="pt-2 px-1">
-        <h1 className="text-3xl font-black tracking-tight text-[#1F2937]">
+        <h1 className="text-3xl font-black tracking-tight text-foreground">
           Hi, {userName}!
         </h1>
-        <p className="text-muted-foreground font-bold opacity-70">
+        <p className="text-muted-foreground font-semibold">
           Your subscriptions are looking good.
         </p>
       </div>

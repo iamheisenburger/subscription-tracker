@@ -35,7 +35,7 @@ interface SubscriptionsTableProps {
   userId: string;
   search?: string;
   sortBy?: string;
-  billing?: ("monthly"|"yearly"|"weekly")[];
+  billing?: ("monthly"|"yearly"|"weekly"|"daily")[];
   categories?: string[];
 }
 
@@ -77,7 +77,7 @@ function SubscriptionsTableContent({ userId, search, sortBy = "name", billing, c
       if (search && !sub.name.toLowerCase().includes(search.toLowerCase())) return false;
       
       // Multi-select billing cycle filter
-      if (billing && billing.length > 0 && !billing.includes(sub.billingCycle)) return false;
+      if (billing && billing.length > 0 && !(billing as string[]).includes(sub.billingCycle as string)) return false;
       
       // Multi-select category filter
       if (categories && categories.length > 0 && !categories.includes(sub.category || "other")) return false;

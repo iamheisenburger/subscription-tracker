@@ -12,16 +12,12 @@ export default async function BudgetPage() {
 
   return (
     <div className="space-y-6">
-      {/* Budget Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight font-sans">
-            Budget Management
-          </h1>
-          <p className="text-muted-foreground font-sans">
-            Monitor and control your subscription spending with smart insights
-          </p>
-        </div>
+      {/* Header - Mobile app style */}
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <h1 className="text-2xl font-bold tracking-tight mb-1">Budget</h1>
+        <p className="text-muted-foreground text-sm">
+          Monitor and control your subscription spending.
+        </p>
       </div>
 
       {/* Premium Gate or Enhanced Spending Management */}

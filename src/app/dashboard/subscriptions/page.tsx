@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SubscriptionsTable } from "@/components/dashboard/subscriptions/subscriptions-table";
 import { useUser } from "@clerk/nextjs";
+import { X } from "lucide-react";
 
 export default function SubscriptionsPage() {
   const { user } = useUser();
@@ -19,7 +20,6 @@ export default function SubscriptionsPage() {
   const [billingSet, setBillingSet] = useState<Set<string>>(new Set((params.get("billing") || "").split(",").filter(Boolean)));
   const [categorySet, setCategorySet] = useState<Set<string>>(new Set((params.get("categories") || "").split(",").filter(Boolean)));
 
-  // URL sync
   const syncURL = (next: Partial<{ q: string; status: string; billing: string[]; categories: string[]; category: string }>) => {
     const sp = new URLSearchParams(params.toString());
     if (next.q !== undefined) sp.set("q", next.q);
@@ -41,11 +41,27 @@ export default function SubscriptionsPage() {
   );
 
   if (!user?.id) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="bg-card rounded-2xl p-6 border border-border animate-pulse">
+          <div className="h-8 bg-muted rounded w-48 mb-2" />
+          <div className="h-4 bg-muted rounded w-64" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header - Mobile app style */}
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <h1 className="text-2xl font-bold tracking-tight mb-1">Subscriptions</h1>
+        <p className="text-muted-foreground text-sm">
+          View and manage all your subscriptions.
+        </p>
+      </div>
+
+      {/* Search and Filters */}
       <SubscriptionsHeader 
         search={search}
         onSearchChange={(v) => { setSearch(v); syncURL({ q: v }); }}
@@ -80,31 +96,31 @@ export default function SubscriptionsPage() {
 
       {/* Applied filter chips */}
       {filterCount > 0 && (
-        <div className="flex flex-wrap items-center gap-2 -mt-2">
+        <div className="flex flex-wrap items-center gap-2">
           {activeFilter !== "all" && (
-            <Badge className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+            <Badge className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
               Status: {activeFilter}
             </Badge>
           )}
           {Array.from(billingSet).map((b) => (
-            <Badge key={`b-${b}`} className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+            <Badge key={`b-${b}`} className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
               Billing: {b}
             </Badge>
           ))}
           {categoryFilter !== "all" && (
-            <Badge className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+            <Badge className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
               Category: {categoryFilter}
             </Badge>
           )}
           {Array.from(categorySet).map((c) => (
-            <Badge key={`c-${c}`} className="font-sans bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30">
+            <Badge key={`c-${c}`} className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
               Category: {c}
             </Badge>
           ))}
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 font-sans text-muted-foreground hover:text-foreground"
+            className="h-7 px-3 rounded-full text-muted-foreground hover:text-foreground"
             onClick={() => {
               setSearch("");
               setActiveFilter("all");
@@ -115,18 +131,23 @@ export default function SubscriptionsPage() {
               syncURL({ q: "", status: "all", billing: [], categories: [], category: "all" });
             }}
           >
+            <X className="w-3 h-3 mr-1" />
             Clear all
           </Button>
         </div>
       )}
-      <SubscriptionsTable 
-        userId={user.id} 
-        search={search}
-        activeFilter={activeFilter}
-        categoryFilter={categoryFilter}
-        billing={billingArray}
-        categories={categoriesArray}
-      />
+
+      {/* Subscriptions List */}
+      <div className="bg-card rounded-2xl border border-border">
+        <SubscriptionsTable 
+          userId={user.id} 
+          search={search}
+          activeFilter={activeFilter}
+          categoryFilter={categoryFilter}
+          billing={billingArray}
+          categories={categoriesArray}
+        />
+      </div>
     </div>
   );
 }

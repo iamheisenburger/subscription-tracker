@@ -67,8 +67,10 @@ export const confirmSubscriptionRenewal = mutation({
         nextBillingDate = currentBillingDate + (30 * 24 * 60 * 60 * 1000);
       } else if (subscription.billingCycle === "yearly") {
         nextBillingDate = currentBillingDate + (365 * 24 * 60 * 60 * 1000);
-      } else { // weekly
+      } else if (subscription.billingCycle === "weekly") {
         nextBillingDate = currentBillingDate + (7 * 24 * 60 * 60 * 1000);
+      } else { // daily
+        nextBillingDate = currentBillingDate + (24 * 60 * 60 * 1000);
       }
 
       // Update subscription as renewed (cost changes are handled by subscriptions.updateSubscription for price history)
@@ -238,6 +240,8 @@ export const getSavingsStats = query({
         ? sub.cost / 12 
         : sub.billingCycle === "weekly"
         ? sub.cost * 4.33
+        : sub.billingCycle === "daily"
+        ? sub.cost * 30.44
         : sub.cost;
       
       totalMonthlySavings += monthlyCost;

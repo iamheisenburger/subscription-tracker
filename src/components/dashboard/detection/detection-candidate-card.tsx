@@ -16,7 +16,7 @@ interface DetectionCandidateCardProps {
     proposedName: string;
     proposedAmount: number;
     proposedCurrency: string;
-    proposedCadence: "weekly" | "monthly" | "yearly";
+    proposedCadence: "daily" | "weekly" | "monthly" | "yearly";
     proposedNextBilling: number;
     confidence: number;
     detectionReason: string;
@@ -94,6 +94,8 @@ export function DetectionCandidateCard({
 
   const getCadenceLabel = () => {
     switch (candidate.proposedCadence) {
+      case "daily":
+        return "Daily";
       case "weekly":
         return "Weekly";
       case "monthly":

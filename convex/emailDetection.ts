@@ -153,7 +153,8 @@ export const createDetectionCandidatesFromReceipts = internalMutation({
         // Update candidate confidence if this receipt has higher confidence
         if (receipt.parsingConfidence! > existingCandidate.confidence) {
           // Validate billing cycle
-          const billingCycle = receipt.billingCycle === "weekly" ||
+          const billingCycle = receipt.billingCycle === "daily" ||
+                              receipt.billingCycle === "weekly" ||
                               receipt.billingCycle === "monthly" ||
                               receipt.billingCycle === "yearly"
             ? receipt.billingCycle
@@ -566,7 +567,7 @@ export const runFullEmailDetectionPipeline = mutation({
  * FIX: Avoids byte limit errors by not querying receipt history
  */
 function createSimplePrediction(receipt: any): {
-  cadence: "weekly" | "monthly" | "yearly";
+  cadence: "daily" | "weekly" | "monthly" | "yearly";
   nextRenewal: number;
   confidence: number;
   reason: string;
@@ -575,7 +576,14 @@ function createSimplePrediction(receipt: any): {
   const cadence = validateCadence(receipt.billingCycle);
 
   // Calculate next renewal date
-  const daysToAdd = cadence === "weekly" ? 7 : cadence === "monthly" ? 30 : 365;
+  const daysToAdd =
+    cadence === "daily"
+      ? 1
+      : cadence === "weekly"
+        ? 7
+        : cadence === "monthly"
+          ? 30
+          : 365;
   const nextRenewal = receipt.nextChargeDate ||
                      receipt.receivedAt + daysToAdd * 24 * 60 * 60 * 1000;
 
@@ -602,7 +610,7 @@ function analyzeReceiptPatterns(
   receipts: any[],
   parsedCycle: string | null | undefined
 ): {
-  cadence: "weekly" | "monthly" | "yearly";
+  cadence: "daily" | "weekly" | "monthly" | "yearly";
   nextRenewal: number;
   confidence: number;
   reason: string;
@@ -613,7 +621,14 @@ function analyzeReceiptPatterns(
   if (receipts.length === 1) {
     const receipt = receipts[0];
     const cadence = validateCadence(parsedCycle);
-    const daysToAdd = cadence === "weekly" ? 7 : cadence === "monthly" ? 30 : 365;
+    const daysToAdd =
+      cadence === "daily"
+        ? 1
+        : cadence === "weekly"
+          ? 7
+          : cadence === "monthly"
+            ? 30
+            : 365;
 
     const nextRenewal = receipt.nextChargeDate ||
                        receipt.receivedAt + daysToAdd * 24 * 60 * 60 * 1000;
@@ -643,10 +658,13 @@ function analyzeReceiptPatterns(
   const medianInterval = calculateMedian(intervals);
 
   // Determine cadence based on median interval
-  let cadence: "weekly" | "monthly" | "yearly";
+  let cadence: "daily" | "weekly" | "monthly" | "yearly";
   let expectedInterval: number;
 
-  if (medianInterval >= 6 && medianInterval <= 8) {
+  if (medianInterval >= 0.8 && medianInterval <= 1.3) {
+    cadence = "daily";
+    expectedInterval = 1;
+  } else if (medianInterval >= 6 && medianInterval <= 8) {
     cadence = "weekly";
     expectedInterval = 7;
   } else if (medianInterval >= 25 && medianInterval <= 35) {
@@ -658,7 +676,14 @@ function analyzeReceiptPatterns(
   } else {
     // No clear pattern - fallback to parsed cycle
     cadence = validateCadence(parsedCycle);
-    expectedInterval = cadence === "weekly" ? 7 : cadence === "monthly" ? 30 : 365;
+    expectedInterval =
+      cadence === "daily"
+        ? 1
+        : cadence === "weekly"
+          ? 7
+          : cadence === "monthly"
+            ? 30
+            : 365;
   }
 
   // Calculate periodicity score (how consistent are intervals?)
@@ -710,8 +735,8 @@ function analyzeReceiptPatterns(
 /**
  * Validate and normalize cadence string
  */
-function validateCadence(cadence: string | null | undefined): "weekly" | "monthly" | "yearly" {
-  if (cadence === "weekly" || cadence === "monthly" || cadence === "yearly") {
+function validateCadence(cadence: string | null | undefined): "daily" | "weekly" | "monthly" | "yearly" {
+  if (cadence === "daily" || cadence === "weekly" || cadence === "monthly" || cadence === "yearly") {
     return cadence;
   }
   return "monthly"; // Default fallback

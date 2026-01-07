@@ -57,7 +57,7 @@ export const acceptCandidate = mutation({
       v.object({
         name: v.optional(v.string()),
         amount: v.optional(v.number()),
-        cadence: v.optional(v.union(v.literal("weekly"), v.literal("monthly"), v.literal("yearly"))),
+        cadence: v.optional(v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly"), v.literal("yearly"))),
         nextBilling: v.optional(v.number()),
       })
     ),

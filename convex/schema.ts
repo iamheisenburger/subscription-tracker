@@ -42,9 +42,10 @@ export default defineSchema({
     cost: v.number(),
     currency: v.string(),
     billingCycle: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
       v.literal("monthly"),
-      v.literal("yearly"),
-      v.literal("weekly")
+      v.literal("yearly")
     ),
     nextBillingDate: v.number(),
     category: v.optional(v.string()),
@@ -65,6 +66,7 @@ export default defineSchema({
     merchantId: v.optional(v.id("merchants")),
     // Renewal prediction fields (Automate tier)
     predictedCadence: v.optional(v.union(
+      v.literal("daily"),
       v.literal("weekly"),
       v.literal("monthly"),
       v.literal("yearly")
@@ -203,7 +205,7 @@ export default defineSchema({
     proposedName: v.string(),
     proposedAmount: v.number(),
     proposedCurrency: v.string(),
-    proposedCadence: v.union(v.literal("weekly"), v.literal("monthly"), v.literal("yearly")),
+    proposedCadence: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly"), v.literal("yearly")),
     proposedNextBilling: v.number(),
     confidence: v.number(), // 0-1
     detectionReason: v.string(), // Human-readable explanation

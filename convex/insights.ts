@@ -363,6 +363,8 @@ export const getSavingsSummary = query({
         monthlySavings = sub.cost / 12;
       } else if (sub.billingCycle === "weekly") {
         monthlySavings = sub.cost * 4.33;
+      } else if (sub.billingCycle === "daily") {
+        monthlySavings = sub.cost * 30.44;
       }
       const yearlySavings = monthlySavings * 12;
 

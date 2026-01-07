@@ -1,6 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,46 +52,38 @@ export function FilterModal({
   onCycleToggle,
   onClearAll,
 }: FilterModalProps) {
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50"
-        onClick={() => onOpenChange(false)}
-      />
-      
-      {/* Modal - slides up from bottom on mobile */}
-      <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-3xl max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[400px] sm:rounded-2xl sm:w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-xl font-bold">Filter & Sort</h2>
-          <button
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[450px] rounded-t-3xl sm:rounded-2xl p-0 gap-0 border-0 overflow-hidden bg-white [&>button]:hidden">
+        {/* Header - Single Close Button */}
+        <div className="flex items-center justify-between p-5 border-b border-border bg-white sticky top-0 z-10">
+          <div className="w-10" /> {/* Spacer */}
+          <DialogTitle className="text-xl font-black text-[#1F2937]">Filter & Sort</DialogTitle>
+          <button 
             onClick={() => onOpenChange(false)}
-            className="w-10 h-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
+            className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-foreground" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-6 space-y-10 max-h-[70vh] overflow-y-auto bg-white custom-scrollbar pb-8">
           {/* Sort By */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <div className="space-y-4">
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] px-1">
               Sort By
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {SORT_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => onSortChange(option.value)}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                    "px-6 py-3.5 rounded-2xl text-sm font-black transition-all border-2",
                     sortBy === option.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-[#1F2937] text-white border-[#1F2937] shadow-lg scale-[1.02]"
+                      : "bg-muted/30 text-muted-foreground border-transparent hover:border-[#1F2937]/20"
                   )}
                 >
                   {option.label}
@@ -96,28 +93,29 @@ export function FilterModal({
           </div>
 
           {/* Categories */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <div className="space-y-4">
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] px-1">
               Categories
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => onCategoryToggle(cat.value)}
                   className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2",
+                    "px-6 py-3.5 rounded-full text-sm font-black transition-all border-2 flex items-center gap-3",
                     selectedCategories.has(cat.value)
-                      ? "text-white"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "text-white shadow-xl scale-[1.05]"
+                      : "bg-muted/30 text-muted-foreground border-transparent hover:border-border"
                   )}
                   style={{
-                    backgroundColor: selectedCategories.has(cat.value) ? cat.color : undefined
+                    backgroundColor: selectedCategories.has(cat.value) ? cat.color : undefined,
+                    borderColor: selectedCategories.has(cat.value) ? cat.color : undefined
                   }}
                 >
                   {!selectedCategories.has(cat.value) && (
                     <span 
-                      className="w-2.5 h-2.5 rounded-full" 
+                      className="w-3.5 h-3.5 rounded-full shadow-inner" 
                       style={{ backgroundColor: cat.color }}
                     />
                   )}
@@ -128,20 +126,20 @@ export function FilterModal({
           </div>
 
           {/* Billing Cycle */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <div className="space-y-4">
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] px-1">
               Billing Cycle
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {BILLING_CYCLES.map((cycle) => (
                 <button
                   key={cycle}
                   onClick={() => onCycleToggle(cycle)}
                   className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                    "px-6 py-3.5 rounded-2xl text-sm font-black transition-all border-2",
                     selectedCycles.has(cycle)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-[#1F2937] text-white border-[#1F2937] shadow-lg scale-[1.02]"
+                      : "bg-muted/30 text-muted-foreground border-transparent hover:border-[#1F2937]/20"
                   )}
                 >
                   {cycle.charAt(0).toUpperCase() + cycle.slice(1)}
@@ -152,22 +150,22 @@ export function FilterModal({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-5 border-t border-border">
+        <div className="flex gap-4 p-6 border-t border-border bg-white sticky bottom-0">
           <Button
             variant="outline"
             onClick={onClearAll}
-            className="flex-1 rounded-xl h-12 font-semibold"
+            className="flex-1 rounded-2xl h-16 font-black text-base border-2 border-border/50 hover:bg-muted active:scale-95 transition-all"
           >
             Clear All
           </Button>
           <Button
             onClick={() => onOpenChange(false)}
-            className="flex-1 rounded-xl h-12 font-semibold"
+            className="flex-1 rounded-2xl h-16 font-black text-base bg-[#1F2937] text-white hover:bg-[#1F2937]/90 active:scale-[0.98] transition-all shadow-xl"
           >
             Apply
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

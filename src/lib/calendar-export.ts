@@ -23,8 +23,10 @@ function formatICalDate(timestamp: number): string {
 /**
  * Generate RRULE for recurring events based on billing cycle
  */
-function generateRRule(billingCycle: "weekly" | "monthly" | "yearly"): string {
+function generateRRule(billingCycle: "daily" | "weekly" | "monthly" | "yearly"): string {
   switch (billingCycle) {
+    case "daily":
+      return "RRULE:FREQ=DAILY;INTERVAL=1";
     case "weekly":
       return "RRULE:FREQ=WEEKLY;INTERVAL=1";
     case "monthly":

@@ -51,7 +51,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
   cost: z.number().min(0.01, "Cost must be greater than 0"),
   currency: z.string().min(1, "Currency is required"),
-  billingCycle: z.enum(["monthly", "yearly", "weekly"]),
+  billingCycle: z.enum(["daily", "monthly", "yearly", "weekly"]),
   nextBillingDate: z.date(),
   category: z.string().optional(),
   description: z.string().optional(),
@@ -212,9 +212,10 @@ export function EditSubscriptionDialog({ subscription, children, open: openProp,
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="font-sans">
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
                         <SelectItem value="monthly">Monthly</SelectItem>
                         <SelectItem value="yearly">Yearly</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

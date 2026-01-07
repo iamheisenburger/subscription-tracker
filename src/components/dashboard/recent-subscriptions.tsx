@@ -13,10 +13,20 @@ import { SubscriptionCard } from "./subscription-card";
 
 interface RecentSubscriptionsProps {
   userId: string;
+  search?: string;
+  sortBy?: string;
+  categories?: string[];
+  billing?: string[];
 }
 
-export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
-  const subscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
+export function RecentSubscriptions({ 
+  userId, 
+  search = "", 
+  sortBy = "name", 
+  categories = [], 
+  billing = [] 
+}: RecentSubscriptionsProps) {
+  const allSubscriptions = useQuery(api.subscriptions.getUserSubscriptions, { clerkId: userId });
   const notifications = useQuery(api.insights.getNotificationHistory, {
     clerkUserId: userId,
     limit: 200,
@@ -39,7 +49,42 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
     return map;
   }, [notifications]);
 
-  if (subscriptions === undefined) {
+  const filteredSubscriptions = useMemo(() => {
+    if (!allSubscriptions) return undefined;
+
+    const result = allSubscriptions.filter((sub) => {
+      // Search filter
+      if (search && !sub.name.toLowerCase().includes(search.toLowerCase())) return false;
+      
+      // Multi-select billing cycle filter
+      if (billing && billing.length > 0 && !billing.includes(sub.billingCycle)) return false;
+      
+      // Multi-select category filter
+      if (categories && categories.length > 0 && !categories.includes(sub.category || "other")) return false;
+      
+      return true;
+    });
+
+    // Sort (create new sorted array)
+    const sorted = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "cost_high":
+          return b.cost - a.cost;
+        case "cost_low":
+          return a.cost - b.cost;
+        case "renewal":
+          return a.nextBillingDate - b.nextBillingDate;
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [allSubscriptions, search, billing, categories, sortBy]);
+
+  if (filteredSubscriptions === undefined) {
     return (
       <Card className="rounded-2xl border border-border">
         <CardHeader className="pb-4">
@@ -64,12 +109,12 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
     );
   }
 
-  if (subscriptions.length === 0) {
+  if (allSubscriptions?.length === 0) {
     return (
       <Card className="rounded-2xl border border-border">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">Your Subscriptions</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
+          <CardTitle className="text-lg font-bold">Your Subscriptions</CardTitle>
+          <CardDescription className="text-sm font-medium text-muted-foreground">
             Manage your active subscriptions
           </CardDescription>
         </CardHeader>
@@ -77,13 +122,13 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
           <div className="mx-auto w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
             <Target className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">No subscriptions yet</h3>
-          <p className="text-muted-foreground text-sm mb-4">
+          <h3 className="text-lg font-bold mb-2">No subscriptions yet</h3>
+          <p className="text-muted-foreground text-sm mb-6">
             Add your first subscription to get started tracking your expenses.
           </p>
           <AddSubscriptionDialog>
-            <Button className="rounded-xl">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="rounded-xl h-12 px-6 bg-[#1F2937] hover:bg-[#1F2937]/90 font-bold">
+              <Plus className="mr-2 h-5 w-5" />
               Add Your First Subscription
             </Button>
           </AddSubscriptionDialog>
@@ -92,41 +137,65 @@ export function RecentSubscriptions({ userId }: RecentSubscriptionsProps) {
     );
   }
 
-  const recentSubscriptions = subscriptions.slice(0, 5);
+  if (filteredSubscriptions.length === 0) {
+    return (
+      <Card className="rounded-2xl border border-border">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div>
+            <CardTitle className="text-lg font-bold">Your Subscriptions</CardTitle>
+            <CardDescription className="text-sm font-medium text-muted-foreground">
+              No matches found for your search/filters
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="text-center py-12">
+          <p className="text-muted-foreground text-sm">
+            Try adjusting your search query or filters to find what you&apos;re looking for.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If searching or filtering, show all results. If not, show top 5.
+  const isFiltered = search || categories.length > 0 || billing.length > 0 || sortBy !== "name";
+  const displaySubscriptions = isFiltered ? filteredSubscriptions : filteredSubscriptions.slice(0, 5);
 
   return (
     <Card className="rounded-2xl border border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div>
-          <CardTitle className="text-lg font-semibold">Your Subscriptions</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Active and recently managed
+          <CardTitle className="text-lg font-bold">Your Subscriptions</CardTitle>
+          <CardDescription className="text-sm font-medium text-muted-foreground">
+            {isFiltered ? `${filteredSubscriptions.length} matches found` : "Active and recently managed"}
           </CardDescription>
         </div>
-        <Link href="/dashboard/subscriptions">
-          <Button variant="ghost" size="sm" className="rounded-xl text-primary hover:bg-primary/5">
-            See All
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </Link>
+        {!isFiltered && (
+          <Link href="/dashboard/subscriptions">
+            <Button variant="ghost" size="sm" className="rounded-xl text-[#1F2937] font-bold hover:bg-[#1F2937]/5">
+              See All
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </Link>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {recentSubscriptions.map((subscription) => (
+          {displaySubscriptions.map((subscription) => (
             <SubscriptionCard
               key={subscription._id}
               subscription={subscription}
               showCategory={true}
-              currency="USD" // Will be replaced with user preference later
+              currency="USD"
               hasDuplicateAlert={duplicateAlertMap.get(subscription._id) === true}
             />
           ))}
         </div>
-        {subscriptions.length > 5 && (
+        {!isFiltered && allSubscriptions && allSubscriptions.length > 5 && (
           <div className="text-center pt-4">
             <Link href="/dashboard/subscriptions">
-              <Button variant="outline" size="sm" className="rounded-xl">
-                View All Subscriptions
+              <Button variant="outline" size="sm" className="rounded-xl font-bold border-border/50 text-[#1F2937]">
+                View All {allSubscriptions.length} Subscriptions
               </Button>
             </Link>
           </div>

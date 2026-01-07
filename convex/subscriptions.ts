@@ -198,7 +198,7 @@ export const createSubscription = mutation({
     name: v.string(),
     cost: v.number(),
     currency: v.string(),
-    billingCycle: v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly")),
+    billingCycle: v.union(v.literal("daily"), v.literal("monthly"), v.literal("yearly"), v.literal("weekly")),
     nextBillingDate: v.number(),
     category: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -253,9 +253,9 @@ export const getUserSubscriptions = query({
     status: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
     search: v.optional(v.string()),
     category: v.optional(v.string()),
-    billingCycle: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
+    billingCycle: v.optional(v.union(v.literal("daily"), v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
     // Multi-select support
-    billing: v.optional(v.array(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly")))),
+    billing: v.optional(v.array(v.union(v.literal("daily"), v.literal("monthly"), v.literal("yearly"), v.literal("weekly")))),
     categories: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
@@ -330,7 +330,7 @@ export const updateSubscription = mutation({
     name: v.optional(v.string()),
     cost: v.optional(v.number()),
     currency: v.optional(v.string()),
-    billingCycle: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
+    billingCycle: v.optional(v.union(v.literal("daily"), v.literal("monthly"), v.literal("yearly"), v.literal("weekly"))),
     nextBillingDate: v.optional(v.number()),
     category: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -616,6 +616,8 @@ export const getSubscriptionAnalytics = query({
             monthlyAmount = sub.convertedCost / 12;
           } else if (sub.billingCycle === "weekly") {
             monthlyAmount = sub.convertedCost * 4.33;
+          } else if (sub.billingCycle === "daily") {
+            monthlyAmount = sub.convertedCost * 30.44;
           }
           monthlySpend += monthlyAmount;
         }
@@ -634,6 +636,8 @@ export const getSubscriptionAnalytics = query({
         monthlyAmount = sub.convertedCost / 12;
       } else if (sub.billingCycle === "weekly") {
         monthlyAmount = sub.convertedCost * 4.33;
+      } else if (sub.billingCycle === "daily") {
+        monthlyAmount = sub.convertedCost * 30.44;
       }
       return total + monthlyAmount;
     }, 0);
@@ -652,6 +656,8 @@ export const getSubscriptionAnalytics = query({
         monthlyAmount = sub.convertedCost / 12;
       } else if (sub.billingCycle === "weekly") {
         monthlyAmount = sub.convertedCost * 4.33;
+      } else if (sub.billingCycle === "daily") {
+        monthlyAmount = sub.convertedCost * 30.44;
       }
       
       acc[category].total += monthlyAmount;
@@ -681,6 +687,8 @@ export const getSubscriptionAnalytics = query({
         monthlyAmount = sub.convertedCost / 12;
       } else if (sub.billingCycle === "weekly") {
         monthlyAmount = sub.convertedCost * 4.33;
+      } else if (sub.billingCycle === "daily") {
+        monthlyAmount = sub.convertedCost * 30.44;
       }
       
       acc[cycle].count += 1;

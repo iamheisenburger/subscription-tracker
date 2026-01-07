@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -22,22 +20,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +29,18 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useUserTier } from "@/hooks/use-user-tier";
-import { CategorySelector } from "./categories/category-selector";
+
+// Mobile app category colors - matching exactly
+const CATEGORIES = [
+  { value: 'streaming', label: 'Streaming', color: '#E63946' },
+  { value: 'music', label: 'Music', color: '#F77F00' },
+  { value: 'productivity', label: 'Productivity', color: '#06A77D' },
+  { value: 'fitness', label: 'Fitness', color: '#2A9D8F' },
+  { value: 'gaming', label: 'Gaming', color: '#7209B7' },
+  { value: 'news', label: 'News', color: '#457B9D' },
+  { value: 'cloud', label: 'Cloud Storage', color: '#3A86FF' },
+  { value: 'other', label: 'Other', color: '#6C757D' },
+];
 
 const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
@@ -73,7 +68,8 @@ export function EditSubscriptionDialog({ subscription, children, open: openProp,
   const setOpen = isControlled ? (onOpenChange as (open: boolean) => void) : setInternalOpen;
   const { user } = useUser();
   const updateSubscription = useMutation(api.subscriptions.updateSubscription);
-  const { isPremium } = useUserTier();
+  // Note: Premium tier check available via useUserTier() if needed for future features
+  useUserTier();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -87,6 +83,17 @@ export function EditSubscriptionDialog({ subscription, children, open: openProp,
       description: subscription.description || "",
     },
   });
+
+  const adjustDay = (increment: number) => {
+    const currentDate = form.getValues("nextBillingDate");
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + increment);
+    form.setValue("nextBillingDate", newDate);
+  };
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   const onSubmit = async (values: FormData) => {
     if (!user?.id) return;
@@ -119,195 +126,214 @@ export function EditSubscriptionDialog({ subscription, children, open: openProp,
           {children}
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="font-sans">Edit Subscription</DialogTitle>
-          <DialogDescription className="font-sans">
-            Update your subscription details.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-sans">Subscription Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Netflix" {...field} className="font-sans" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
+      {/* Mobile app style dialog */}
+      <DialogContent className="sm:max-w-[450px] rounded-2xl p-0 gap-0 border border-border bg-[#F8F9FA] dark:bg-[#1A1F26] overflow-hidden [&>button]:hidden max-h-[90vh]">
+        {/* Custom Header */}
+        <div className="flex items-center justify-between p-5 border-b border-[#E5E7EB] dark:border-[#374151] bg-white dark:bg-[#1A1F26] sticky top-0 z-10">
+          <div className="w-10" />
+          <DialogTitle className="text-xl font-bold text-[#1F2937] dark:text-[#F3F4F6]">Edit Subscription</DialogTitle>
+          <button 
+            onClick={() => setOpen(false)}
+            className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] flex items-center justify-center hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] transition-colors"
+          >
+            <X className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+          </button>
+        </div>
+
+        <div className="p-5 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1A1F26]" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-4">
+              {/* Cost Input */}
               <FormField
                 control={form.control}
                 name="cost"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-sans">Cost</FormLabel>
+                  <FormItem className="space-y-2">
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="9.99"
-                        className="font-sans"
-                        value={field.value || ""} // Handle undefined for empty input
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "") {
-                            field.onChange(undefined); // Set to undefined if empty
-                          } else {
-                            const numValue = parseFloat(value);
-                            if (!isNaN(numValue)) {
-                              field.onChange(numValue);
+                      <div className="flex items-center bg-white dark:bg-[#0F1419] rounded-xl px-4 h-16 border border-[#E5E7EB] dark:border-[#374151]">
+                        <span className="text-xl font-semibold text-[#1F2937] dark:text-[#F3F4F6] mr-1">$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          className="border-0 bg-transparent text-2xl font-bold h-full p-0 focus-visible:ring-0 text-[#1F2937] dark:text-[#F3F4F6] placeholder:text-[#9CA3AF]"
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "") {
+                              field.onChange(undefined);
+                            } else {
+                              const numValue = parseFloat(value);
+                              if (!isNaN(numValue)) {
+                                field.onChange(numValue);
+                              }
                             }
-                          }
-                        }}
-                      />
+                          }}
+                        />
+                      </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs font-medium px-1" />
                   </FormItem>
                 )}
               />
+
+              {/* Subscription Name */}
               <FormField
                 control={form.control}
-                name="currency"
+                name="name"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-sans">Currency</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="font-sans">
-                          <SelectValue placeholder="Select a currency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="font-sans">
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                        <SelectItem value="CAD">CAD</SelectItem>
-                        <SelectItem value="AUD">AUD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">Subscription Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Netflix, Spotify, etc." 
+                        className="h-14 rounded-xl bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#374151] focus-visible:border-[#1F2937] dark:focus-visible:border-[#F3F4F6] focus-visible:ring-0 text-base text-[#1F2937] dark:text-[#F3F4F6] placeholder:text-[#9CA3AF] px-4" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs font-medium px-1" />
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+              {/* Billing Cycle */}
               <FormField
                 control={form.control}
                 name="billingCycle"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-sans">Billing Cycle</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="font-sans">
-                          <SelectValue placeholder="Select billing cycle" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="font-sans">
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">Billing Cycle</FormLabel>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {["daily", "weekly", "monthly", "yearly"].map((cycle) => (
+                        <button
+                          key={cycle}
+                          type="button"
+                          onClick={() => field.onChange(cycle)}
+                          className={cn(
+                            "py-4 px-4 rounded-xl text-[15px] font-semibold transition-all border-2",
+                            field.value === cycle
+                              ? "bg-[#1F2937] dark:bg-[#F3F4F6] text-white dark:text-[#1F2937] border-[#1F2937] dark:border-[#F3F4F6]"
+                              : "bg-white dark:bg-[#0F1419] text-[#6C757D] border-[#E5E7EB] dark:border-[#374151] hover:border-[#1F2937]/30 dark:hover:border-[#F3F4F6]/30"
+                          )}
+                        >
+                          {cycle.charAt(0).toUpperCase() + cycle.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                    <FormMessage className="text-xs font-medium px-1" />
                   </FormItem>
                 )}
               />
+
+              {/* Next Billing Date - Simple arrow-based picker */}
               <FormField
                 control={form.control}
                 name="nextBillingDate"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="font-sans">Next Billing Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal font-sans",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date("1900-01-01")}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">Next Renewal Date</FormLabel>
+                    <div className="bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#374151] rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => adjustDay(-1)}
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] flex items-center justify-center transition-colors"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                        </button>
+                        <div className="flex items-center gap-3">
+                          <CalendarIcon className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                          <span className="font-semibold text-base text-[#1F2937] dark:text-[#F3F4F6]">{formatDate(field.value)}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => adjustDay(1)}
+                          className="w-10 h-10 rounded-full bg-[#F3F4F6] dark:bg-[#374151] hover:bg-[#E5E7EB] dark:hover:bg-[#4B5563] flex items-center justify-center transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5 text-[#1F2937] dark:text-[#F3F4F6]" />
+                        </button>
+                      </div>
+                    </div>
+                    <FormMessage className="text-xs font-medium px-1" />
                   </FormItem>
                 )}
               />
-            </div>
 
-            {isPremium && (
+              {/* Category Selection - Available for all users (mobile app shows it for all) */}
               <FormField
                 control={form.control}
                 name="category"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-sans">Category (Optional)</FormLabel>
-                    <FormControl>
-                      <CategorySelector value={field.value} onChange={field.onChange} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">Category</FormLabel>
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => field.onChange(cat.value)}
+                          className={cn(
+                            "w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left",
+                            field.value === cat.value
+                              ? "bg-[#F9FAFB] dark:bg-[#1A1F26]"
+                              : "bg-white dark:bg-[#0F1419] border-[#E5E7EB] dark:border-[#374151] hover:border-[#9CA3AF] dark:hover:border-[#4B5563]"
+                          )}
+                          style={{
+                            borderColor: field.value === cat.value ? cat.color : undefined
+                          }}
+                        >
+                          <div 
+                            className="w-4 h-4 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: cat.color }}
+                          />
+                          <span className={cn(
+                            "font-medium text-base",
+                            field.value === cat.value 
+                              ? "text-[#1F2937] dark:text-[#F3F4F6] font-semibold" 
+                              : "text-[#6C757D]"
+                          )}>
+                            {cat.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <FormMessage className="text-xs font-medium px-1" />
                   </FormItem>
                 )}
               />
-            )}
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-sans">Description (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Notes about this subscription" {...field} className="font-sans" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Notes */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Add any notes about this subscription..." 
+                        className="min-h-[80px] rounded-xl bg-white dark:bg-[#0F1419] border border-[#E5E7EB] dark:border-[#374151] focus-visible:border-[#1F2937] dark:focus-visible:border-[#F3F4F6] focus-visible:ring-0 text-base text-[#1F2937] dark:text-[#F3F4F6] placeholder:text-[#9CA3AF] px-4 py-3" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs font-medium px-1" />
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                className="font-sans"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="font-sans">
-                Update Subscription
-              </Button>
-            </div>
-          </form>
-        </Form>
+              {/* Submit Button */}
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  className="w-full rounded-[14px] h-[56px] font-bold text-[17px] bg-[#1F2937] dark:bg-[#F3F4F6] text-white dark:text-[#1F2937] hover:bg-[#1F2937]/90 dark:hover:bg-[#F3F4F6]/90 transition-colors"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

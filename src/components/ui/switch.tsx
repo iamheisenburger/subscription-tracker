@@ -13,7 +13,14 @@ function Switch({
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        // Mobile app style: trackColor={{ false: '#D1D5DB', true: '#1F2937' }}
+        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        // Light mode: unchecked = gray, checked = dark slate
+        "data-[state=unchecked]:bg-[#D1D5DB] data-[state=checked]:bg-[#1F2937]",
+        // Dark mode: unchecked = slightly lighter gray, checked = light (inverted)
+        "dark:data-[state=unchecked]:bg-[#4B5563] dark:data-[state=checked]:bg-[#F3F4F6]",
         className
       )}
       {...props}
@@ -21,7 +28,13 @@ function Switch({
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
-          "bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
+          // Mobile app style: thumbColor="#FFFFFF"
+          "pointer-events-none block h-5 w-5 rounded-full shadow-lg ring-0 transition-transform",
+          "data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
+          // Always white thumb in light mode
+          "bg-white",
+          // Dark mode: white thumb when unchecked, dark when checked (for contrast)
+          "dark:bg-white dark:data-[state=checked]:bg-[#1F2937]"
         )}
       />
     </SwitchPrimitive.Root>

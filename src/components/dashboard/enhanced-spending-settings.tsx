@@ -165,7 +165,7 @@ export function EnhancedSpendingSettings() {
               <div>
                 <p className="font-semibold text-destructive">Over Budget Alert</p>
                 <p className="text-sm text-destructive/80">
-                  You've exceeded your budget by {formatCurrency(currentSpending - monthlyThreshold, userCurrency)}. Consider reviewing your subscriptions.
+                  You&apos;ve exceeded your budget by {formatCurrency(currentSpending - monthlyThreshold, userCurrency)}. Consider reviewing your subscriptions.
                 </p>
               </div>
             </div>
@@ -263,7 +263,7 @@ export function EnhancedSpendingSettings() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground text-center mt-4">
-            You'll receive email notifications when your spending reaches these percentages.
+            You&apos;ll receive email notifications when your spending reaches these percentages.
           </p>
         </CardContent>
       </Card>

@@ -7,7 +7,6 @@ import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  CreditCard,
   Edit,
   Trash2,
   Pause,

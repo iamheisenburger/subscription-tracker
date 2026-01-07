@@ -6,7 +6,7 @@ import { api } from "../../../../convex/_generated/api";
 import { SpendingTrendsChart } from "./spending-trends-chart";
 import { CategoryBreakdownChart } from "./category-breakdown-chart";
 import { BillingCycleChart } from "./billing-cycle-chart";
-import { TrendingUp, Calendar, CreditCard } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -56,8 +56,6 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
 
   const {
     totalSubscriptions,
-    monthlyTotal,
-    yearlyTotal,
     spendingTrends,
     categoryBreakdown,
     cycleBreakdown,

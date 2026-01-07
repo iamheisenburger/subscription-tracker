@@ -4,7 +4,7 @@
 import { Crown, DollarSign, TrendingUp, AlertTriangle, Lock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useUserTier } from "@/hooks/use-user-tier";
 
 interface BudgetPremiumGateProps {

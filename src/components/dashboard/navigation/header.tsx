@@ -5,7 +5,6 @@ import { Bell, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/landing/theme-toggle";
 import { AddSubscriptionDialog } from "../add-subscription-dialog";
-import Link from "next/link";
 
 export function DashboardHeader() {
   return (

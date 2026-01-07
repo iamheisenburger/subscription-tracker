@@ -15,7 +15,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUserTier } from "@/hooks/use-user-tier";
 import { AddSubscriptionDialog } from "../add-subscription-dialog";
-import { Button } from "@/components/ui/button";
 
 type NavItem = {
   name: string;

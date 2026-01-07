@@ -34,20 +34,18 @@ import { Id } from "../../../../convex/_generated/dataModel";
 interface SubscriptionsTableProps {
   userId: string;
   search?: string;
-  activeFilter?: string;
-  categoryFilter?: string;
+  sortBy?: string;
   billing?: ("monthly"|"yearly"|"weekly")[];
   categories?: string[];
 }
 
-export function SubscriptionsTable({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableProps) {
+export function SubscriptionsTable({ userId, search, sortBy, billing, categories }: SubscriptionsTableProps) {
   return (
     <ConvexErrorBoundary>
       <SubscriptionsTableContent
         userId={userId}
         search={search}
-        activeFilter={activeFilter}
-        categoryFilter={categoryFilter}
+        sortBy={sortBy}
         billing={billing}
         categories={categories}
       />
@@ -55,22 +53,13 @@ export function SubscriptionsTable({ userId, search, activeFilter, categoryFilte
   );
 }
 
-interface SubscriptionsTableContentProps extends SubscriptionsTableProps {
-  search?: string;
-  activeFilter?: string;
-  categoryFilter?: string;
-}
-
-function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilter, billing, categories }: SubscriptionsTableContentProps) {
-  // Parse filters for Convex query
+function SubscriptionsTableContent({ userId, search, sortBy = "name", billing, categories }: SubscriptionsTableProps) {
   const isMobile = useIsMobile();
-  const billingCycle = ["monthly", "yearly", "weekly"].includes(activeFilter || "") ? activeFilter as "monthly" | "yearly" | "weekly" : undefined;
-  const category = categoryFilter && categoryFilter !== "all" ? categoryFilter : undefined;
 
   // PERFORMANCE: Simple query, filter client-side for speed
   const allSubscriptions = useQuery(api.subscriptions.getUserSubscriptions, {
     clerkId: userId,
-    activeOnly: false, // Get all, filter client-side
+    activeOnly: false,
   });
 
   // Notification history for duplicate protection badge gating
@@ -79,32 +68,41 @@ function SubscriptionsTableContent({ userId, search, activeFilter, categoryFilte
     limit: 200,
   });
 
-  // Client-side filtering for better performance
+  // Client-side filtering and sorting
   const subscriptions = useMemo(() => {
     if (!allSubscriptions) return undefined;
 
-    return allSubscriptions.filter((sub) => {
-      // Status filter
-      if (activeFilter === "active" && !sub.isActive) return false;
-      if (activeFilter === "inactive" && sub.isActive) return false;
-      
+    const filtered = allSubscriptions.filter((sub) => {
       // Search filter
       if (search && !sub.name.toLowerCase().includes(search.toLowerCase())) return false;
       
-      // Category filter
-      if (category && sub.category !== category) return false;
-      if (categoryFilter === "uncategorized" && sub.category) return false;
-      
-      // Billing cycle filter
-      if (billingCycle && sub.billingCycle !== billingCycle) return false;
-      
-      // Multi-select filters
+      // Multi-select billing cycle filter
       if (billing && billing.length > 0 && !billing.includes(sub.billingCycle)) return false;
-      if (categories && categories.length > 0 && !categories.includes(sub.category || "uncategorized")) return false;
+      
+      // Multi-select category filter
+      if (categories && categories.length > 0 && !categories.includes(sub.category || "other")) return false;
       
       return true;
     });
-  }, [allSubscriptions, activeFilter, search, category, categoryFilter, billingCycle, billing, categories]);
+
+    // Sort (create new sorted array)
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "cost_high":
+          return b.cost - a.cost;
+        case "cost_low":
+          return a.cost - b.cost;
+        case "renewal":
+          return a.nextBillingDate - b.nextBillingDate;
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [allSubscriptions, search, billing, categories, sortBy]);
 
   // Map of subscriptionId -> has unread duplicate alert
   const duplicateAlertMap = useMemo(() => {

@@ -3,11 +3,8 @@
 import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SubscriptionsHeader } from "@/components/dashboard/subscriptions/subscriptions-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { SubscriptionsTable } from "@/components/dashboard/subscriptions/subscriptions-table";
 import { useUser } from "@clerk/nextjs";
-import { X } from "lucide-react";
 
 export default function SubscriptionsPage() {
   const { user } = useUser();
@@ -15,30 +12,57 @@ export default function SubscriptionsPage() {
   const router = useRouter();
 
   const [search, setSearch] = useState(params.get("q") || "");
-  const [activeFilter, setActiveFilter] = useState(params.get("status") || "all");
-  const [categoryFilter, setCategoryFilter] = useState(params.get("category") || "all");
-  const [billingSet, setBillingSet] = useState<Set<string>>(new Set((params.get("billing") || "").split(",").filter(Boolean)));
-  const [categorySet, setCategorySet] = useState<Set<string>>(new Set((params.get("categories") || "").split(",").filter(Boolean)));
+  const [sortBy, setSortBy] = useState(params.get("sort") || "name");
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    new Set((params.get("categories") || "").split(",").filter(Boolean))
+  );
+  const [selectedCycles, setSelectedCycles] = useState<Set<string>>(
+    new Set((params.get("billing") || "").split(",").filter(Boolean))
+  );
 
-  const syncURL = (next: Partial<{ q: string; status: string; billing: string[]; categories: string[]; category: string }>) => {
+  const syncURL = (next: Partial<{ q: string; sort: string; billing: string[]; categories: string[] }>) => {
     const sp = new URLSearchParams(params.toString());
     if (next.q !== undefined) sp.set("q", next.q);
-    if (next.status !== undefined) sp.set("status", next.status);
-    if (next.category !== undefined) sp.set("category", next.category);
+    if (next.sort !== undefined) sp.set("sort", next.sort);
     if (next.billing !== undefined) sp.set("billing", next.billing.join(","));
     if (next.categories !== undefined) sp.set("categories", next.categories.join(","));
     router.replace(`?${sp.toString()}`);
   };
 
-  const billingArray = useMemo(() => Array.from(billingSet) as ("monthly"|"yearly"|"weekly")[], [billingSet]);
-  const categoriesArray = useMemo(() => Array.from(categorySet), [categorySet]);
+  const handleCategoryToggle = (category: string) => {
+    const next = new Set(selectedCategories);
+    if (next.has(category)) {
+      next.delete(category);
+    } else {
+      next.add(category);
+    }
+    setSelectedCategories(next);
+    syncURL({ categories: Array.from(next) });
+  };
 
-  const filterCount = (
-    (activeFilter !== "all" ? 1 : 0) +
-    billingSet.size +
-    (categoryFilter !== "all" ? 1 : 0) +
-    categorySet.size
-  );
+  const handleCycleToggle = (cycle: string) => {
+    const next = new Set(selectedCycles);
+    if (next.has(cycle)) {
+      next.delete(cycle);
+    } else {
+      next.add(cycle);
+    }
+    setSelectedCycles(next);
+    syncURL({ billing: Array.from(next) });
+  };
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setSortBy("name");
+    setSelectedCategories(new Set());
+    setSelectedCycles(new Set());
+    syncURL({ q: "", sort: "name", billing: [], categories: [] });
+  };
+
+  const filterCount = selectedCategories.size + selectedCycles.size + (sortBy !== "name" ? 1 : 0);
+
+  const billingArray = useMemo(() => Array.from(selectedCycles) as ("monthly"|"yearly"|"weekly")[], [selectedCycles]);
+  const categoriesArray = useMemo(() => Array.from(selectedCategories), [selectedCategories]);
 
   if (!user?.id) {
     return (
@@ -65,85 +89,22 @@ export default function SubscriptionsPage() {
       <SubscriptionsHeader 
         search={search}
         onSearchChange={(v) => { setSearch(v); syncURL({ q: v }); }}
-        activeFilter={activeFilter}
-        onFilterChange={(v) => { setActiveFilter(v); syncURL({ status: v }); }}
-        categoryFilter={categoryFilter}
-        onCategoryChange={(v) => { setCategoryFilter(v); syncURL({ category: v }); }}
+        sortBy={sortBy}
+        onSortChange={(v) => { setSortBy(v); syncURL({ sort: v }); }}
+        selectedCategories={selectedCategories}
+        onCategoryToggle={handleCategoryToggle}
+        selectedCycles={selectedCycles}
+        onCycleToggle={handleCycleToggle}
+        onClearFilters={handleClearFilters}
         filterCount={filterCount}
-        billingSet={billingSet}
-        onBillingToggle={(cycle) => {
-          const next = new Set(billingSet);
-          if (next.has(cycle)) {
-            next.delete(cycle);
-          } else {
-            next.add(cycle);
-          }
-          setBillingSet(next);
-          syncURL({ billing: Array.from(next) });
-        }}
-        categorySet={categorySet}
-        onCategoryToggle={(name) => {
-          const next = new Set(categorySet);
-          if (next.has(name)) {
-            next.delete(name);
-          } else {
-            next.add(name);
-          }
-          setCategorySet(next);
-          syncURL({ categories: Array.from(next) });
-        }}
       />
-
-      {/* Applied filter chips */}
-      {filterCount > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {activeFilter !== "all" && (
-            <Badge className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
-              Status: {activeFilter}
-            </Badge>
-          )}
-          {Array.from(billingSet).map((b) => (
-            <Badge key={`b-${b}`} className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
-              Billing: {b}
-            </Badge>
-          ))}
-          {categoryFilter !== "all" && (
-            <Badge className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
-              Category: {categoryFilter}
-            </Badge>
-          )}
-          {Array.from(categorySet).map((c) => (
-            <Badge key={`c-${c}`} className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1">
-              Category: {c}
-            </Badge>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-3 rounded-full text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              setSearch("");
-              setActiveFilter("all");
-              setCategoryFilter("all");
-              const ns = new Set<string>();
-              setBillingSet(ns);
-              setCategorySet(new Set<string>());
-              syncURL({ q: "", status: "all", billing: [], categories: [], category: "all" });
-            }}
-          >
-            <X className="w-3 h-3 mr-1" />
-            Clear all
-          </Button>
-        </div>
-      )}
 
       {/* Subscriptions List */}
       <div className="bg-card rounded-2xl border border-border">
         <SubscriptionsTable 
           userId={user.id} 
           search={search}
-          activeFilter={activeFilter}
-          categoryFilter={categoryFilter}
+          sortBy={sortBy}
           billing={billingArray}
           categories={categoriesArray}
         />

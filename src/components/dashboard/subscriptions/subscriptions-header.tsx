@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Filter, Download, Tag } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, Download } from "lucide-react";
 import { AddSubscriptionDialog } from "@/components/dashboard/add-subscription-dialog";
+import { FilterModal } from "./filter-modal";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -21,148 +23,73 @@ import {
 interface SubscriptionsHeaderProps {
   search: string;
   onSearchChange: (search: string) => void;
-  activeFilter: string; // all | active | inactive | monthly | yearly | weekly
-  onFilterChange: (filter: string) => void;
-  categoryFilter: string; // all | uncategorized | <name>
-  onCategoryChange: (category: string) => void;
-  billingSet?: Set<string>;
-  onBillingToggle?: (cycle: string) => void;
-  categorySet?: Set<string>;
-  onCategoryToggle?: (name: string) => void;
-  filterCount?: number;
+  sortBy: string;
+  onSortChange: (sort: string) => void;
+  selectedCategories: Set<string>;
+  onCategoryToggle: (category: string) => void;
+  selectedCycles: Set<string>;
+  onCycleToggle: (cycle: string) => void;
+  onClearFilters: () => void;
+  filterCount: number;
 }
 
 export function SubscriptionsHeader({
   search,
   onSearchChange,
-  activeFilter,
-  onFilterChange,
-  categoryFilter,
-  onCategoryChange,
-  billingSet,
-  onBillingToggle,
-  categorySet,
+  sortBy,
+  onSortChange,
+  selectedCategories,
   onCategoryToggle,
+  selectedCycles,
+  onCycleToggle,
+  onClearFilters,
   filterCount,
 }: SubscriptionsHeaderProps) {
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const { isPlus, isAutomate, isFree } = useUserTier();
   const { user } = useUser();
-  const categories = useQuery(api.categories.listCategories, user?.id ? { clerkId: user.id } : "skip");
   const subscriptions = useQuery(
     api.subscriptions.getUserSubscriptions,
     user?.id ? { clerkId: user.id } : "skip"
   );
 
   const hasPlusFeatures = isPlus || isAutomate;
+  const hasActiveFilters = filterCount > 0;
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search subscriptions..."
-            className="pl-10 rounded-xl bg-muted/40 border-border/50"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-xl border-border/50">
-                <Filter className="mr-2 h-4 w-4" />
-                {filterCount && filterCount > 0 ? `Filters (${filterCount})` : "Filter"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-xl">
-              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className={cn(
-                  activeFilter === "all" && "bg-primary/10 text-primary"
-                )} 
-                onClick={() => onFilterChange("all")}
-              >
-                All Subscriptions
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className={cn(
-                  activeFilter === "active" && "bg-primary/10 text-primary"
-                )} 
-                onClick={() => onFilterChange("active")}
-              >
-                Active
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className={cn(
-                  activeFilter === "inactive" && "bg-primary/10 text-primary"
-                )} 
-                onClick={() => onFilterChange("inactive")}
-              >
-                Inactive
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Filter by Billing</DropdownMenuLabel>
-              {(["monthly","yearly","weekly"]).map((c) => (
-                <DropdownMenuItem
-                  key={c}
-                  className={cn(
-                    "flex items-center gap-2",
-                    billingSet?.has(c) && "bg-primary/5"
-                  )}
-                  onClick={() => (typeof window !== 'undefined' && (onBillingToggle && onBillingToggle(c)))}
-                >
-                  <span className={`h-2 w-2 rounded-full ${billingSet?.has(c) ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
-                  {c.charAt(0).toUpperCase()+c.slice(1)}
-                </DropdownMenuItem>
-              ))}
-              {hasPlusFeatures && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="flex items-center gap-2">
-                    <Tag className="h-4 w-4" /> Categories
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem 
-                    className={cn(
-                      categoryFilter === "all" && "bg-primary/10 text-primary"
-                    )} 
-                    onClick={() => onCategoryChange("all")}
-                  >
-                    All Categories
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className={cn(
-                      categoryFilter === "uncategorized" && "bg-primary/10 text-primary"
-                    )} 
-                    onClick={() => onCategoryChange("uncategorized")}
-                  >
-                    Uncategorized
-                  </DropdownMenuItem>
-                  {categories?.map((c) => (
-                    <DropdownMenuItem 
-                      key={c._id}
-                      className={cn(
-                        "flex items-center gap-2",
-                        categorySet?.has(c.name) && "bg-primary/5"
-                      )}
-                      onClick={() => (typeof window !== 'undefined' && (onCategoryToggle && onCategoryToggle(c.name)))}
-                    >
-                      <span className={`h-2 w-2 rounded-full ${categorySet?.has(c.name) ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
-                      {c.name}
-                    </DropdownMenuItem>
-                  ))}
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <>
+      <div className="bg-card rounded-2xl border border-border p-4">
+        {/* Search and Filter Row */}
+        <div className="flex items-center gap-3">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search subscriptions..."
+              className="pl-10 h-11 rounded-xl bg-muted border-0"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
 
-          {hasPlusFeatures ? (
+          {/* Filter Button */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setFilterModalOpen(true)}
+            className={cn(
+              "h-11 w-11 rounded-xl shrink-0",
+              hasActiveFilters && "bg-primary text-primary-foreground hover:bg-primary/90 border-primary"
+            )}
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+          </Button>
+
+          {/* Export Button - Desktop only */}
+          {hasPlusFeatures && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="rounded-xl border-border/50">
+                <Button variant="outline" className="hidden sm:flex rounded-xl h-11">
                   <Download className="mr-2 h-4 w-4" />
                   Export
                 </Button>
@@ -178,26 +105,21 @@ export function SubscriptionsHeader({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Button variant="outline" className="rounded-xl border-border/50 opacity-50 cursor-not-allowed" disabled>
-              <Download className="mr-2 h-4 w-4" />
-              Export (Plus)
-            </Button>
           )}
 
-          {/* Add Subscription Button */}
+          {/* Add Button */}
           {isAutomate && (
             <AddSubscriptionDialog>
-              <Button variant="outline" className="rounded-xl border-border/50">
+              <Button className="hidden sm:flex rounded-xl h-11">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Manual
+                Add
               </Button>
             </AddSubscriptionDialog>
           )}
 
           {isPlus && (
             <AddSubscriptionDialog>
-              <Button className="rounded-xl">
+              <Button className="hidden sm:flex rounded-xl h-11">
                 <Plus className="mr-2 h-4 w-4" />
                 Add
               </Button>
@@ -212,7 +134,7 @@ export function SubscriptionsHeader({
 
               if (reachedLimit) {
                 return (
-                  <Button disabled className="rounded-xl opacity-60 cursor-not-allowed">
+                  <Button disabled className="hidden sm:flex rounded-xl h-11 opacity-60">
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                   </Button>
@@ -220,7 +142,7 @@ export function SubscriptionsHeader({
               }
               return (
                 <AddSubscriptionDialog>
-                  <Button className="rounded-xl">
+                  <Button className="hidden sm:flex rounded-xl h-11">
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                   </Button>
@@ -229,7 +151,58 @@ export function SubscriptionsHeader({
             })()
           )}
         </div>
+
+        {/* Active Filters Display */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+            <span className="text-xs text-muted-foreground">Filters:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from(selectedCategories).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => onCategoryToggle(cat)}
+                  className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                >
+                  {cat} ×
+                </button>
+              ))}
+              {Array.from(selectedCycles).map((cycle) => (
+                <button
+                  key={cycle}
+                  onClick={() => onCycleToggle(cycle)}
+                  className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                >
+                  {cycle} ×
+                </button>
+              ))}
+              {sortBy !== 'name' && (
+                <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs">
+                  Sort: {sortBy.replace('_', ' ')}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={onClearFilters}
+              className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Filter Modal */}
+      <FilterModal
+        open={filterModalOpen}
+        onOpenChange={setFilterModalOpen}
+        sortBy={sortBy}
+        onSortChange={onSortChange}
+        selectedCategories={selectedCategories}
+        onCategoryToggle={onCategoryToggle}
+        selectedCycles={selectedCycles}
+        onCycleToggle={onCycleToggle}
+        onClearAll={onClearFilters}
+      />
+    </>
   );
 }

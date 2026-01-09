@@ -28,7 +28,7 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
   const stats = useQuery(api.subscriptions.getSubscriptionStats, { clerkId: userId });
   const { isPremium } = useUserTier();
 
-  // Get preferred currency
+  // Get preferred currency - GLOBAL
   const [preferredCurrency, setPreferredCurrency] = useState('USD');
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -37,7 +37,7 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
     }
   }, []);
 
-  // Use same analytics backend as analytics page
+  // Use same analytics backend as analytics page - CONSISTENT WITH ALL PAGES
   const analytics = useQuery(api.subscriptions.getSubscriptionAnalytics, {
     clerkId: userId,
     targetCurrency: preferredCurrency,
@@ -49,12 +49,12 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
   if (stats === undefined) {
     return (
       <div className="space-y-4">
-        {/* Loading skeleton for summary card */}
-        <Card className="rounded-2xl bg-[#1F2937] dark:bg-[#1F2937] border-0">
+        {/* Loading skeleton - proper dark mode */}
+        <Card className="rounded-2xl bg-[#1F2937] dark:bg-[#1A1F26] border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
-              <Skeleton className="h-20 w-32 bg-white/10" />
-              <Skeleton className="h-20 w-32 bg-white/10" />
+              <Skeleton className="h-20 w-32 bg-white/10 dark:bg-white/5" />
+              <Skeleton className="h-20 w-32 bg-white/10 dark:bg-white/5" />
             </div>
           </CardContent>
         </Card>
@@ -73,26 +73,26 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
 
   return (
     <div className="space-y-4">
-      {/* Main Summary Card - Mobile App Style */}
-      <Card className="rounded-2xl bg-[#1F2937] dark:bg-[#1F2937] border-0 shadow-lg overflow-hidden">
+      {/* Main Summary Card - Mobile App Style with proper dark mode */}
+      <Card className="rounded-2xl bg-[#1F2937] dark:bg-[#1A1F26] border-0 shadow-lg overflow-hidden">
         <CardContent className="p-6">
           <div className="flex justify-between items-start">
             {/* Monthly Total */}
             <div className="space-y-1">
-              <p className="text-sm font-medium text-white/60 uppercase tracking-wide">Monthly</p>
-              <p className="text-3xl font-bold text-white tracking-tight">
+              <p className="text-sm font-medium text-white/60 dark:text-white/50 uppercase tracking-wide font-sans">Monthly</p>
+              <p className="text-3xl font-bold text-white dark:text-[#F3F4F6] tracking-tight font-sans">
                 {formatCurrency(monthlyTotal, currency)}
               </p>
-              <p className="text-xs text-white/40">{analytics?.totalSubscriptions || 0} subscriptions</p>
+              <p className="text-xs text-white/40 dark:text-white/30 font-sans">{analytics?.totalSubscriptions || 0} subscriptions</p>
             </div>
 
             {/* Yearly Total */}
             <div className="space-y-1 text-right">
-              <p className="text-sm font-medium text-white/60 uppercase tracking-wide">Yearly</p>
-              <p className="text-3xl font-bold text-white tracking-tight">
+              <p className="text-sm font-medium text-white/60 dark:text-white/50 uppercase tracking-wide font-sans">Yearly</p>
+              <p className="text-3xl font-bold text-white dark:text-[#F3F4F6] tracking-tight font-sans">
                 {formatCurrency(yearlyTotal, currency)}
               </p>
-              <div className="flex items-center justify-end gap-1 text-xs text-white/40">
+              <div className="flex items-center justify-end gap-1 text-xs text-white/40 dark:text-white/30 font-sans">
                 <TrendingUp className="h-3 w-3" />
                 <span>projected</span>
               </div>
@@ -103,14 +103,14 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
           {isPremium && budget ? (
             <div className="mt-6 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-white/60">Budget</span>
-                <span className={`text-xs font-semibold ${isOverBudget ? 'text-red-400' : 'text-emerald-400'}`}>
+                <span className="text-xs font-medium text-white/60 dark:text-white/50 font-sans">Budget</span>
+                <span className={`text-xs font-semibold font-sans ${isOverBudget ? 'text-red-400' : 'text-emerald-400'}`}>
                   {formatCurrency(monthlyTotal, currency)} / {formatCurrency(budget, currency)}
                 </span>
               </div>
               <Progress
                 value={budgetUsagePercent}
-                className="h-2 bg-white/10"
+                className="h-2 bg-white/10 dark:bg-white/5"
                 // Custom colors via CSS
                 style={{
                   // @ts-expect-error CSS custom property
@@ -118,7 +118,7 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
                 }}
               />
               {isOverBudget && (
-                <p className="text-xs text-red-400 font-medium">
+                <p className="text-xs text-red-400 font-medium font-sans">
                   Over budget by {formatCurrency(monthlyTotal - budget, currency)}
                 </p>
               )}
@@ -126,9 +126,9 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
           ) : isPremium ? (
             // Plus user without budget set
             <Link href="/dashboard/budget" className="block mt-6">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                <span className="text-sm text-white/70">Set a monthly budget</span>
-                <span className="text-xs text-white/40">Tap to configure</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 dark:bg-white/[0.03] hover:bg-white/10 dark:hover:bg-white/[0.05] transition-colors">
+                <span className="text-sm text-white/70 dark:text-white/60 font-sans">Set a monthly budget</span>
+                <span className="text-xs text-white/40 dark:text-white/30 font-sans">Tap to configure</span>
               </div>
             </Link>
           ) : (
@@ -137,9 +137,9 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
               <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-colors border border-amber-500/20">
                 <div className="flex items-center gap-2">
                   <Crown className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm text-amber-200 font-medium">Unlock budget tracking</span>
+                  <span className="text-sm text-amber-200 dark:text-amber-300 font-medium font-sans">Unlock budget tracking</span>
                 </div>
-                <span className="text-xs text-amber-400/70">Upgrade to Plus</span>
+                <span className="text-xs text-amber-400/70 dark:text-amber-400/60 font-sans">Upgrade to Plus</span>
               </div>
             </Link>
           )}

@@ -220,7 +220,7 @@ export interface PricingInfo {
   cta: string;
 }
 
-// Pricing matching mobile app: $4/mo or $40/yr for Plus
+// Pricing matching Clerk configuration
 export const PRICING_INFO: Record<UserTier, PricingInfo> = {
   free_user: {
     tier: "free_user",
@@ -238,8 +238,8 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
   premium_user: {
     tier: "premium_user",
     displayName: "Plus (Legacy)",
-    monthlyPrice: 4,
-    annualPrice: 40,
+    monthlyPrice: 5,
+    annualPrice: 42,
     features: [
       "Unlimited subscriptions",
       "Budget tracking & alerts",
@@ -252,8 +252,8 @@ export const PRICING_INFO: Record<UserTier, PricingInfo> = {
   plus: {
     tier: "plus",
     displayName: "Plus",
-    monthlyPrice: 4,
-    annualPrice: 40,
+    monthlyPrice: 5,
+    annualPrice: 42,
     features: [
       "Unlimited subscriptions",
       "Budget tracking & alerts",

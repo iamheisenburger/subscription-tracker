@@ -44,21 +44,20 @@ const CATEGORIES = [
   { value: 'other', label: 'Other', color: '#6C757D' },
 ];
 
-// Matching mobile app: 7 currencies
-const CURRENCY_OPTIONS = [
-  { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "EUR", label: "Euro", symbol: "€" },
-  { code: "GBP", label: "British Pound", symbol: "£" },
-  { code: "CAD", label: "Canadian Dollar", symbol: "C$" },
-  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
-  { code: "JPY", label: "Japanese Yen", symbol: "¥" },
-  { code: "INR", label: "Indian Rupee", symbol: "₹" },
-];
+// Currency symbol mapping
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  CAD: 'C$',
+  AUD: 'A$',
+  JPY: '¥',
+  INR: '₹',
+};
 
 const formSchema = z.object({
   name: z.string().min(1, "Subscription name is required"),
   cost: z.number().min(0.01, "Cost must be greater than 0"),
-  currency: z.string().min(1, "Currency is required"),
   billingCycle: z.enum(["daily", "weekly", "monthly", "yearly"]),
   category: z.string().optional(),
   description: z.string().optional(),
@@ -75,6 +74,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [includeRenewalDate, setIncludeRenewalDate] = useState(false);
   const [renewalDate, setRenewalDate] = useState<Date>(new Date());
+  const [currency, setCurrency] = useState<string>("USD");
   const [currencySymbol, setCurrencySymbol] = useState<string>("$");
   const { user } = useUser();
   const { isPremium, subscriptionLimit } = useUserTier();
@@ -85,26 +85,18 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
     defaultValues: {
       name: "",
       cost: undefined,
-      currency: "USD",
       billingCycle: "monthly",
       category: "streaming",
       description: "",
     },
   });
 
+  // Get currency from user settings on mount
   useEffect(() => {
     const preferred = getPreferredCurrency();
-    form.setValue("currency", preferred);
-    const match = CURRENCY_OPTIONS.find((c) => c.code === preferred);
-    setCurrencySymbol(match?.symbol || "$");
-  }, [form]);
-
-  const handleCurrencyChange = (code: string) => {
-    form.setValue("currency", code);
-    const match = CURRENCY_OPTIONS.find((c) => c.code === code);
-    setCurrencySymbol(match?.symbol || "$");
-    setPreferredCurrency(code);
-  };
+    setCurrency(preferred);
+    setCurrencySymbol(CURRENCY_SYMBOLS[preferred] || "$");
+  }, []);
 
   const onSubmit = async (values: FormData) => {
     if (!user?.id) return;
@@ -122,7 +114,7 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
         clerkId: user.id,
         name: values.name,
         cost: values.cost,
-        currency: values.currency.toUpperCase(),
+        currency: currency.toUpperCase(),
         billingCycle: values.billingCycle,
         nextBillingDate,
         category: values.category,
@@ -221,43 +213,6 @@ export function AddSubscriptionDialog({ children }: AddSubscriptionDialogProps) 
                           />
                         </div>
                       </FormControl>
-                      <FormMessage className="text-xs font-medium px-1" />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Currency selection - Mobile-style segmented buttons */}
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6]">
-                        Currency
-                      </FormLabel>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        {CURRENCY_OPTIONS.map((option) => (
-                          <button
-                            key={option.code}
-                            type="button"
-                            onClick={() => {
-                              handleCurrencyChange(option.code);
-                              field.onChange(option.code);
-                            }}
-                            className={cn(
-                              "w-full text-left p-3 rounded-xl border-2 transition-all bg-white dark:bg-[#0F1419]",
-                              field.value === option.code
-                                ? "border-[#1F2937] dark:border-[#F3F4F6] text-[#1F2937] dark:text-[#F3F4F6] font-semibold"
-                                : "border-[#E5E7EB] dark:border-[#374151] text-[#6C757D] hover:border-[#1F2937]/30 dark:hover:border-[#F3F4F6]/30"
-                            )}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm">{option.label}</span>
-                              <span className="text-base font-bold">{option.symbol}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
                       <FormMessage className="text-xs font-medium px-1" />
                     </FormItem>
                   )}

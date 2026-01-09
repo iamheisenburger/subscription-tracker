@@ -33,10 +33,10 @@ export const CustomPricingV2 = () => {
   const plusPlan = {
     name: "Plus",
     description: "Unlock unlimited subscriptions, advanced analytics, budget tracking, smart alerts, and export capabilities.",
-    price: billingCycle === 'monthly' ? "$4.00" : "$3.33",
+    price: billingCycle === 'monthly' ? "$5.00" : "$3.50",
     period: billingCycle === 'monthly' ? "/month" : "/month",
-    originalPrice: billingCycle === 'annual' ? "$4.00" : null,
-    annualNote: billingCycle === 'annual' ? "Billed annually ($40.00/year)" : "Billed monthly",
+    originalPrice: billingCycle === 'annual' ? "$5.00" : null,
+    annualNote: billingCycle === 'annual' ? "Billed annually ($42.00/year)" : "Billed monthly",
     features: [
       "Unlimited subscriptions",
       "Budget tracking & alerts",

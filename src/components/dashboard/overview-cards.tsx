@@ -74,7 +74,7 @@ function OverviewCardsContent({ userId }: OverviewCardsProps) {
   return (
     <div className="space-y-4">
       {/* Main Summary Card - Mobile App Style with proper dark mode */}
-      <Card className="rounded-2xl bg-[#1F2937] dark:bg-[#1A1F26] border-0 shadow-lg overflow-hidden">
+      <Card className="rounded-2xl bg-[#1F2937] dark:bg-[#1F2937] border-0 shadow-lg overflow-hidden">
         <CardContent className="p-6">
           <div className="flex justify-between items-start">
             {/* Monthly Total */}

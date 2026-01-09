@@ -68,13 +68,13 @@ export function DashboardContent({ userId, userName }: DashboardContentProps) {
           onClick={() => setFilterModalOpen(true)}
           className={cn(
             "h-12 w-12 rounded-xl shrink-0 border-border/50 transition-all",
-            filterCount > 0 && "bg-[#1F2937] text-white border-[#1F2937] shadow-md"
+            filterCount > 0 && "bg-[#1F2937] dark:bg-white text-white dark:text-[#1F2937] border-[#1F2937] dark:border-white shadow-md"
           )}
         >
           <SlidersHorizontal className="h-5 w-5" />
         </Button>
         <AddSubscriptionDialog>
-          <Button className="flex h-12 px-4 rounded-xl bg-[#1F2937] hover:bg-[#1F2937]/90 font-black text-white sm:px-6">
+          <Button className="flex h-12 px-4 rounded-xl bg-[#1F2937] dark:bg-white hover:bg-[#1F2937]/90 dark:hover:bg-white/90 font-black text-white dark:text-[#1F2937] sm:px-6">
             <Plus className="h-5 w-5 sm:mr-2" />
             <span className="hidden sm:inline">Add</span>
           </Button>

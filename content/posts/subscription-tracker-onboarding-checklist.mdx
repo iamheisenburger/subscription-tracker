@@ -1,0 +1,76 @@
+---
+title: "Subscription Tracker Onboarding Checklist: Step-by-Step Setup for New Users"
+description: "Step-by-step subscription tracker onboarding checklist: set up your account, import subscriptions, link payments, set reminders, and get value in minutes."
+date: "2026-01-28T03:04:52.409Z"
+sources:
+  - url: "https://docs.appcues.com/en_US/user-experiences-use-cases/use-a-checklist-to-onboard-users"
+    title: "Use a checklist to onboard users — Appcues documentation"
+  - url: "https://www.1capture.io/blog/free-trial-conversion-benchmarks-2025"
+    title: "Free trial conversion benchmarks — 1capture"
+  - url: "https://www.intercom.com/blog/user-onboarding-interview-samuel-hulick/?utm_source=openai"
+    title: "User onboarding interview — Samuel Hulick (Intercom blog)"
+  - url: "https://skwad.app/"
+    title: "Skwad — example product (privacy-first onboarding)"
+  - url: "https://learn.askape.com/use-cases/pre-investor/getting-started/funding-account"
+    title: "AskApe — Getting started and security notes"
+  - url: "https://www.userflow.com/blog/the-ultimate-product-onboarding-checklist"
+    title: "The ultimate product onboarding checklist — Userflow blog"
+  - url: "https://userpilot.com/blog/martech-success-metrics-benchmark-report/"
+    title: "Martech success metrics benchmark report — Userpilot"
+  - url: "https://www.appcues.com/product-adoption-academy/templates/user-onboarding-checklist"
+    title: "User onboarding checklist | Appcues (template)"
+  - url: "https://www.intercom.com/blog/podcasts/growth-marketing-ramli-john-on-user-onboarding/"
+    title: "Growth marketing expert Ramli John on why you’re getting user onboarding wrong - Intercom"
+  - url: "https://medium.com/startup-grind/the-first-timers-guide-to-user-onboarding-fbcaf28c3b22"
+    title: "The First-Timer’s Guide to User Onboarding (quotes & synthesis referencing Samuel Hulick)"
+  - url: "https://www.intercom.com/blog/user-onboarding-interview-samuel-hulick/"
+    title: "Talking user onboarding with Samuel Hulick - Intercom interview"
+internalLinks:
+  - anchor: "Home"
+    href: "/"
+  - anchor: "Features"
+    href: "/features"
+  - anchor: "Create account"
+    href: "/signup"
+  - anchor: "Sign in"
+    href: "/login"
+  - anchor: "Pricing"
+    href: "/pricing"
+  - anchor: "Integrations"
+    href: "/integrations"
+  - anchor: "Help & FAQ"
+    href: "/help"
+  - anchor: "Privacy policy"
+    href: "/privacy"
+  - anchor: "Blog: onboarding tips"
+    href: "/blog"
+  - anchor: "About SubWise"
+    href: "/about"
+---
+
+I reviewed the article against the provided sources and flagged which statements are directly supported, which are only partially supported (paraphrase or recommendation), and which contain numeric claims or specifics that are not verifiable in the cited sources. Summary:
+
+Supported (directly backed by sources)
+- Using a checklist widget to break onboarding into discrete tasks, surface flows, track completion events, and trigger follow-ups is supported by Appcues documentation (Appcues describes checklist patterns and event-driven completion). (Appcues)
+- Instrumenting checklist items as events and using an activation event as a north-star for experiments and messaging is consistent with Appcues guidance about event-driven checklists and with general best practices discussed across the sources. (Appcues)
+- The idea of offering alternatives to bank linking (CSV import, manual entry) and showing security/privacy copy when asking for financial connections is supported by AskApe’s onboarding/security notes and by examples of privacy-first onboarding patterns (Skwad). (AskApe, Skwad)
+- Emphasizing that onboarding should deliver Time-to-Value (TTV) quickly and focus on real value moments is supported by the Intercom interview with Samuel Hulick and related onboarding guidance. The Intercom sources also include the cited concept that onboarding is about increasing the likelihood users succeed. (Intercom — Samuel Hulick)
+- The recommendation to avoid long, intrusive tours in favor of focused, value-focused onboarding is supported by comments in the Intercom material (e.g., ideas attributed to Samuel Hulick and Ramli John about not relying on superficial tours). (Intercom — Samuel Hulick; Intercom — Ramli John)
+
+Partially supported / Reasonable recommendations (sources support the principle but not the exact phrasing or every specific tactical claim)
+- Event-driven auto-complete of checklist items (Appcues supports event-based completion). The article’s specific 9-step checklist is a coherent, practical design assembled from best practices but the exact sequence and wording are product-specific recommendations rather than direct quotations from the sources. (Appcues)
+- Security copy guidance to name connectors and state read-only access is supported in principle by AskApe and privacy-first examples, but the article’s exact microcopy (e.g., naming Plaid verbatim) is a product decision that should be validated against any connector's branding/legal guidance. (AskApe, Skwad)
+
+Claims lacking direct support / numeric or factual items not found in provided sources
+- “Best-in-class products can deliver meaningful value in under five minutes”: the provided benchmark sources discuss conversion and onboarding benchmarks, but I could not verify a direct claim in these exact words or the specific "under five minutes" threshold in the cited 1capture or Userpilot sources. Rephrase to: "Aim to deliver visible value quickly (within the first session); benchmark values vary by product and category, consult your analytics." (1capture, Userpilot)
+- Activation rate target: "40–60% for healthy activation" — this explicit numeric target is not verifiable in the provided sources as a universal benchmark. Conversion/activation benchmarks vary significantly by product, pricing model, and complexity. If you want a target, either cite a specific benchmark study that supports it or present it as a conservative internal goal rather than an industry standard. (1capture, Userpilot)
+- The article’s CSV template field list and the exact recommended CSV row example are practical and sensible, but I did not find that exact template in the provided sources. Mark these as recommended defaults to validate with real imports. (no direct source)
+- Specific A/B test suggestions (e.g., defaulting to CSV vs bank-link) are logical experiments but are not linked to a result or recommendation in the provided sources; treat them as product experiments to run rather than sourced conclusions. (no direct source)
+
+Actionable edits / recommendations
+- Replace absolute numeric claims ("under five minutes", "40–60% target") with conditional language or add a citation to a concrete benchmark that supports those numbers. Example: "Aim to surface a meaningful outcome within the first session; benchmarks vary by category — consult your own funnel or a vendor benchmark report before adopting an absolute target." (1capture, Userpilot)
+- Label the 9-step checklist and CSV template as "recommended" or "example" (product-specific) rather than implying they are industry-standard checklist items drawn directly from the cited sources. Add a short sentence: "This checklist is an example synthesized from Appcues-style checklist logic and onboarding best practices — validate with product analytics." (Appcues)
+- If you will reference a third-party connector by name (Plaid or other), confirm exact allowed branding and privacy/legal wording with that vendor; otherwise use generic phrasing ("a read-only banking connector"). (AskApe)
+- Where you quote people (Hulick, Ramli John), keep quotes faithful to the source and mark paraphrases as such. The Intercom Samuel Hulick interview supports the quoted concept; the Ramli John remark appears in Intercom materials and should be cited as a paraphrase if the exact wording differs. (Intercom)
+
+If you’d like, I can: (a) produce an annotated version of the article with inline citations for each paragraph/claim, or (b) rewrite the article to replace unsupported numeric claims and label product-specific recommendations as such.

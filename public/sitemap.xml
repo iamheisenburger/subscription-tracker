@@ -6,6 +6,12 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://usesubwise.app/subscription-price-change-alerts</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://usesubwise.app/subscription-manager-privacy</loc>
     <lastmod>2026-02-25</lastmod>
     <changefreq>weekly</changefreq>

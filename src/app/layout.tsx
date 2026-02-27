@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { UserSync } from "@/components/user-sync";
 import { TestModeBanner } from "@/components/test-mode-banner";
 import { Analytics } from "@/lib/analytics";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -126,6 +127,11 @@ export default function RootLayout({
               <Toaster />
             </ConvexClientProvider>
           </ThemeProvider>
+          <Script
+            src="https://leadpilot.chat/embed.js"
+            data-agent="lp_nvks6k1vtrx06sps"
+            strategy="lazyOnload"
+          />
         </body>
       </html>
     </ClerkProvider>
